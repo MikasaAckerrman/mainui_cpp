@@ -88,6 +88,22 @@ else()
 	# install to the same directory as engine
         set(GAMEDIR ".")
         set(CLIENT_INSTALL_DIR ".")
+
+	# On Android, engine expects library named libmenu_android_<arch>.so
+	if(ANDROID)
+		if(ANDROID_ABI STREQUAL "arm64-v8a")
+			set(_MENU_ARCH "arm64")
+		elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+			set(_MENU_ARCH "armv7hf")
+		elseif(ANDROID_ABI STREQUAL "x86")
+			set(_MENU_ARCH "i386")
+		elseif(ANDROID_ABI STREQUAL "x86_64")
+			set(_MENU_ARCH "amd64")
+		else()
+			set(_MENU_ARCH "unknown")
+		endif()
+		set_target_properties(menu PROPERTIES OUTPUT_NAME "menu_android_${_MENU_ARCH}")
+	endif()
 endif()
 
 install(TARGETS menu DESTINATION "${GAMEDIR}/${CLIENT_INSTALL_DIR}")
