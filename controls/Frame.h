@@ -16,6 +16,22 @@ A non-fullscreen draggable window with:
 
 #define FRAME_TITLE_HEIGHT 24  // logical pixels (scaled)
 #define FRAME_BORDER_WIDTH 2
+#define FRAME_RESIZE_GRIP  20  // logical pixels for resize grab zone
+#define FRAME_MIN_W        200 // minimum logical width
+#define FRAME_MIN_H        150 // minimum logical height
+
+enum EResizeEdge
+{
+	RESIZE_NONE = 0,
+	RESIZE_LEFT,
+	RESIZE_RIGHT,
+	RESIZE_TOP,
+	RESIZE_BOTTOM,
+	RESIZE_TOPLEFT,
+	RESIZE_TOPRIGHT,
+	RESIZE_BOTTOMLEFT,
+	RESIZE_BOTTOMRIGHT
+};
 
 class CMenuFrame : public CMenuBaseWindow
 {
@@ -37,6 +53,9 @@ public:
 	// Title text
 	const char *m_szTitle;
 
+	// Allow/disallow resize
+	bool bAllowResize;
+
 protected:
 	void DrawTitleBar();
 	void DrawBorder();
@@ -45,9 +64,19 @@ protected:
 	bool IsInTitleBar( int x, int y );
 	bool IsOnCloseButton( int x, int y );
 
+	// Returns which edge/corner the cursor is on (inside grab zone)
+	int HitTestResize( int x, int y );
+
 	// Drag state
 	bool m_bDragging;
 	Point m_dragOffset;
+
+	// Resize state
+	bool m_bResizing;
+	int  m_iResizeEdge;
+	Point m_resizeStartCursor;
+	Point m_resizeStartPos;
+	Size  m_resizeStartSize;
 
 	// Scaled sizes computed in Draw
 	int m_iTitleH;

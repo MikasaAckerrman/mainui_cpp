@@ -149,6 +149,88 @@ void CMenuFrameTabbed::Draw()
 	m_iTabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
+	// Handle resizing (from base class state)
+	if( m_bResizing )
+	{
+		int dx = uiStatic.cursorX - m_resizeStartCursor.x;
+		int dy = uiStatic.cursorY - m_resizeStartCursor.y;
+
+		int minW = (int)(FRAME_MIN_W * uiStatic.scaleX);
+		int minH = (int)(FRAME_MIN_H * uiStatic.scaleY);
+
+		int newX = m_resizeStartPos.x;
+		int newY = m_resizeStartPos.y;
+		int newW = m_resizeStartSize.w;
+		int newH = m_resizeStartSize.h;
+
+		switch( m_iResizeEdge )
+		{
+		case RESIZE_RIGHT:
+			newW += dx;
+			break;
+		case RESIZE_LEFT:
+			newX += dx;
+			newW -= dx;
+			break;
+		case RESIZE_BOTTOM:
+			newH += dy;
+			break;
+		case RESIZE_TOP:
+			newY += dy;
+			newH -= dy;
+			break;
+		case RESIZE_BOTTOMRIGHT:
+			newW += dx;
+			newH += dy;
+			break;
+		case RESIZE_BOTTOMLEFT:
+			newX += dx;
+			newW -= dx;
+			newH += dy;
+			break;
+		case RESIZE_TOPRIGHT:
+			newW += dx;
+			newY += dy;
+			newH -= dy;
+			break;
+		case RESIZE_TOPLEFT:
+			newX += dx;
+			newW -= dx;
+			newY += dy;
+			newH -= dy;
+			break;
+		}
+
+		if( newW < minW )
+		{
+			if( m_iResizeEdge == RESIZE_LEFT || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_BOTTOMLEFT )
+				newX = m_resizeStartPos.x + m_resizeStartSize.w - minW;
+			newW = minW;
+		}
+		if( newH < minH )
+		{
+			if( m_iResizeEdge == RESIZE_TOP || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_TOPRIGHT )
+				newY = m_resizeStartPos.y + m_resizeStartSize.h - minH;
+			newH = minH;
+		}
+
+		if( newX < 0 ) { newW += newX; newX = 0; }
+		if( newY < 0 ) { newH += newY; newY = 0; }
+		if( newX + newW > ScreenWidth ) newW = ScreenWidth - newX;
+		if( newY + newH > ScreenHeight ) newH = ScreenHeight - newY;
+
+		if( newW < minW ) newW = minW;
+		if( newH < minH ) newH = minH;
+
+		m_scPos.x = newX;
+		m_scPos.y = newY;
+		m_scSize.w = newW;
+		m_scSize.h = newH;
+
+		CalcItemsPositions();
+		CalcItemsSizes();
+	}
+
 	// Handle dragging (from base class)
 	if( m_bDragging )
 	{

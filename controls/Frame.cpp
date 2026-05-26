@@ -13,7 +13,10 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 {
 	m_szTitle = title;
 	m_bDragging = false;
+	m_bResizing = false;
+	m_iResizeEdge = RESIZE_NONE;
 	bAllowDrag = true;
+	bAllowResize = true;
 	m_iTitleH = FRAME_TITLE_HEIGHT;
 	m_iBorderW = FRAME_BORDER_WIDTH;
 }
@@ -48,6 +51,39 @@ bool CMenuFrame::IsOnCloseButton( int x, int y )
 	int btnY = m_scPos.y + 2;
 	return ( x >= btnX && x <= btnX + btnSize &&
 	         y >= btnY && y <= btnY + btnSize );
+}
+
+int CMenuFrame::HitTestResize( int x, int y )
+{
+	if( !bAllowResize )
+		return RESIZE_NONE;
+
+	int grip = (int)(FRAME_RESIZE_GRIP * uiStatic.scaleX);
+	int gripY = (int)(FRAME_RESIZE_GRIP * uiStatic.scaleY);
+
+	// Check if cursor is inside the window at all
+	if( x < m_scPos.x || x > m_scPos.x + m_scSize.w ||
+	    y < m_scPos.y || y > m_scPos.y + m_scSize.h )
+		return RESIZE_NONE;
+
+	bool onLeft   = ( x < m_scPos.x + grip );
+	bool onRight  = ( x > m_scPos.x + m_scSize.w - grip );
+	// For top edge: only the very top border area (not inside title bar content)
+	int topBorder = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
+	if( topBorder < 4 ) topBorder = 4; // minimum touch area for top
+	bool onTop    = ( y < m_scPos.y + topBorder );
+	bool onBottom = ( y > m_scPos.y + m_scSize.h - gripY );
+
+	if( onTop && onLeft )     return RESIZE_TOPLEFT;
+	if( onTop && onRight )    return RESIZE_TOPRIGHT;
+	if( onBottom && onLeft )  return RESIZE_BOTTOMLEFT;
+	if( onBottom && onRight ) return RESIZE_BOTTOMRIGHT;
+	if( onTop )               return RESIZE_TOP;
+	if( onBottom )            return RESIZE_BOTTOM;
+	if( onLeft )              return RESIZE_LEFT;
+	if( onRight )             return RESIZE_RIGHT;
+
+	return RESIZE_NONE;
 }
 
 void CMenuFrame::DrawBackground()
@@ -109,6 +145,92 @@ void CMenuFrame::Draw()
 	m_iBorderW = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
+	// Handle resizing
+	if( m_bResizing )
+	{
+		int dx = uiStatic.cursorX - m_resizeStartCursor.x;
+		int dy = uiStatic.cursorY - m_resizeStartCursor.y;
+
+		int minW = (int)(FRAME_MIN_W * uiStatic.scaleX);
+		int minH = (int)(FRAME_MIN_H * uiStatic.scaleY);
+
+		int newX = m_resizeStartPos.x;
+		int newY = m_resizeStartPos.y;
+		int newW = m_resizeStartSize.w;
+		int newH = m_resizeStartSize.h;
+
+		// Adjust based on edge being dragged
+		switch( m_iResizeEdge )
+		{
+		case RESIZE_RIGHT:
+			newW += dx;
+			break;
+		case RESIZE_LEFT:
+			newX += dx;
+			newW -= dx;
+			break;
+		case RESIZE_BOTTOM:
+			newH += dy;
+			break;
+		case RESIZE_TOP:
+			newY += dy;
+			newH -= dy;
+			break;
+		case RESIZE_BOTTOMRIGHT:
+			newW += dx;
+			newH += dy;
+			break;
+		case RESIZE_BOTTOMLEFT:
+			newX += dx;
+			newW -= dx;
+			newH += dy;
+			break;
+		case RESIZE_TOPRIGHT:
+			newW += dx;
+			newY += dy;
+			newH -= dy;
+			break;
+		case RESIZE_TOPLEFT:
+			newX += dx;
+			newW -= dx;
+			newY += dy;
+			newH -= dy;
+			break;
+		}
+
+		// Enforce minimum size
+		if( newW < minW )
+		{
+			if( m_iResizeEdge == RESIZE_LEFT || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_BOTTOMLEFT )
+				newX = m_resizeStartPos.x + m_resizeStartSize.w - minW;
+			newW = minW;
+		}
+		if( newH < minH )
+		{
+			if( m_iResizeEdge == RESIZE_TOP || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_TOPRIGHT )
+				newY = m_resizeStartPos.y + m_resizeStartSize.h - minH;
+			newH = minH;
+		}
+
+		// Clamp to screen
+		if( newX < 0 ) { newW += newX; newX = 0; }
+		if( newY < 0 ) { newH += newY; newY = 0; }
+		if( newX + newW > ScreenWidth ) newW = ScreenWidth - newX;
+		if( newY + newH > ScreenHeight ) newH = ScreenHeight - newY;
+
+		// Re-enforce minimum after clamping
+		if( newW < minW ) newW = minW;
+		if( newH < minH ) newH = minH;
+
+		m_scPos.x = newX;
+		m_scPos.y = newY;
+		m_scSize.w = newW;
+		m_scSize.h = newH;
+
+		CalcItemsPositions();
+		CalcItemsSizes();
+	}
+
 	// Handle dragging
 	if( m_bDragging )
 	{
@@ -141,6 +263,18 @@ bool CMenuFrame::KeyDown( int key )
 			return true; // consume, handle on KeyUp
 		}
 
+		// Check resize edges/corners before drag
+		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
+		if( edge != RESIZE_NONE )
+		{
+			m_bResizing = true;
+			m_iResizeEdge = edge;
+			m_resizeStartCursor = Point( uiStatic.cursorX, uiStatic.cursorY );
+			m_resizeStartPos = m_scPos;
+			m_resizeStartSize = m_scSize;
+			return true;
+		}
+
 		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
 			m_bDragging = true;
@@ -163,6 +297,18 @@ bool CMenuFrame::KeyUp( int key )
 {
 	if( UI::Key::IsLeftMouse( key ) )
 	{
+		if( m_bResizing )
+		{
+			m_bResizing = false;
+			m_iResizeEdge = RESIZE_NONE;
+			// Update logical pos/size from screen-space values
+			pos.x = (int)(m_scPos.x / uiStatic.scaleX);
+			pos.y = (int)(m_scPos.y / uiStatic.scaleY);
+			size.w = (int)(m_scSize.w / uiStatic.scaleX);
+			size.h = (int)(m_scSize.h / uiStatic.scaleY);
+			return true;
+		}
+
 		if( m_bDragging )
 		{
 			m_bDragging = false;
