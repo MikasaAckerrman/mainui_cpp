@@ -142,104 +142,85 @@ void CMenuWndConsole::ReadLog()
 		return;
 	}
 
-	bool newContent = (length > m_iLastFileSize);
-	m_iLastFileSize = length;
-
-	// Parse from end of file to extract last CON_MAX_LINES lines
-	// Work backwards to find line boundaries
 	const char *text = (const char *)pFile;
-	int lineStarts[CON_MAX_LINES];
-	int numLines = 0;
+	bool truncated = (length < m_iLastFileSize);
 
-	// Start from end, find line boundaries
-	int pos = length - 1;
-
-	// Skip trailing newline
-	while( pos >= 0 && (text[pos] == '\n' || text[pos] == '\r') )
-		pos--;
-
-	if( pos < 0 )
+	if( truncated )
 	{
-		EngFuncs::COM_FreeFile( pFile );
-		return;
-	}
+		// File was truncated/rotated - reset and parse the whole file
+		m_iLineHead = 0;
+		m_iLineCount = 0;
 
-	// The end of the last content line
-	int lineEnd = pos + 1;
+		// Parse entire file forward
+		int pos = 0;
+		while( pos < length && m_iLineCount < CON_MAX_LINES )
+		{
+			int lineStart = pos;
+			// Find end of line
+			while( pos < length && text[pos] != '\n' && text[pos] != '\r' )
+				pos++;
 
-	// Walk backwards finding line starts
-	while( pos >= 0 && numLines < CON_MAX_LINES )
-	{
-		if( text[pos] == '\n' )
-		{
-			lineStarts[numLines] = pos + 1;
-			numLines++;
-			// Skip \r\n pairs
-			if( pos > 0 && text[pos - 1] == '\r' )
-				pos--;
-			lineEnd = pos; // end of previous line
-			pos--;
-		}
-		else
-		{
-			pos--;
+			int len = pos - lineStart;
+			if( len >= CON_LINE_LEN )
+				len = CON_LINE_LEN - 1;
+
+			memcpy( m_lines[m_iLineHead], text + lineStart, len );
+			m_lines[m_iLineHead][len] = '\0';
+			m_lineColors[m_iLineHead] = CON_TEXT_COLOR;
+
+			m_iLineHead = (m_iLineHead + 1) % CON_MAX_LINES;
+			if( m_iLineCount < CON_MAX_LINES )
+				m_iLineCount++;
+
+			// Skip newline characters
+			if( pos < length && text[pos] == '\r' ) pos++;
+			if( pos < length && text[pos] == '\n' ) pos++;
 		}
 	}
-
-	// If we didn't hit the beginning, add the first line
-	if( pos < 0 && numLines < CON_MAX_LINES )
+	else
 	{
-		lineStarts[numLines] = 0;
-		numLines++;
+		// Incremental: only parse new bytes from m_iLastFileSize onward
+		int pos = m_iLastFileSize;
+		bool hasNew = false;
+
+		while( pos < length )
+		{
+			int lineStart = pos;
+			// Find end of line
+			while( pos < length && text[pos] != '\n' && text[pos] != '\r' )
+				pos++;
+
+			// Only add complete lines (terminated by newline) or content at EOF
+			int len = pos - lineStart;
+			if( len > 0 || pos < length )
+			{
+				if( len >= CON_LINE_LEN )
+					len = CON_LINE_LEN - 1;
+				if( len < 0 ) len = 0;
+
+				memcpy( m_lines[m_iLineHead], text + lineStart, len );
+				m_lines[m_iLineHead][len] = '\0';
+				m_lineColors[m_iLineHead] = CON_TEXT_COLOR;
+
+				m_iLineHead = (m_iLineHead + 1) % CON_MAX_LINES;
+				if( m_iLineCount < CON_MAX_LINES )
+					m_iLineCount++;
+
+				hasNew = true;
+			}
+
+			// Skip newline characters
+			if( pos < length && text[pos] == '\r' ) pos++;
+			if( pos < length && text[pos] == '\n' ) pos++;
+		}
+
+		// Auto-scroll to bottom when new content detected
+		if( hasNew )
+			m_iScrollOffset = 0;
 	}
 
-	// Now lineStarts[0..numLines-1] are in reverse order (last line first)
-	// Reset ring buffer and fill with the extracted lines
-	m_iLineHead = 0;
-	m_iLineCount = 0;
-
-	for( int i = numLines - 1; i >= 0; i-- )
-	{
-		int start = lineStarts[i];
-		int end;
-
-		if( i == 0 )
-		{
-			// This is the last line in file (first in our reversed array)
-			// Find its end
-			end = length;
-			// Trim trailing newlines
-			while( end > start && (text[end - 1] == '\n' || text[end - 1] == '\r') )
-				end--;
-		}
-		else
-		{
-			// End is just before the next line's start
-			end = lineStarts[i - 1];
-			// Trim newlines between lines
-			while( end > start && (text[end - 1] == '\n' || text[end - 1] == '\r') )
-				end--;
-		}
-
-		int len = end - start;
-		if( len >= CON_LINE_LEN )
-			len = CON_LINE_LEN - 1;
-		if( len < 0 ) len = 0;
-
-		memcpy( m_lines[m_iLineHead], text + start, len );
-		m_lines[m_iLineHead][len] = '\0';
-		m_lineColors[m_iLineHead] = CON_TEXT_COLOR;
-
-		m_iLineHead = (m_iLineHead + 1) % CON_MAX_LINES;
-		if( m_iLineCount < CON_MAX_LINES )
-			m_iLineCount++;
-	}
-
+	m_iLastFileSize = length;
 	EngFuncs::COM_FreeFile( pFile );
-
-	// Auto-scroll to bottom when new content detected
-	if( newContent )
-		m_iScrollOffset = 0;
 }
 
 void CMenuWndConsole::Submit()
@@ -334,74 +315,8 @@ void CMenuWndConsole::Draw()
 	m_iBorderW = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
-	// Handle resizing (from CMenuFrame)
-	if( m_bResizing )
-	{
-		int dx = uiStatic.cursorX - m_resizeStartCursor.x;
-		int dy = uiStatic.cursorY - m_resizeStartCursor.y;
-
-		int minW = (int)(FRAME_MIN_W * uiStatic.scaleX);
-		int minH = (int)(FRAME_MIN_H * uiStatic.scaleY);
-
-		int newX = m_resizeStartPos.x;
-		int newY = m_resizeStartPos.y;
-		int newW = m_resizeStartSize.w;
-		int newH = m_resizeStartSize.h;
-
-		switch( m_iResizeEdge )
-		{
-		case RESIZE_RIGHT:       newW += dx; break;
-		case RESIZE_LEFT:        newX += dx; newW -= dx; break;
-		case RESIZE_BOTTOM:      newH += dy; break;
-		case RESIZE_TOP:         newY += dy; newH -= dy; break;
-		case RESIZE_BOTTOMRIGHT: newW += dx; newH += dy; break;
-		case RESIZE_BOTTOMLEFT:  newX += dx; newW -= dx; newH += dy; break;
-		case RESIZE_TOPRIGHT:    newW += dx; newY += dy; newH -= dy; break;
-		case RESIZE_TOPLEFT:     newX += dx; newW -= dx; newY += dy; newH -= dy; break;
-		}
-
-		if( newW < minW )
-		{
-			if( m_iResizeEdge == RESIZE_LEFT || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_BOTTOMLEFT )
-				newX = m_resizeStartPos.x + m_resizeStartSize.w - minW;
-			newW = minW;
-		}
-		if( newH < minH )
-		{
-			if( m_iResizeEdge == RESIZE_TOP || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_TOPRIGHT )
-				newY = m_resizeStartPos.y + m_resizeStartSize.h - minH;
-			newH = minH;
-		}
-
-		if( newX < 0 ) { newW += newX; newX = 0; }
-		if( newY < 0 ) { newH += newY; newY = 0; }
-		if( newX + newW > ScreenWidth ) newW = (int)ScreenWidth - newX;
-		if( newY + newH > ScreenHeight ) newH = (int)ScreenHeight - newY;
-		if( newW < minW ) newW = minW;
-		if( newH < minH ) newH = minH;
-
-		m_scPos.x = newX;
-		m_scPos.y = newY;
-		m_scSize.w = newW;
-		m_scSize.h = newH;
-
-		CalcItemsPositions();
-		CalcItemsSizes();
-	}
-
-	// Handle dragging
-	if( m_bDragging )
-	{
-		m_scPos.x = uiStatic.cursorX - m_dragOffset.x;
-		m_scPos.y = uiStatic.cursorY - m_dragOffset.y;
-
-		if( m_scPos.x < 0 ) m_scPos.x = 0;
-		if( m_scPos.y < 0 ) m_scPos.y = 0;
-		if( m_scPos.x + m_scSize.w > ScreenWidth ) m_scPos.x = (int)ScreenWidth - m_scSize.w;
-		if( m_scPos.y + m_scSize.h > ScreenHeight ) m_scPos.y = (int)ScreenHeight - m_scSize.h;
-
-		CalcItemsPositions();
-	}
+	ApplyResize();
+	ApplyDrag();
 
 	// --- Dynamic input field positioning ---
 	// Because inputField has QMF_DISABLESCAILING, CalcPosition sets m_scPos = pos directly.
@@ -497,9 +412,6 @@ bool CMenuWndConsole::KeyDown( int key )
 	if( key == K_MWHEELUP )
 	{
 		m_iScrollOffset += 3;
-		int maxScroll = m_iLineCount - 1;
-		if( m_iScrollOffset > maxScroll )
-			m_iScrollOffset = maxScroll;
 		return true;
 	}
 

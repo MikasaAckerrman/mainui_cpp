@@ -67,6 +67,12 @@ protected:
 	// Returns which edge/corner the cursor is on (inside grab zone)
 	int HitTestResize( int x, int y );
 
+	// Apply resize delta from m_resizeStart* to m_scPos/m_scSize. Call in Draw().
+	void ApplyResize();
+
+	// Apply drag offset to m_scPos. Call in Draw().
+	void ApplyDrag();
+
 	// Drag state
 	bool m_bDragging;
 	Point m_dragOffset;
