@@ -151,9 +151,9 @@ void CMenuWndConsole::ReadLog()
 		m_iLineHead = 0;
 		m_iLineCount = 0;
 
-		// Parse entire file forward
+		// Parse entire file forward; ring buffer wraps naturally to retain most recent lines
 		int pos = 0;
-		while( pos < length && m_iLineCount < CON_MAX_LINES )
+		while( pos < length )
 		{
 			int lineStart = pos;
 			// Find end of line
@@ -169,13 +169,15 @@ void CMenuWndConsole::ReadLog()
 			m_lineColors[m_iLineHead] = CON_TEXT_COLOR;
 
 			m_iLineHead = (m_iLineHead + 1) % CON_MAX_LINES;
-			if( m_iLineCount < CON_MAX_LINES )
-				m_iLineCount++;
+			m_iLineCount++;
 
 			// Skip newline characters
 			if( pos < length && text[pos] == '\r' ) pos++;
 			if( pos < length && text[pos] == '\n' ) pos++;
 		}
+
+		if( m_iLineCount > CON_MAX_LINES )
+			m_iLineCount = CON_MAX_LINES;
 	}
 	else
 	{
@@ -324,8 +326,8 @@ void CMenuWndConsole::Draw()
 	int pad = (int)(CON_PADDING * uiStatic.scaleX);
 	int inputH = (int)(CON_INPUT_HEIGHT * uiStatic.scaleY);
 
-	inputField.pos.x = m_scPos.x + pad;
-	inputField.pos.y = m_scPos.y + m_scSize.h - inputH - pad;
+	inputField.pos.x = pad;
+	inputField.pos.y = (m_scSize.h - m_iTitleH) - inputH - pad;
 	inputField.size.w = m_scSize.w - pad * 2;
 	inputField.size.h = inputH;
 	inputField.CalcPosition();
@@ -340,7 +342,7 @@ void CMenuWndConsole::Draw()
 	if( lineH < 8 ) lineH = 8;
 
 	int contentTop = m_scPos.y + m_iTitleH + 4;
-	int separatorY = inputField.pos.y - pad;
+	int separatorY = inputField.GetRenderPosition().y - pad;
 	int contentBottom = separatorY;
 	int contentX = m_scPos.x + pad;
 	int contentW = m_scSize.w - pad * 2;
@@ -357,7 +359,6 @@ void CMenuWndConsole::Draw()
 	// Draw lines from ring buffer
 	// The ring buffer: oldest line is at index (m_iLineHead - m_iLineCount + CON_MAX_LINES) % CON_MAX_LINES
 	// We want to show lines from (newest - maxVisibleLines - scrollOffset) to (newest - scrollOffset)
-	int newestIdx = (m_iLineHead - 1 + CON_MAX_LINES) % CON_MAX_LINES;
 
 	// Start from the bottom-most visible line (which is the newest minus scroll offset)
 	int firstVisibleFromBottom = m_iScrollOffset;
