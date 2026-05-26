@@ -49,6 +49,7 @@ public:
 	bool KeyDown( int key ) override;
 	bool KeyUp( int key ) override;
 	bool MouseMove( int x, int y ) override;
+	bool IsFrame() const override { return true; }
 
 	void SetRect( int x, int y, int w, int h );
 
