@@ -37,7 +37,7 @@ static unsigned int ParseColorString( const char *str )
 	if( !stricmp( str, "White" ) ) return 0xFFFFFFFF;
 	if( !stricmp( str, "Black" ) ) return 0xFF000000;
 	if( !stricmp( str, "Blank" ) || !stricmp( str, "None" ) ) return 0;
-	if( !stricmp( str, "Orange" ) ) return 0xFFF0B418;
+	if( !stricmp( str, "Orange" ) ) return 0xFFC8C8C8;
 
 	int count = sscanf( str, "%d %d %d %d", &r, &g, &b, &a );
 	if( count < 3 )
@@ -268,51 +268,51 @@ void UI_LoadTrackerScheme( void )
 	{
 		Con_Printf( "TrackerScheme: not found, applying built-in CS 1.6 defaults\n" );
 
-		// Apply CS 1.6 Steam default colors
-		g_Scheme.frameBgColor        = 0xE6282828; // 40,40,40,230
-		g_Scheme.frameTitleBarBg     = 0xFF4A3520; // 74,53,32,255 (dark orange-brown)
-		g_Scheme.frameTitleBarFg     = 0xFFF0ECE0; // 240,236,224,255
+		// Apply CS 1.6 original neutral grey palette
+		g_Scheme.frameBgColor        = 0xE63C3C3C; // 60,60,60,230
+		g_Scheme.frameTitleBarBg     = 0xFF4B4B4B; // 75,75,75,255
+		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
 		g_Scheme.frameBorderColor    = 0xFF5C5C5C; // 92,92,92,255
 
-		g_Scheme.borderBright        = 0xC8C8C8C8; // 200,200,200,200
-		g_Scheme.borderDark          = 0xC4282828; // 40,40,40,196
-		g_Scheme.borderSelection     = 0xC4000000; // 0,0,0,196
+		g_Scheme.borderBright        = 0xFFC8C8C8; // 200,200,200,255
+		g_Scheme.borderDark          = 0xFF282828; // 40,40,40,255
+		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
-		g_Scheme.buttonTextColor     = 0xFFF0ECE0; // light cream
+		g_Scheme.buttonTextColor     = 0xFFFFFFFF; // white
 		g_Scheme.buttonBgColor       = 0x00000000; // transparent
 		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF; // white on hover
-		g_Scheme.buttonArmedBgColor  = 0x40505040; // subtle highlight
-		g_Scheme.buttonDepressedTextColor = 0xFF9C9080; // dimmed
+		g_Scheme.buttonArmedBgColor  = 0x40505050; // subtle grey highlight
+		g_Scheme.buttonDepressedTextColor = 0xFFA0A0A0; // dimmed grey
 
-		g_Scheme.labelTextColor      = 0xFFF0B418; // 240,180,24  CS 1.6 orange
+		g_Scheme.labelTextColor      = 0xFFC8C8C8; // 200,200,200 light grey
 		g_Scheme.labelBrightColor    = 0xFFFFFFFF; // white
-		g_Scheme.labelDimColor       = 0xFFA0A0A0; // gray
-		g_Scheme.labelDisabledFg1    = 0xFF505050;
-		g_Scheme.labelDisabledFg2    = 0xFF404040;
+		g_Scheme.labelDimColor       = 0xFFA0A0A0; // 160,160,160
+		g_Scheme.labelDisabledFg1    = 0xFF404040;
+		g_Scheme.labelDisabledFg2    = 0xFF282828;
 
-		g_Scheme.listTextColor       = 0xFFF0ECE0;
-		g_Scheme.listBgColor         = 0xE6202020; // 32,32,32,230
+		g_Scheme.listTextColor       = 0xFFFFFFFF;
+		g_Scheme.listBgColor         = 0xE62D2D2D; // 45,45,45,230
 		g_Scheme.listSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.listSelectedBgColor = 0xFF4A3520; // dark orange highlight
+		g_Scheme.listSelectedBgColor = 0xFF4A4A5A; // blue-grey selection
 		g_Scheme.listHeaderTextColor = 0xFFA0A0A0;
 
-		g_Scheme.fieldTextColor      = 0xFFF0ECE0;
-		g_Scheme.fieldBgColor        = 0xE6181818; // 24,24,24,230
+		g_Scheme.fieldTextColor      = 0xFFFFFFFF;
+		g_Scheme.fieldBgColor        = 0xE6323232; // 50,50,50,230
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.fieldSelectedBgColor = 0xFF4A3520;
+		g_Scheme.fieldSelectedBgColor = 0xFF4A4A5A;
 
-		g_Scheme.tabTextColor        = 0xFF9C9080;
-		g_Scheme.tabSelectedTextColor= 0xFFF0ECE0;
+		g_Scheme.tabTextColor        = 0xFFA0A0A0;
+		g_Scheme.tabSelectedTextColor= 0xFFFFFFFF;
 
-		g_Scheme.menuTextColor       = 0xFFF0ECE0;
-		g_Scheme.menuBgColor         = 0xE6282828;
+		g_Scheme.menuTextColor       = 0xFFFFFFFF;
+		g_Scheme.menuBgColor         = 0xE63C3C3C;
 		g_Scheme.menuArmedTextColor  = 0xFFFFFFFF;
-		g_Scheme.menuArmedBgColor    = 0xFF4A3520;
+		g_Scheme.menuArmedBgColor    = 0xFF4A4A5A;
 
-		g_Scheme.bgColor             = 0xE6282828;
-		g_Scheme.fgColor             = 0xFFF0ECE0;
-		g_Scheme.windowBgColor       = 0xE6202020;
-		g_Scheme.windowFgColor       = 0xFFF0ECE0;
+		g_Scheme.bgColor             = 0xE63C3C3C;
+		g_Scheme.fgColor             = 0xFFFFFFFF;
+		g_Scheme.windowBgColor       = 0xE62D2D2D;
+		g_Scheme.windowFgColor       = 0xFFFFFFFF;
 
 		// Also update legacy mainui globals
 		uiPromptTextColor  = g_Scheme.labelTextColor;

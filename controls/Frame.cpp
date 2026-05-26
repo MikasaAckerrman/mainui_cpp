@@ -92,8 +92,8 @@ void CMenuFrame::DrawBackground()
 
 void CMenuFrame::DrawTitleBar()
 {
-	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4A3520 );
-	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFF0ECE0 );
+	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4B4B4B );
+	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
 	unsigned int sepColor = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
 
 	// Title bar background
@@ -112,14 +112,31 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] — sharp 1px diagonal lines (PC CS 1.6 reference)
+	// Close button [X] — bevel box with grey fill, grey hover highlight (not red)
 	int btnSize = m_iTitleH - 6;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
 	int btnY = m_scPos.y + 3;
 
 	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
-	unsigned int btnColor = hovered ? 0xFFFF4040 : titleFg;
 
+	// Bevel box background
+	unsigned int btnBg = hovered ? 0xFF606060 : 0xFF4A4A4A;
+	UI_FillRect( btnX, btnY, btnSize, btnSize, btnBg );
+
+	// Bevel box border (raised: bright top+left, dark bottom+right)
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
+	// Top edge (bright)
+	UI_FillRect( btnX, btnY, btnSize, 1, bright );
+	// Left edge (bright)
+	UI_FillRect( btnX, btnY, 1, btnSize, bright );
+	// Bottom edge (dark)
+	UI_FillRect( btnX, btnY + btnSize - 1, btnSize, 1, dark );
+	// Right edge (dark)
+	UI_FillRect( btnX + btnSize - 1, btnY, 1, btnSize, dark );
+
+	// X glyph — white diagonal lines inside the bevel box
+	unsigned int glyphColor = 0xFFFFFFFF;
 	int pad = 3;
 	int x0 = btnX + pad;
 	int y0 = btnY + pad;
@@ -132,35 +149,32 @@ void CMenuFrame::DrawTitleBar()
 	for( int i = 0; i <= span; i++ )
 	{
 		int px = x0 + i;
-		int py1 = y0 + i;            // top-left → bottom-right
-		int py2 = y1 - i;            // bottom-left → top-right
-		UI_FillRect( px, py1, 1, 1, btnColor );
-		UI_FillRect( px, py2, 1, 1, btnColor );
+		int py1 = y0 + i;            // top-left -> bottom-right
+		int py2 = y1 - i;            // bottom-left -> top-right
+		UI_FillRect( px, py1, 1, 1, glyphColor );
+		UI_FillRect( px, py2, 1, 1, glyphColor );
 	}
 }
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFA0A0A0 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
 	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
 
-	// Double bevel: outer ring = dark, inner ring = bright
+	// Raised bevel: bright on top+left, dark on bottom+right (single pixel each side)
 	int x = m_scPos.x;
 	int y = m_scPos.y;
 	int w = m_scSize.w;
 	int h = m_scSize.h;
 
-	// Outer ring (dark, 1px)
-	UI_FillRect( x - 2, y - 2,     w + 4, 1,     dark );  // top
-	UI_FillRect( x - 2, y + h + 1, w + 4, 1,     dark );  // bottom
-	UI_FillRect( x - 2, y - 2,     1,     h + 4, dark );  // left
-	UI_FillRect( x + w + 1, y - 2, 1,     h + 4, dark );  // right
-
-	// Inner ring (bright, 1px)
-	UI_FillRect( x - 1, y - 1, w + 2, 1,     bright );    // top
-	UI_FillRect( x - 1, y + h, w + 2, 1,     bright );    // bottom
-	UI_FillRect( x - 1, y - 1, 1,     h + 2, bright );    // left
-	UI_FillRect( x + w, y - 1, 1,     h + 2, bright );    // right
+	// Top edge (bright)
+	UI_FillRect( x - 1, y - 1, w + 1, 1, bright );
+	// Left edge (bright)
+	UI_FillRect( x - 1, y - 1, 1, h + 1, bright );
+	// Bottom edge (dark)
+	UI_FillRect( x - 1, y + h, w + 1, 1, dark );
+	// Right edge (dark)
+	UI_FillRect( x + w, y - 1, 1, h + 1, dark );
 }
 
 // ─── Drag/Resize math ────────────────────────────────────────────────────────
