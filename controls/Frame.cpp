@@ -284,7 +284,9 @@ bool CMenuFrame::KeyDown( int key )
 			return true;
 		}
 
-		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
+		// Drag from anywhere in the window (touch-friendly)
+		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
+		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
 			m_bDragging = true;
 			m_dragOffset.x = uiStatic.cursorX - m_scPos.x;
