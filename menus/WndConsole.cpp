@@ -424,6 +424,22 @@ bool CMenuWndConsole::KeyDown( int key )
 		return true;
 	}
 
+	// Check if tap is on the input field - activate keyboard
+	if( UI::Key::IsLeftMouse( key ) )
+	{
+		Point iPos = inputField.GetRenderPosition();
+		Size iSize = inputField.GetRenderSize();
+		if( uiStatic.cursorX >= iPos.x &&
+		    uiStatic.cursorX <= iPos.x + iSize.w &&
+		    uiStatic.cursorY >= iPos.y &&
+		    uiStatic.cursorY <= iPos.y + iSize.h )
+		{
+			SetCursorToItem( inputField );
+			UI_EnableTextInput( true );
+			return true;
+		}
+	}
+
 	return CMenuFrame::KeyDown( key );
 }
 

@@ -224,6 +224,12 @@ void CMenuFrame::ApplyResize()
 
 	CalcItemsPositions();
 	CalcItemsSizes();
+
+	// Sync logical coordinates so base class doesn't overwrite
+	pos.x = (int)(m_scPos.x / uiStatic.scaleX);
+	pos.y = (int)(m_scPos.y / uiStatic.scaleY);
+	size.w = (int)(m_scSize.w / uiStatic.scaleX);
+	size.h = (int)(m_scSize.h / uiStatic.scaleY);
 }
 
 void CMenuFrame::ApplyDrag()
@@ -241,6 +247,10 @@ void CMenuFrame::ApplyDrag()
 	if( m_scPos.y + m_scSize.h > ScreenHeight ) m_scPos.y = ScreenHeight - m_scSize.h;
 
 	CalcItemsPositions();
+
+	// Sync logical coordinates
+	pos.x = (int)(m_scPos.x / uiStatic.scaleX);
+	pos.y = (int)(m_scPos.y / uiStatic.scaleY);
 }
 
 void CMenuFrame::Draw()
@@ -308,11 +318,6 @@ bool CMenuFrame::KeyUp( int key )
 		{
 			m_bResizing = false;
 			m_iResizeEdge = RESIZE_NONE;
-			// Update logical pos/size from screen-space values
-			pos.x = (int)(m_scPos.x / uiStatic.scaleX);
-			pos.y = (int)(m_scPos.y / uiStatic.scaleY);
-			size.w = (int)(m_scSize.w / uiStatic.scaleX);
-			size.h = (int)(m_scSize.h / uiStatic.scaleY);
 			return true;
 		}
 
