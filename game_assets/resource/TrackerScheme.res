@@ -118,13 +118,13 @@
 	"Fonts"
 	{
 		// Font definitions - mainui_cpp handles these via FontManager
-		// These are here for documentation/reference
+		// Tahoma 11px feel (CS 1.6 PC reference)
 		"Default"
 		{
 			"1"
 			{
 				"name"		"Tahoma"
-				"tall"		"16"
+				"tall"		"12"
 				"weight"	"500"
 			}
 		}
@@ -133,7 +133,7 @@
 			"1"
 			{
 				"name"		"Tahoma"
-				"tall"		"16"
+				"tall"		"12"
 				"weight"	"700"
 			}
 		}
@@ -142,7 +142,7 @@
 			"1"
 			{
 				"name"		"Tahoma"
-				"tall"		"20"
+				"tall"		"14"
 				"weight"	"700"
 			}
 		}

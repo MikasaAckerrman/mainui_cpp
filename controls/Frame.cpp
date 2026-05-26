@@ -88,9 +88,13 @@ void CMenuFrame::DrawTitleBar()
 {
 	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4A3520 );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFF0ECE0 );
+	unsigned int sepColor = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
 
 	// Title bar background
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
+
+	// 1px separator line at bottom of title bar (between title and content/tabs)
+	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, sepColor );
 
 	// Title text
 	if( m_szTitle && m_szTitle[0] )
@@ -100,34 +104,74 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, m_iTitleH - 4, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X]
+	// Close button [X] — drawn as a glyph (two crossing diagonal lines)
 	int btnSize = m_iTitleH - 6;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
 	int btnY = m_scPos.y + 3;
 
 	unsigned int btnColor = titleFg;
-	if( IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
+	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
+	if( hovered )
 		btnColor = 0xFFFF4040; // red on hover
 
-	// Draw X as two lines using filled rects (diagonal approximation)
-	UI_DrawString( uiStatic.hDefaultFont,
-		btnX, btnY, btnSize, btnSize,
-		"X", btnColor, btnSize, QM_CENTER, ETF_FORCECOL );
+	// Draw X glyph using small filled rects (simulated diagonal lines)
+	// We draw two diagonals as a series of 1-2px filled squares
+	int pad = btnSize / 5; // padding inside the button area
+	int x0 = btnX + pad;
+	int y0 = btnY + pad;
+	int x1 = btnX + btnSize - pad;
+	int y1 = btnY + btnSize - pad;
+	int steps = (x1 - x0);
+	if( steps < 4 ) steps = 4;
+
+	for( int i = 0; i <= steps; i++ )
+	{
+		int px = x0 + (x1 - x0) * i / steps;
+		int py = y0 + (y1 - y0) * i / steps;
+		// Forward diagonal (\)
+		UI_FillRect( px, py, 2, 2, btnColor );
+		// Back diagonal (/)
+		int py2 = y1 - (y1 - y0) * i / steps;
+		UI_FillRect( px, py2, 2, 2, btnColor );
+	}
 }
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xC8808080 );
-	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xC4282828 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFA0A0A0 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
 
-	// Top border (bright)
-	UI_FillRect( m_scPos.x, m_scPos.y - m_iBorderW, m_scSize.w, m_iBorderW, bright );
-	// Left border (bright)
-	UI_FillRect( m_scPos.x - m_iBorderW, m_scPos.y - m_iBorderW, m_iBorderW, m_scSize.h + m_iBorderW * 2, bright );
-	// Bottom border (dark)
-	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h, m_scSize.w, m_iBorderW, dark );
-	// Right border (dark)
-	UI_FillRect( m_scPos.x + m_scSize.w, m_scPos.y - m_iBorderW, m_iBorderW, m_scSize.h + m_iBorderW * 2, dark );
+	// Double bevel: outer ring = dark, inner ring = bright
+	// This matches the CS 1.6 PC / Source Engine frame style from issue #17.
+	//
+	// Layout (2px total border drawn OUTSIDE the window rect):
+	//   outer 1px: dark on all 4 sides
+	//   inner 1px: bright on all 4 sides (classic raised bevel feel)
+
+	int x = m_scPos.x;
+	int y = m_scPos.y;
+	int w = m_scSize.w;
+	int h = m_scSize.h;
+
+	// --- Outer ring (dark, 1px) ---
+	// Top
+	UI_FillRect( x - 2, y - 2, w + 4, 1, dark );
+	// Bottom
+	UI_FillRect( x - 2, y + h + 1, w + 4, 1, dark );
+	// Left
+	UI_FillRect( x - 2, y - 2, 1, h + 4, dark );
+	// Right
+	UI_FillRect( x + w + 1, y - 2, 1, h + 4, dark );
+
+	// --- Inner ring (bright, 1px) ---
+	// Top
+	UI_FillRect( x - 1, y - 1, w + 2, 1, bright );
+	// Bottom
+	UI_FillRect( x - 1, y + h, w + 2, 1, bright );
+	// Left
+	UI_FillRect( x - 1, y - 1, 1, h + 2, bright );
+	// Right
+	UI_FillRect( x + w, y - 1, 1, h + 2, bright );
 }
 
 void CMenuFrame::ApplyResize()
