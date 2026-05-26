@@ -19,6 +19,7 @@ GNU General Public License for more details.
 #include "Table.h"
 #include "Utils.h"
 #include "Scissor.h"
+#include "TrackerScheme.h"
 
 #define HEADER_HEIGHT_FRAC 1.75f
 
@@ -47,10 +48,10 @@ void CMenuTable::VidInit()
 {
 	BaseClass::VidInit();
 
-	iBackgroundColor.SetDefault( uiColorBlack );
-	iHeaderColor.SetDefault( uiColorHelp );
-	colorStroke.SetDefault( uiInputFgColor );
-	iStrokeFocusedColor.SetDefault( uiInputTextColor );
+	iBackgroundColor.SetDefault( Scheme_GetColor( g_Scheme.listBgColor, uiColorBlack ) );
+	iHeaderColor.SetDefault( Scheme_GetColor( g_Scheme.listHeaderTextColor, uiColorHelp ) );
+	colorStroke.SetDefault( Scheme_GetColor( g_Scheme.borderDark, uiInputFgColor ) );
+	iStrokeFocusedColor.SetDefault( Scheme_GetColor( g_Scheme.borderBright, uiInputTextColor ) );
 
 	iStrokeWidth = uiStatic.outlineWidth;
 
@@ -608,7 +609,7 @@ void CMenuTable::DrawLine( Point p, int line, uint textColor, bool forceCol, uin
 void CMenuTable::Draw()
 {
 	int i, y;
-	int selColor = PackRGB( 80, 56, 24 );
+	int selColor = Scheme_GetColor( g_Scheme.listSelectedBgColor, PackRGB( 80, 56, 24 ) );
 	int upFocus, downFocus, scrollbarFocus;
 
 	// HACKHACK: recalc iNumRows, to be not greater than iNumItems
