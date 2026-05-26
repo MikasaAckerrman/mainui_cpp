@@ -2,24 +2,22 @@
 {
 	"Colors"
 	{
-		// CS 1.6 Steam-era color palette
-		"Orange"			"240 180 24 255"
-		"OrangeDim"			"200 140 20 200"
-		"White"				"240 236 224 255"
-		"OffWhite"			"220 216 204 255"
-		"DullWhite"			"160 156 144 255"
-		"LightGray"			"160 160 160 255"
+		// CS 1.6 original neutral grey palette
+		"White"				"255 255 255 255"
+		"OffWhite"			"220 220 220 255"
+		"LightGray"			"200 200 200 255"
+		"DullWhite"			"160 160 160 255"
+		"MedGray"			"85 85 85 255"
 		"DarkGray"			"64 64 64 255"
 		"DarkerGray"		"40 40 40 255"
+		"TitleGray"			"75 75 75 255"
 		"Black"				"0 0 0 255"
 		"TransBlack"		"0 0 0 128"
-		"DarkBrown"			"74 53 32 255"
-		"MedBrown"			"100 80 50 255"
-		"ListBG"			"32 32 32 230"
-		"FieldBG"			"24 24 24 230"
-		"FrameBG"			"40 40 40 230"
-		"SelectionBG"		"74 53 32 255"
-		"Highlight"			"80 64 40 64"
+		"ListBG"			"45 45 45 230"
+		"FieldBG"			"50 50 50 230"
+		"FrameBG"			"60 60 60 230"
+		"SelectionBG"		"74 74 90 255"
+		"Highlight"			"80 80 80 64"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -28,7 +26,7 @@
 		// ===== Frame / Windows =====
 		"Frame.BgColor"					"FrameBG"
 		"Frame.OutOfFocusBgColor"		"FrameBG"
-		"FrameTitleBar.BgColor"			"DarkBrown"
+		"FrameTitleBar.BgColor"			"TitleGray"
 		"FrameTitleBar.TextColor"		"White"
 		"FrameTitleBar.DisabledTextColor" "DullWhite"
 		"FrameTitleBar.DisabledBgColor"	"DarkerGray"
@@ -52,9 +50,9 @@
 		"CheckButton.BgColor"			"TransBlack"
 
 		// ===== Labels =====
-		"Label.TextColor"				"Orange"
+		"Label.TextColor"				"LightGray"
 		"Label.TextBrightColor"			"White"
-		"Label.TextDullColor"			"LightGray"
+		"Label.TextDullColor"			"DullWhite"
 		"Label.DisabledFgColor1"		"DarkGray"
 		"Label.DisabledFgColor2"		"DarkerGray"
 
@@ -63,10 +61,10 @@
 		"ListPanel.BgColor"				"ListBG"
 		"ListPanel.SelectedTextColor"	"White"
 		"ListPanel.SelectedBgColor"		"SelectionBG"
-		"ListPanel.HeaderTextColor"		"LightGray"
+		"ListPanel.HeaderTextColor"		"DullWhite"
 		"ListPanel.EmptyListInfoTextColor" "DullWhite"
 
-		"SectionedListPanel.HeaderTextColor" "LightGray"
+		"SectionedListPanel.HeaderTextColor" "DullWhite"
 		"SectionedListPanel.HeaderBgColor"	"ListBG"
 		"SectionedListPanel.TextColor"		"White"
 		"SectionedListPanel.BrightTextColor" "White"
@@ -79,7 +77,7 @@
 		"TextEntry.BgColor"				"FieldBG"
 		"TextEntry.SelectedTextColor"	"White"
 		"TextEntry.SelectedBgColor"		"SelectionBG"
-		"TextEntry.CursorColor"			"Orange"
+		"TextEntry.CursorColor"			"White"
 		"TextEntry.DisabledTextColor"	"DullWhite"
 		"TextEntry.DisabledBgColor"		"DarkerGray"
 
@@ -102,13 +100,13 @@
 		"ScrollBarSlider.BgColor"		"DarkerGray"
 
 		// ===== Slider =====
-		"Slider.NobColor"				"Orange"
+		"Slider.NobColor"				"LightGray"
 		"Slider.TextColor"				"White"
 		"Slider.TrackColor"				"DarkGray"
 
 		// ===== Tooltip =====
 		"Tooltip.TextColor"				"White"
-		"Tooltip.BgColor"				"DarkBrown"
+		"Tooltip.BgColor"				"TitleGray"
 
 		// ===== Generic panel =====
 		"Panel.FgColor"					"White"
@@ -158,7 +156,7 @@
 			{
 				"1"
 				{
-					"color"		"Border.Dark"
+					"color"		"Border.Bright"
 					"offset"	"0 1"
 				}
 			}
@@ -166,7 +164,7 @@
 			{
 				"1"
 				{
-					"color"		"Border.Bright"
+					"color"		"Border.Dark"
 					"offset"	"1 0"
 				}
 			}
@@ -174,7 +172,7 @@
 			{
 				"1"
 				{
-					"color"		"Border.Dark"
+					"color"		"Border.Bright"
 					"offset"	"0 0"
 				}
 			}
@@ -182,7 +180,7 @@
 			{
 				"1"
 				{
-					"color"		"Border.Bright"
+					"color"		"Border.Dark"
 					"offset"	"0 0"
 				}
 			}
