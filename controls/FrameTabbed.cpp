@@ -9,7 +9,7 @@ Copyright (C) 2024 DragonSlayer Team
 #include "Utils.h"
 #include "keydefs.h"
 
-#define TAB_HEIGHT 22 // logical pixels
+#define TAB_HEIGHT FRAME_TAB_HEIGHT // use the public constant from header
 
 CMenuFrameTabbed::CMenuFrameTabbed( const char *title ) : BaseClass( title )
 {

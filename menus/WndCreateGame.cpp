@@ -103,7 +103,8 @@ void CMenuWndCreateGame::_Init()
 	int cw = w - 32;
 	int btnW = 100;
 	int btnH = 26;
-	int btnY = h - 80;
+	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
+	int btnY = contentH - btnH - 12;
 
 	// ─── Bottom buttons (always visible) ───
 	btnStart.szName = "Start Server";

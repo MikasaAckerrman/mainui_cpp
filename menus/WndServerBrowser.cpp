@@ -107,7 +107,8 @@ void CMenuWndServerBrowser::_Init()
 	int cw = w - 32;
 	int btnW = 90;
 	int btnH = 26;
-	int btnY = h - 80;
+	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
+	int btnY = contentH - btnH - 12;
 
 	// ─── Bottom buttons (before tabs — always visible) ───
 	btnConnect.szName = "Connect";
