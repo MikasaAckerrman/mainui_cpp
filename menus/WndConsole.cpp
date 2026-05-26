@@ -20,8 +20,8 @@ and dynamic content layout that adjusts on resize.
 #define CON_LINE_LEN     512
 #define CON_HISTORY_SIZE 32
 #define CON_READ_INTERVAL 300  // milliseconds between file re-reads
-#define CON_INPUT_HEIGHT  32   // logical pixels
-#define CON_PADDING       8    // logical pixels
+#define CON_INPUT_HEIGHT  20   // logical pixels
+#define CON_PADDING       6    // logical pixels
 
 // Colors
 #define CON_TEXT_COLOR    0xFF40FF40  // green for regular output
@@ -377,7 +377,7 @@ void CMenuWndConsole::Draw()
 			break;
 
 		unsigned int color = m_lineColors[ringIdx];
-		UI_DrawString( uiStatic.hSmallFont, contentX, drawY, contentW, lineH,
+		UI_DrawString( uiStatic.hConsoleFont, contentX, drawY, contentW, lineH,
 			m_lines[ringIdx], color, lineH, QM_LEFT, ETF_FORCECOL | ETF_NO_WRAP );
 	}
 

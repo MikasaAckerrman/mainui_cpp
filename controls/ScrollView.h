@@ -3,6 +3,8 @@
 
 #include "ItemsHolder.h"
 
+#define SCROLLBAR_WIDTH 16  // logical pixels
+
 class CMenuScrollView : public CMenuItemsHolder
 {
 	typedef CMenuItemsHolder BaseClass;
@@ -18,6 +20,7 @@ public:
 
 private:
 	bool IsRectVisible( Point pt, Size sz );
+	void DrawScrollBar();
 
 	Point m_scScrollBarPos;
 	Size  m_scScrollBarSize;
@@ -28,6 +31,12 @@ private:
 
 	int m_iPos;
 	int m_iMax;
+
+	// Visual scrollbar state
+	int m_iScrollBarWidth;        // scaled scrollbar width
+	bool m_bScrollBarDragging;    // thumb is being dragged
+	int m_iScrollBarDragStartY;   // cursor Y when drag started
+	int m_iScrollBarDragStartPos; // m_iPos when drag started
 	// float m_flOverScrolling;
 };
 
