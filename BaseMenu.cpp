@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "FontManager.h"
 #include "cursor_type.h"
 #include "utflib.h"
+#include "TrackerScheme.h"
 
 cvar_t		*ui_showmodels;
 cvar_t		*ui_show_window_stack;
@@ -1175,6 +1176,9 @@ void UI_Init( void )
 
 	// trying to load colors.lst
 	UI_ApplyCustomColors ();
+
+	// load TrackerScheme.res (overrides colors.lst with Source-style scheme)
+	UI_LoadTrackerScheme();
 }
 
 /*

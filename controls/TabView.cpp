@@ -14,6 +14,7 @@ GNU General Public License for more details.
 */
 #include "TabView.h"
 #include "Scissor.h"
+#include "TrackerScheme.h"
 
 CMenuTabView::CMenuTabView() : BaseClass()
 {
@@ -44,18 +45,18 @@ void CMenuTabView::VidInit()
 
 void CMenuTabView::DrawTab(Point pt, const char *name, bool isEnd, bool isSelected, bool isHighlighted)
 {
-	uint textColor = uiInputTextColor;
-	uint fillColor = uiColorBlack;
+	uint textColor = Scheme_GetColor( g_Scheme.tabTextColor, uiInputTextColor );
+	uint fillColor = Scheme_GetColor( g_Scheme.frameBgColor, uiColorBlack );
 	uint textflags = ( iFlags & QMF_DROPSHADOW ) ? ETF_SHADOW : 0;
 
 	if( isSelected && !isHighlighted )
 	{
-		fillColor = uiInputBgColor;
-		textColor = uiInputFgColor;
+		fillColor = Scheme_GetColor( g_Scheme.listSelectedBgColor, uiInputBgColor );
+		textColor = Scheme_GetColor( g_Scheme.tabSelectedTextColor, uiInputFgColor );
 	}
 	else if( isHighlighted )
 	{
-		textColor = uiPromptFocusColor;
+		textColor = Scheme_GetColor( g_Scheme.buttonArmedTextColor, uiPromptFocusColor );
 	}
 
 	UI_FillRect( pt, m_szTab, fillColor );
@@ -69,14 +70,16 @@ void CMenuTabView::DrawTab(Point pt, const char *name, bool isEnd, bool isSelect
 		int h = m_szTab.h + UI_OUTLINE_WIDTH + UI_OUTLINE_WIDTH;
 
 		// draw right
-		UI_FillRect( x, y, w, h, uiColorHelp );
+		UI_FillRect( x, y, w, h, Scheme_GetColor( g_Scheme.borderBright, uiColorHelp ) );
 	}
 }
 
 void CMenuTabView::Draw()
 {
+	uint borderColor = Scheme_GetColor( g_Scheme.borderBright, uiColorHelp );
+
 	// draw frame first
-	UI_DrawRectangle( m_scPos, m_scSize, uiColorHelp );
+	UI_DrawRectangle( m_scPos, m_scSize, borderColor );
 
 	// draw tabs
 	Point tabOffset = m_scPos;
@@ -95,10 +98,10 @@ void CMenuTabView::Draw()
 
 	// draw line after tab
 	UI_FillRect( contentOffset.x, contentOffset.y,
-		m_scSize.w, UI_OUTLINE_WIDTH, uiColorHelp );
+		m_scSize.w, UI_OUTLINE_WIDTH, borderColor );
 
 	// fill background
-	UI_FillRect( contentOffset, contentSize, uiColorBlack );
+	UI_FillRect( contentOffset, contentSize, Scheme_GetColor( g_Scheme.windowBgColor, uiColorBlack ) );
 
 	// draw contents
 	if( m_iCursor >= 0 && m_iCursor < m_pItems.Count() )
