@@ -147,21 +147,11 @@ void CMenuFrame::ApplyResize()
 	int newH = m_resizeStartSize.h;
 
 	// Adjust based on edge being dragged
+	// HitTestResize only returns BOTTOM, BOTTOMLEFT, BOTTOMRIGHT
 	switch( m_iResizeEdge )
 	{
-	case RESIZE_RIGHT:
-		newW += dx;
-		break;
-	case RESIZE_LEFT:
-		newX += dx;
-		newW -= dx;
-		break;
 	case RESIZE_BOTTOM:
 		newH += dy;
-		break;
-	case RESIZE_TOP:
-		newY += dy;
-		newH -= dy;
 		break;
 	case RESIZE_BOTTOMRIGHT:
 		newW += dx;
@@ -172,30 +162,17 @@ void CMenuFrame::ApplyResize()
 		newW -= dx;
 		newH += dy;
 		break;
-	case RESIZE_TOPRIGHT:
-		newW += dx;
-		newY += dy;
-		newH -= dy;
-		break;
-	case RESIZE_TOPLEFT:
-		newX += dx;
-		newW -= dx;
-		newY += dy;
-		newH -= dy;
-		break;
 	}
 
 	// Enforce minimum size
 	if( newW < minW )
 	{
-		if( m_iResizeEdge == RESIZE_LEFT || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_BOTTOMLEFT )
+		if( m_iResizeEdge == RESIZE_BOTTOMLEFT )
 			newX = m_resizeStartPos.x + m_resizeStartSize.w - minW;
 		newW = minW;
 	}
 	if( newH < minH )
 	{
-		if( m_iResizeEdge == RESIZE_TOP || m_iResizeEdge == RESIZE_TOPLEFT || m_iResizeEdge == RESIZE_TOPRIGHT )
-			newY = m_resizeStartPos.y + m_resizeStartSize.h - minH;
 		newH = minH;
 	}
 
@@ -272,7 +249,7 @@ bool CMenuFrame::KeyDown( int key )
 			return true; // consume, handle on KeyUp
 		}
 
-		// Check resize edges/corners before drag
+		// Check resize edges/corners before anything else
 		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
 		if( edge != RESIZE_NONE )
 		{
@@ -284,7 +261,11 @@ bool CMenuFrame::KeyDown( int key )
 			return true;
 		}
 
-		// Drag from anywhere in the window (touch-friendly)
+		// Let child items handle the click first
+		if( BaseClass::KeyDown( key ) )
+			return true;
+
+		// No child consumed it — start drag from anywhere in window
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
@@ -293,6 +274,8 @@ bool CMenuFrame::KeyDown( int key )
 			m_dragOffset.y = uiStatic.cursorY - m_scPos.y;
 			return true;
 		}
+
+		return false;
 	}
 
 	if( UI::Key::IsEscape( key ) )
