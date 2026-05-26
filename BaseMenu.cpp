@@ -1152,13 +1152,17 @@ void UI_Init( void )
 	// show cl_predict dialog
 	EngFuncs::CvarRegister( "menu_mp_firsttime2", "1", FCVAR_ARCHIVE );
 
+	int cmdCount = 0;
 	for( CMenuEntry *entry = s_pEntries; entry; entry = entry->m_pNext )
 	{
 		if( entry->m_szCommand && entry->m_pfnShow )
 		{
 			EngFuncs::Cmd_AddCommand( entry->m_szCommand, entry->m_pfnShow );
+			Con_Printf( "Slayer: registered menu cmd \"%s\"\n", entry->m_szCommand );
+			cmdCount++;
 		}
 	}
+	Con_Printf( "Slayer: total menu commands registered: %d\n", cmdCount );
 
 	g_FontMgr = new CFontManager();
 
