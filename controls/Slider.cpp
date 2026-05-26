@@ -18,6 +18,7 @@ GNU General Public License for more details.
 #include "BaseMenu.h"
 #include "Slider.h"
 #include "Utils.h"
+#include "Frame.h"
 
 CMenuSlider::CMenuSlider() : BaseClass(), m_flMinValue(), m_flMaxValue(), m_flCurValue(),
 	m_flDrawStep(), m_iNumSteps(), m_flRange(), m_iKeepSlider()
@@ -194,13 +195,71 @@ void CMenuSlider::Draw( void )
 		+ ( ( m_flCurValue - m_flMinValue ) / ( m_flMaxValue - m_flMinValue ) )  // calc fractional part
 		* ( m_scSize.w - m_iSliderOutlineWidth - (m_scCenterBox.w) );
 
+	// Frame-style programmatic drawing: sunken groove track + raised bevel thumb
+	if( m_pParent && m_pParent->IsFrame() )
+	{
+		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+		unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
 
-	UI_DrawRectangleExt( m_scPos.x + m_iSliderOutlineWidth / 2, m_scPos.y + m_iSliderOutlineWidth, m_scSize.w - m_iSliderOutlineWidth, m_scCenterBox.h, uiInputBgColor, m_iSliderOutlineWidth );
-	if( eFocusAnimation == QM_HIGHLIGHTIFFOCUS && this == m_pParent->ItemAtCursor())
-		UI_DrawPic( sliderX, m_scPos.y, m_scCenterBox.w, m_scSize.h, uiColorHelp, imgSlider );
+		// Track: thin 3px sunken groove centered vertically
+		int trackH = 3;
+		int trackY = m_scPos.y + m_scSize.h / 2 - trackH / 2;
+		int trackX = m_scPos.x + m_iSliderOutlineWidth / 2;
+		int trackW = m_scSize.w - m_iSliderOutlineWidth;
+
+		// Track fill
+		UI_FillRect( trackX + 1, trackY + 1, trackW - 2, trackH - 2, dark );
+
+		// Track sunken bevel: dark top+left, bright bottom+right
+		UI_FillRect( trackX, trackY, trackW, 1, dark );            // top
+		UI_FillRect( trackX, trackY, 1, trackH, dark );            // left
+		UI_FillRect( trackX, trackY + trackH - 1, trackW, 1, bright ); // bottom
+		UI_FillRect( trackX + trackW - 1, trackY, 1, trackH, bright ); // right
+
+		// Thumb: ~11x20 raised bevel rectangle
+		int thumbW = (int)(11 * uiStatic.scaleX);
+		int thumbH = (int)(20 * uiStatic.scaleY);
+		if( thumbW < 7 ) thumbW = 7;
+		if( thumbH < 12 ) thumbH = 12;
+		int thumbX = sliderX;
+		int thumbY = m_scPos.y + m_scSize.h / 2 - thumbH / 2;
+
+		// Thumb fill (medium grey)
+		// Use a slightly lighter grey for the thumb face
+		unsigned int thumbFace = 0xFFC0C0C0;
+		UI_FillRect( thumbX + 1, thumbY + 1, thumbW - 2, thumbH - 2, thumbFace );
+
+		// Thumb raised bevel: bright top+left, dark bottom+right
+		UI_FillRect( thumbX, thumbY, thumbW, 1, bright );            // top
+		UI_FillRect( thumbX, thumbY, 1, thumbH, bright );            // left
+		UI_FillRect( thumbX, thumbY + thumbH - 1, thumbW, 1, dark ); // bottom
+		UI_FillRect( thumbX + thumbW - 1, thumbY, 1, thumbH, dark ); // right
+
+		// Decorative: 3 thin vertical groove lines on the thumb center
+		int grooveCenterX = thumbX + thumbW / 2;
+		int grooveTop = thumbY + thumbH / 4;
+		int grooveBot = thumbY + thumbH - thumbH / 4;
+		int grooveH = grooveBot - grooveTop;
+
+		for( int g = -1; g <= 1; g++ )
+		{
+			int gx = grooveCenterX + g * 2;
+			if( gx > thumbX + 1 && gx < thumbX + thumbW - 2 )
+			{
+				UI_FillRect( gx, grooveTop, 1, grooveH, dark );
+				UI_FillRect( gx + 1, grooveTop + 1, 1, grooveH, bright );
+			}
+		}
+	}
 	else
-		UI_DrawPic( sliderX, m_scPos.y, m_scCenterBox.w, m_scSize.h, uiColorWhite, imgSlider );
-
+	{
+		// Legacy bitmap-based drawing for non-frame contexts
+		UI_DrawRectangleExt( m_scPos.x + m_iSliderOutlineWidth / 2, m_scPos.y + m_iSliderOutlineWidth, m_scSize.w - m_iSliderOutlineWidth, m_scCenterBox.h, uiInputBgColor, m_iSliderOutlineWidth );
+		if( eFocusAnimation == QM_HIGHLIGHTIFFOCUS && this == m_pParent->ItemAtCursor())
+			UI_DrawPic( sliderX, m_scPos.y, m_scCenterBox.w, m_scSize.h, uiColorHelp, imgSlider );
+		else
+			UI_DrawPic( sliderX, m_scPos.y, m_scCenterBox.w, m_scSize.h, uiColorWhite, imgSlider );
+	}
 
 	textHeight = m_scPos.y - (m_scChSize * 1.5f);
 	UI_DrawString( font, m_scPos.x, textHeight, m_scSize.w, m_scChSize, szName, uiColorHelp, m_scChSize, eTextAlignment, textflags | ETF_FORCECOL );

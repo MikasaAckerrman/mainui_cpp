@@ -18,6 +18,7 @@ GNU General Public License for more details.
 #include "BaseMenu.h"
 #include "CheckBox.h"
 #include "Utils.h"
+#include "Frame.h"
 
 CMenuCheckBox::CMenuCheckBox() : BaseClass()
 {
@@ -46,9 +47,26 @@ CMenuCheckBox::Init
 void CMenuCheckBox::VidInit( void )
 {
 	colorText.SetDefault( uiColorHelp );
+
+	// When inside a Frame, use compact 13x13 checkbox style
+	if( m_pParent && m_pParent->IsFrame() )
+	{
+		SetSize( 13, 13 );
+	}
+
 	BaseClass::VidInit();
-	m_scTextPos.x = m_scPos.x + ( m_scSize.w * 1.25f );
-	m_scTextPos.y = m_scPos.y;
+
+	if( m_pParent && m_pParent->IsFrame() )
+	{
+		// Position text closer to the compact box
+		m_scTextPos.x = m_scPos.x + (int)(16 * uiStatic.scaleX);
+		m_scTextPos.y = m_scPos.y;
+	}
+	else
+	{
+		m_scTextPos.x = m_scPos.x + ( m_scSize.w * 1.25f );
+		m_scTextPos.y = m_scPos.y;
+	}
 
 	m_scTextSize.w = g_FontMgr->GetTextWideScaled( font, szName, m_scChSize );
 	m_scTextSize.h = m_scChSize;
@@ -132,6 +150,81 @@ void CMenuCheckBox::Draw( void )
 		EngFuncs::DrawConsoleString( coord, szStatusText );
 	}
 
+	// Frame-style programmatic drawing: 13x13 sunken bevel box + checkmark glyph
+	if( m_pParent && m_pParent->IsFrame() )
+	{
+		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+		unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
+		unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE6323232 );
+
+		int x = m_scPos.x;
+		int y = m_scPos.y;
+		int w = m_scSize.w;
+		int h = m_scSize.h;
+
+		// Fill inside (field background - white/light for checkbox well)
+		UI_FillRect( x + 1, y + 1, w - 2, h - 2, fieldBg );
+
+		// Sunken bevel: dark on top+left, bright on bottom+right (opposite of raised)
+		// Top edge (dark)
+		UI_FillRect( x, y, w, 1, dark );
+		// Left edge (dark)
+		UI_FillRect( x, y, 1, h, dark );
+		// Bottom edge (bright)
+		UI_FillRect( x, y + h - 1, w, 1, bright );
+		// Right edge (bright)
+		UI_FillRect( x + w - 1, y, 1, h, bright );
+
+		// Draw checkmark when checked
+		if( bChecked )
+		{
+			unsigned int checkColor = Scheme_GetColor( g_Scheme.labelTextColor, 0xFFC8C8C8 );
+
+			// Draw a V-shaped checkmark inside the box
+			// The check starts from left-center, goes down to bottom-center,
+			// then up to top-right corner area.
+			int pad = 2;
+			int innerW = w - pad * 2;
+			int innerH = h - pad * 2;
+
+			// Short descending stroke (left part of V): from top-left area to bottom-center
+			int midX = pad + innerW / 3;      // x pivot at ~1/3 width
+			int startY = pad + innerH / 3;    // start ~1/3 down
+			int midY = pad + innerH - 2;      // bottom of V
+
+			// Descending stroke
+			int steps1 = midX - pad;
+			if( steps1 > 0 )
+			{
+				for( int i = 0; i <= steps1; i++ )
+				{
+					int px = x + pad + i;
+					int py = y + startY + (int)((float)i * (midY - startY) / steps1);
+					UI_FillRect( px, py, 1, 1, checkColor );
+					UI_FillRect( px, py + 1, 1, 1, checkColor ); // 2px thick
+				}
+			}
+
+			// Ascending stroke (right part of V): from bottom-center to top-right
+			int endX = pad + innerW - 1;
+			int endY = pad + 1;
+			int steps2 = endX - midX;
+			if( steps2 > 0 )
+			{
+				for( int i = 0; i <= steps2; i++ )
+				{
+					int px = x + midX + i;
+					int py = y + midY - (int)((float)i * (midY - endY) / steps2);
+					UI_FillRect( px, py, 1, 1, checkColor );
+					UI_FillRect( px, py + 1, 1, 1, checkColor ); // 2px thick
+				}
+			}
+		}
+
+		return;
+	}
+
+	// Legacy bitmap-based drawing for non-frame contexts
 	if( iFlags & QMF_GRAYED )
 	{
 		UI_DrawPic( m_scPos, m_scSize, uiColorWhite, szGrayedPic );
