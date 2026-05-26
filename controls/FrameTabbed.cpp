@@ -97,53 +97,61 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabY = m_scPos.y + m_iTitleH;
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
-	// CS 1.6 PC style: darker tab strip background, bright underline on active
-	unsigned int tabStripBg = 0xFF2D2D2D; // dark strip bg
-	unsigned int tabSelBg = Scheme_GetColor( g_Scheme.frameBgColor, 0xE6282828 ); // blends with content
-	unsigned int tabText = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9080 );
-	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFF0ECE0 );
-	unsigned int accentColor = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4A3520 );
-	unsigned int borderColor = Scheme_GetColor( g_Scheme.borderDark, 0xC4282828 );
+	// CS 1.6 PC card-style tab colors from scheme
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF3C3C3C );
+	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
+	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
+	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
+	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFFFFFFF );
 
 	int hovered = TabAtCursor();
-
-	// Fill tab strip background
-	UI_FillRect( m_scPos.x, tabY, m_scSize.w, m_iTabH, tabStripBg );
+	int inactiveOffset = 2; // inactive tabs drawn 2px lower
 
 	for( int i = 0; i < m_iNumTabs; i++ )
 	{
 		int x = m_scPos.x + i * tabW;
-		unsigned int fg;
+		int ty, th;
+		unsigned int bg, fg;
 
 		if( i == m_iActiveTab )
 		{
-			// Active tab: blend with content bg, highlight text
-			UI_FillRect( x, tabY, tabW, m_iTabH, tabSelBg );
-			fg = tabSelText;
-			// Accent underline (2px) on active tab
-			UI_FillRect( x + 2, tabY + m_iTabH - 2, tabW - 4, 2, accentColor );
-		}
-		else if( i == hovered )
-		{
+			// Active tab: full height, merges with content area
+			ty = tabY;
+			th = m_iTabH;
+			bg = activeBg;
 			fg = tabSelText;
 		}
 		else
 		{
-			fg = tabText;
+			// Inactive tab: offset down 2px, shorter
+			ty = tabY + inactiveOffset;
+			th = m_iTabH - inactiveOffset;
+			bg = inactiveBg;
+			fg = ( i == hovered ) ? tabSelText : tabText;
 		}
 
-		UI_DrawString( uiStatic.hSmallFont, x, tabY, tabW, m_iTabH,
-			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
+		// Tab background fill
+		UI_FillRect( x, ty, tabW, th, bg );
 
-		// Separator between tabs
-		if( i < m_iNumTabs - 1 )
+		// Raised bevel: bright on top + left
+		UI_FillRect( x, ty, tabW, 1, bright );       // top edge
+		UI_FillRect( x, ty, 1, th, bright );          // left edge
+
+		// Raised bevel: dark on bottom + right
+		UI_FillRect( x + tabW - 1, ty, 1, th, dark ); // right edge
+
+		if( i != m_iActiveTab )
 		{
-			UI_FillRect( x + tabW - 1, tabY + 4, 1, m_iTabH - 8, borderColor );
+			// Inactive tabs get a bottom border
+			UI_FillRect( x, ty + th - 1, tabW, 1, dark );
 		}
-	}
+		// Active tab: no bottom border (merges with content area below)
 
-	// Thin line below entire tab strip
-	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, borderColor );
+		// Tab label text
+		UI_DrawString( uiStatic.hSmallFont, x, ty, tabW, th,
+			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
+	}
 }
 
 void CMenuFrameTabbed::Draw()

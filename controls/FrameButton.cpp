@@ -97,7 +97,11 @@ void CMenuFrameButton::Draw()
 
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
 	if( textH < 8 ) textH = 8;
+
+	// When pressed, offset text 1px right and 1px down for "pushed" feel
+	int textX = m_scPos.x + ( pressed ? 1 : 0 );
+	int textY = m_scPos.y + ( pressed ? 1 : 0 );
 	UI_DrawString( uiStatic.hSmallFont,
-		m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h,
+		textX, textY, m_scSize.w, m_scSize.h,
 		szName, textColor, textH, QM_CENTER, ETF_FORCECOL );
 }
