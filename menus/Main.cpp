@@ -31,6 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "AnimatedBanner.h"
 #include "MovieBanner.h"
 
+// Windowed dialogs (Source Engine-style)
+extern void WndConsole_Show( void );
+extern void WndServerBrowser_Show( void );
+
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
 #define ART_MINIMIZE_F	"gfx/shell/min_f"
 #define ART_MINIMIZE_D	"gfx/shell/min_d"
@@ -178,11 +182,7 @@ void CMenuMain::_Init( void )
 	console.iFlags |= QMF_NOTIFY;
 	console.SetPicture( PC_CONSOLE );
 	console.SetVisibility( gpGlobals->developer );
-	SET_EVENT_MULTI( console.onReleased,
-	{
-		UI_SetActiveMenu( false );
-		EngFuncs::KEY_SetDest( KEY_CONSOLE );
-	});
+	console.onReleased = WndConsole_Show;
 
 	resumeGame.SetNameAndStatus( L( "GameUI_GameMenu_ResumeGame" ), L( "StringsList_188" ) );
 	resumeGame.SetPicture( PC_RESUME_GAME );
@@ -208,7 +208,7 @@ void CMenuMain::_Init( void )
 	multiPlayer.SetNameAndStatus( L( "GameUI_Multiplayer" ), L( "StringsList_198" ) );
 	multiPlayer.SetPicture( PC_MULTIPLAYER );
 	multiPlayer.iFlags |= QMF_NOTIFY;
-	multiPlayer.onReleased = UI_MultiPlayer_Menu;
+	multiPlayer.onReleased = WndServerBrowser_Show;
 
 	configuration.SetNameAndStatus( L( "GameUI_Options" ), L( "StringsList_193" ) );
 	configuration.SetPicture( PC_CONFIG );
