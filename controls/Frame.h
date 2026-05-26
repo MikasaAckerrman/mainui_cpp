@@ -66,6 +66,7 @@ protected:
 	void DrawTitleBar();
 	void DrawBorder();
 	void DrawBackground();
+	void DrawResizeGrip();
 
 	bool IsInTitleBar( int x, int y );
 	bool IsOnCloseButton( int x, int y );

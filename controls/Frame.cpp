@@ -177,6 +177,39 @@ void CMenuFrame::DrawBorder()
 	UI_FillRect( x + w, y - 1, 1, h + 1, dark );
 }
 
+void CMenuFrame::DrawResizeGrip()
+{
+	if( !bAllowResize )
+		return;
+
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
+
+	// Draw 3 diagonal groove lines at bottom-right corner.
+	// Each line is a pair of bright+dark 1px diagonal strokes for a grooved look.
+	// Lines go from bottom-right toward upper-left at offsets (4,4), (8,8), (12,12).
+	int baseX = m_scPos.x + m_scSize.w;
+	int baseY = m_scPos.y + m_scSize.h;
+
+	// 3 groove lines at different offsets from the corner
+	for( int line = 0; line < 3; line++ )
+	{
+		int offset = 4 + line * 4; // 4, 8, 12 pixels from corner
+		int len = offset - 1;      // length of each diagonal stroke
+
+		for( int i = 0; i < len; i++ )
+		{
+			// Dark stroke (shadow - offset by 1px down-right from bright)
+			int dx = baseX - offset + i;
+			int dy = baseY - 1 - i;
+			UI_FillRect( dx, dy, 1, 1, dark );
+
+			// Bright stroke (highlight - 1px up-left from dark)
+			UI_FillRect( dx - 1, dy - 1, 1, 1, bright );
+		}
+	}
+}
+
 // ─── Drag/Resize math ────────────────────────────────────────────────────────
 
 void CMenuFrame::UpdateDrag( int x, int y )
@@ -305,6 +338,7 @@ void CMenuFrame::Draw()
 	DrawBackground();
 	DrawTitleBar();
 	DrawBorder();
+	DrawResizeGrip();
 
 	CMenuItemsHolder::Draw();
 }
