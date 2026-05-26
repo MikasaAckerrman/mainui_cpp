@@ -22,7 +22,7 @@ CMenuFrameTabbed::CMenuFrameTabbed( const char *title ) : BaseClass( title )
 Point CMenuFrameTabbed::GetPositionOffset() const
 {
 	Point pt = m_scPos;
-	pt.y += m_iTitleH + m_iTabH;
+	pt.y += (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY) + (int)(TAB_HEIGHT * uiStatic.scaleY);
 	return pt;
 }
 
@@ -63,9 +63,9 @@ void CMenuFrameTabbed::SetActiveTab( int idx )
 		for( int i = m_tabs[t].firstItem; i <= m_tabs[t].lastItem && i < m_pItems.Count(); i++ )
 		{
 			if( visible )
-				m_pItems[i]->SetInactive( false );
+				m_pItems[i]->iFlags &= ~QMF_HIDDEN;
 			else
-				m_pItems[i]->SetInactive( true );
+				m_pItems[i]->iFlags |= QMF_HIDDEN;
 		}
 	}
 }
@@ -75,10 +75,12 @@ int CMenuFrameTabbed::TabAtCursor()
 	if( m_iNumTabs == 0 )
 		return -1;
 
-	int tabY = m_scPos.y + m_iTitleH;
+	int titleH = (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY);
+	int tabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
+	int tabY = m_scPos.y + titleH;
 	int tabW = m_scSize.w / m_iNumTabs;
 
-	if( uiStatic.cursorY < tabY || uiStatic.cursorY > tabY + m_iTabH )
+	if( uiStatic.cursorY < tabY || uiStatic.cursorY > tabY + tabH )
 		return -1;
 
 	int idx = ( uiStatic.cursorX - m_scPos.x ) / tabW;
@@ -165,9 +167,6 @@ void CMenuFrameTabbed::Draw()
 	DrawTitleBar();
 	DrawTabs();
 	DrawBorder();
-
-	// Ensure correct tab visibility
-	SetActiveTab( m_iActiveTab );
 
 	// Draw child items (only active tab's items are visible)
 	CMenuItemsHolder::Draw();

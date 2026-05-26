@@ -30,7 +30,7 @@ Point CMenuFrame::GetPositionOffset() const
 {
 	// Content starts below title bar
 	Point pt = m_scPos;
-	pt.y += m_iTitleH;
+	pt.y += (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY);
 	return pt;
 }
 

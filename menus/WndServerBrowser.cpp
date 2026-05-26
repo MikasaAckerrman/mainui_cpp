@@ -12,6 +12,7 @@ called from the new-style menu.
 #include "controls/FrameTabbed.h"
 #include "Table.h"
 #include "Field.h"
+#include "Action.h"
 #include "keydefs.h"
 #include "Utils.h"
 #include "TrackerScheme.h"
