@@ -331,16 +331,23 @@ void UI_LoadTrackerScheme( void )
 	kv.pFile = afile;
 
 	// Top-level: expect "Scheme" or similar root key, then brace
-	while( kv.NextToken() )
+	// First token is the root key name (e.g. "Scheme"), skip it
+	// Then expect opening brace
+	if( !kv.NextToken() )
 	{
-		if( kv.token[0] == '{' )
+		EngFuncs::COM_FreeFile( afile );
+		return;
+	}
+	// If first token is already '{', we're in a brace-only file
+	if( kv.token[0] != '{' )
+	{
+		// Read next token which should be '{'
+		if( !kv.NextToken() || kv.token[0] != '{' )
 		{
-			// We're inside root
-			break;
+			Con_Printf( "TrackerScheme: parse error, expected '{' after root key\n" );
+			EngFuncs::COM_FreeFile( afile );
+			return;
 		}
-		// Skip the root key name (e.g. "Scheme" or "TrackerScheme")
-		if( kv.token[0] == '{' )
-			break;
 	}
 
 	// Now parse sections
