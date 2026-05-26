@@ -11,9 +11,7 @@ Copyright (C) 2024 DragonSlayer Team
 
 CMenuFrameButton::CMenuFrameButton() : BaseClass()
 {
-	iFlags = 0;
 	eTextAlignment = QM_CENTER;
-	eFocusAnimation = QM_HIGHLIGHTIFFOCUS;
 }
 
 void CMenuFrameButton::VidInit()
@@ -59,10 +57,11 @@ void CMenuFrameButton::Draw()
 	bool focused = ( this == m_pParent->ItemAtCursor() );
 	bool pressed = m_bPressed;
 
-	// Colors — CS 1.6 style grey button
-	unsigned int bgNormal  = 0xFF3C3C3C; // medium grey
-	unsigned int bgHover   = 0xFF4A4A4A; // slightly lighter on hover
-	unsigned int bgPressed = 0xFF2D2D2D; // darker when pressed
+	// Colors — CS 1.6 style grey button, customizable via TrackerScheme
+	unsigned int schemeBg = g_Scheme.buttonBgColor;
+	unsigned int bgNormal  = schemeBg ? schemeBg : 0xFF3C3C3C;
+	unsigned int bgHover   = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF4A4A4A;
+	unsigned int bgPressed = 0xFF2D2D2D;
 	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFF6E6E6E );
 	unsigned int dark      = Scheme_GetColor( g_Scheme.borderDark, 0xFF222222 );
 	unsigned int textNorm  = Scheme_GetColor( g_Scheme.buttonTextColor, 0xFFF0ECE0 );

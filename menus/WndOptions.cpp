@@ -147,7 +147,8 @@ void CMenuWndOptions::_Init()
 	int cw = w - 32; // 16px padding each side
 	int btnW = 80;
 	int btnH = 26;
-	int btnY = h - 56; // from window top (logical), will be offset by GetPositionOffset
+	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
+	int btnY = contentH - btnH - 12;
 
 	// ─── Bottom buttons — added BEFORE any tab so they're always visible ───
 	btnOK.szName = "OK";
