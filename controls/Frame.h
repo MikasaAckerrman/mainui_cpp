@@ -4,9 +4,12 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar with text and close button
-- Bevel border (bright top-left, dark bottom-right)
-- Touch-friendly drag via title bar
+- Title bar with text and close button (X glyph)
+- Double bevel border (1px outer dark + 1px inner bright)
+- Drag from anywhere in the window
+- Resize from bottom edge / bottom corners
+- All drag/resize state updates happen synchronously inside MouseMove(x,y),
+  so they work consistently on both PC mouse and Android touch.
 */
 #ifndef MENU_FRAME_H
 #define MENU_FRAME_H
@@ -14,11 +17,13 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-#define FRAME_TITLE_HEIGHT 28  // logical pixels
+// CS 1.6 PC reference: ~22px title bar, 20px tab strip, 11-12px text font.
+#define FRAME_TITLE_HEIGHT 22  // logical pixels
 #define FRAME_BORDER_WIDTH 2
-#define FRAME_RESIZE_GRIP  12  // logical pixels - corner grab zone size
-#define FRAME_MIN_W        200 // minimum logical width
-#define FRAME_MIN_H        150 // minimum logical height
+#define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
+#define FRAME_MIN_W        220 // minimum logical width
+#define FRAME_MIN_H        140 // minimum logical height
+#define FRAME_TEXT_HEIGHT  12  // logical pixels — Tahoma 11px feel
 
 enum EResizeEdge
 {
@@ -67,22 +72,28 @@ protected:
 	// Returns which edge/corner the cursor is on (inside grab zone)
 	int HitTestResize( int x, int y );
 
-	// Apply resize delta from m_resizeStart* to m_scPos/m_scSize. Call in Draw().
-	void ApplyResize();
+	// Drag/resize update primitives — apply state given an absolute cursor (x,y).
+	// Called from MouseMove() (primary) and from ApplyDrag/ApplyResize in Draw()
+	// (idempotent fallback for the case where MouseMove was missed).
+	void UpdateDrag( int x, int y );
+	void UpdateResize( int x, int y );
 
-	// Apply drag offset to m_scPos. Call in Draw().
+	// Legacy hooks that re-apply state from uiStatic.cursorX/Y. Kept so subclasses
+	// like CMenuWndConsole that override Draw can still call them; they are
+	// idempotent with the MouseMove path (same start state → same final state).
+	void ApplyResize();
 	void ApplyDrag();
 
-	// Drag state
+	// State
 	bool m_bDragging;
-	Point m_dragOffset;
-
-	// Resize state
 	bool m_bResizing;
 	int  m_iResizeEdge;
-	Point m_resizeStartCursor;
-	Point m_resizeStartPos;
-	Size  m_resizeStartSize;
+
+	// Captured at KeyDown — start cursor position and start window rect.
+	// Used identically for drag and resize so we never accumulate floating error.
+	Point m_actionStartCursor;
+	Point m_actionStartPos;
+	Size  m_actionStartSize;
 
 	// Scaled sizes computed in Draw
 	int m_iTitleH;
