@@ -66,22 +66,14 @@ int CMenuFrame::HitTestResize( int x, int y )
 	    y < m_scPos.y || y > m_scPos.y + m_scSize.h )
 		return RESIZE_NONE;
 
-	bool onLeft   = ( x < m_scPos.x + grip );
-	bool onRight  = ( x > m_scPos.x + m_scSize.w - grip );
-	// For top edge: only the very top border area (not inside title bar content)
-	int topBorder = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
-	if( topBorder < 4 ) topBorder = 4; // minimum touch area for top
-	bool onTop    = ( y < m_scPos.y + topBorder );
-	bool onBottom = ( y > m_scPos.y + m_scSize.h - gripY );
+	bool nearLeft   = ( x < m_scPos.x + grip );
+	bool nearRight  = ( x > m_scPos.x + m_scSize.w - grip );
+	bool nearBottom = ( y > m_scPos.y + m_scSize.h - gripY );
 
-	if( onTop && onLeft )     return RESIZE_TOPLEFT;
-	if( onTop && onRight )    return RESIZE_TOPRIGHT;
-	if( onBottom && onLeft )  return RESIZE_BOTTOMLEFT;
-	if( onBottom && onRight ) return RESIZE_BOTTOMRIGHT;
-	if( onTop )               return RESIZE_TOP;
-	if( onBottom )            return RESIZE_BOTTOM;
-	if( onLeft )              return RESIZE_LEFT;
-	if( onRight )             return RESIZE_RIGHT;
+	// Only corners and bottom edge trigger resize
+	if( nearBottom && nearLeft )  return RESIZE_BOTTOMLEFT;
+	if( nearBottom && nearRight ) return RESIZE_BOTTOMRIGHT;
+	if( nearBottom )             return RESIZE_BOTTOM;
 
 	return RESIZE_NONE;
 }

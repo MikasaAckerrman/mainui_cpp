@@ -14,9 +14,9 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-#define FRAME_TITLE_HEIGHT 44  // logical pixels - touch friendly (>=44dp)
+#define FRAME_TITLE_HEIGHT 28  // logical pixels
 #define FRAME_BORDER_WIDTH 2
-#define FRAME_RESIZE_GRIP  20  // logical pixels for resize grab zone
+#define FRAME_RESIZE_GRIP  12  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        200 // minimum logical width
 #define FRAME_MIN_H        150 // minimum logical height
 
