@@ -7,6 +7,7 @@
 
 CMenuScrollView::CMenuScrollView() : CMenuItemsHolder (),
 	m_bHoldingMouse1( false ),
+	m_bGestureOnContent( false ),
 	m_bScrollBarDragging( false ),
 	m_iScrollBarDragStartY( 0 ),
 	m_iScrollBarDragStartPos( 0 ),
@@ -142,6 +143,15 @@ bool CMenuScrollView::KeyDown( int key )
 	}
 
 	return CMenuItemsHolder::KeyDown( key );
+}
+
+bool CMenuScrollView::KeyUp( int key )
+{
+	if( UI::Key::IsLeftMouse( key ) )
+	{
+		m_bScrollBarDragging = false;
+	}
+	return CMenuItemsHolder::KeyUp( key );
 }
 
 Point CMenuScrollView::GetPositionOffset() const
@@ -305,7 +315,7 @@ void CMenuScrollView::DrawScrollBar()
 
 void CMenuScrollView::Draw()
 {
-	// Handle scrollbar drag release
+	// Handle scrollbar drag release (safety net fallback)
 	if( m_bScrollBarDragging && !EngFuncs::KEY_IsDown( K_MOUSE1 ) )
 	{
 		m_bScrollBarDragging = false;
@@ -317,6 +327,10 @@ void CMenuScrollView::Draw()
 		{
 			m_bHoldingMouse1 = true;
 			m_HoldingPoint = Point( uiStatic.cursorX, uiStatic.cursorY );
+
+			// Record whether gesture started in content or scrollbar
+			int sbX = m_scPos.x + m_scSize.w - m_iScrollBarWidth;
+			m_bGestureOnContent = ( uiStatic.cursorX < sbX );
 		}
 	}
 	else
@@ -326,9 +340,8 @@ void CMenuScrollView::Draw()
 
 	if( m_bHoldingMouse1 && !m_bDisableScrolling && !m_bScrollBarDragging )
 	{
-		// Only do touch-drag if cursor is NOT on the scrollbar
-		int sbX = m_scPos.x + m_scSize.w - m_iScrollBarWidth;
-		if( uiStatic.cursorX < sbX )
+		// Only do touch-drag if gesture started in content area
+		if( m_bGestureOnContent )
 		{
 			int newPos = m_iPos;
 
@@ -371,8 +384,6 @@ void CMenuScrollView::Draw()
 			drawn++;
 		}
 	}
-
-	Con_NPrintf( 0, "Drawn: %i Skipped: %i", drawn, skipped );
 
 	// Scissor content area reduced by scrollbar width
 	Size scissorSize = m_scSize;

@@ -14,6 +14,7 @@ public:
 	void VidInit() override;
 	void Draw() override;
 	bool KeyDown( int key ) override;
+	bool KeyUp( int key ) override;
 	bool MouseMove( int x, int y ) override;
 
 	Point GetPositionOffset() const override;
@@ -27,6 +28,7 @@ private:
 	bool  m_bScrollBarSliding;
 	bool  m_bDisableScrolling; // can't actually scroll due to item placement
 	bool  m_bHoldingMouse1;
+	bool  m_bGestureOnContent; // true if gesture started in content area (not scrollbar)
 	Point m_HoldingPoint;
 
 	int m_iPos;
