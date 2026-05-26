@@ -46,11 +46,13 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
 	// Close button is in top-right corner of title bar
-	int btnSize = m_iTitleH - 4;
+	// Use same size as DrawTitleBar (m_iTitleH - 6) but with +2px padding for touch
+	int btnSize = m_iTitleH - 6;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
-	int btnY = m_scPos.y + 2;
-	return ( x >= btnX && x <= btnX + btnSize &&
-	         y >= btnY && y <= btnY + btnSize );
+	int btnY = m_scPos.y + 3;
+	int pad = 2; // extra touch-friendly padding around glyph
+	return ( x >= btnX - pad && x <= btnX + btnSize + pad &&
+	         y >= btnY - pad && y <= btnY + btnSize + pad );
 }
 
 int CMenuFrame::HitTestResize( int x, int y )
