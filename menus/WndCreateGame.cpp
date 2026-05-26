@@ -55,7 +55,6 @@ private:
 	CMenuCheckBox autoteambalance; // mp_autoteambalance
 
 	// ─── Bots tab ───
-	CMenuCheckBox addBots;        // bot_quota > 0
 	CMenuSlider  botQuota;        // bot_quota
 	CMenuDropDownStr botDifficulty; // bot_difficulty
 	CMenuCheckBox botsJoinTeam;   // bot_join_team
@@ -204,14 +203,9 @@ void CMenuWndCreateGame::_Init()
 	// ─────────────────────── TAB: Bots ──────────────────────────────
 	AddTab( "Bots" );
 
-	addBots.szName = "Enable Bots";
-	addBots.SetCoord( 16, 8 );
-	addBots.LinkCvar( "bot_quota_mode" );
-	AddItem( addBots );
-
-	botQuota.szName = "Number of Bots";
+	botQuota.szName = "Number of Bots (0 = disabled)";
 	botQuota.Setup( 0.0f, 32.0f, 1.0f );
-	botQuota.SetRect( 16, 48, cw, 28 );
+	botQuota.SetRect( 16, 8, cw, 28 );
 	botQuota.LinkCvar( "bot_quota" );
 	AddItem( botQuota );
 
@@ -220,12 +214,12 @@ void CMenuWndCreateGame::_Init()
 	botDifficulty.AddItem( "Normal", "1" );
 	botDifficulty.AddItem( "Hard", "2" );
 	botDifficulty.AddItem( "Expert", "3" );
-	botDifficulty.SetRect( 16, 92, 200, 28 );
+	botDifficulty.SetRect( 16, 48, 200, 28 );
 	botDifficulty.LinkCvar( "bot_difficulty", CMenuEditable::CVAR_STRING );
 	AddItem( botDifficulty );
 
 	botsJoinTeam.szName = "Bots join both teams";
-	botsJoinTeam.SetCoord( 16, 136 );
+	botsJoinTeam.SetCoord( 16, 92 );
 	botsJoinTeam.LinkCvar( "bot_join_after_player" );
 	AddItem( botsJoinTeam );
 

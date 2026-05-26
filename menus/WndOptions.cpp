@@ -52,7 +52,7 @@ private:
 	CMenuSlider    mouseSens;        // sensitivity
 	CMenuCheckBox  rawInput;         // m_rawinput
 	CMenuCheckBox  mouseFilter;      // m_filter
-	CMenuCheckBox  invertMouse;      // m_pitch < 0
+	CMenuCheckBox  invertMouse;      // lookspring
 
 	// ─── Audio tab ───
 	CMenuSlider    sndVolume;        // volume
@@ -66,7 +66,7 @@ private:
 	CMenuSlider    gamma;            // gamma
 	CMenuDropDownInt  dispMode;      // windowed/fullscreen
 	CMenuCheckBox  vsync;            // gl_vsync
-	CMenuCheckBox  hdr;              // mat_hdr_level approach
+	CMenuCheckBox  hdr;              // gl_overbright
 	CMenuSlider    fov;              // default_fov
 
 	// ─── Voice tab ───
@@ -226,10 +226,9 @@ void CMenuWndOptions::_Init()
 	mouseFilter.LinkCvar( "m_filter" );
 	AddItem( mouseFilter );
 
-	invertMouse.szName = "Reverse Mouse";
+	invertMouse.szName = "Look Spring";
 	invertMouse.SetCoord( 16, 190 );
-	invertMouse.LinkCvar( "m_pitch" );
-	invertMouse.bInvertMask = true;
+	invertMouse.LinkCvar( "lookspring" );
 	AddItem( invertMouse );
 
 	// ─────────────────────── TAB: Audio ─────────────────────────────
@@ -290,9 +289,9 @@ void CMenuWndOptions::_Init()
 	vsync.LinkCvar( "gl_vsync" );
 	AddItem( vsync );
 
-	hdr.szName = "HDR";
+	hdr.szName = "Overbright";
 	hdr.SetCoord( 16, 174 );
-	hdr.LinkCvar( "mat_hdr_level" );
+	hdr.LinkCvar( "gl_overbright" );
 	AddItem( hdr );
 
 	fov.szName = "Field of View";
@@ -318,7 +317,7 @@ void CMenuWndOptions::_Init()
 	voiceRx.szName = "Receive Volume";
 	voiceRx.Setup( 0.0f, 1.0f, 0.05f );
 	voiceRx.SetRect( 16, 92, cw, 28 );
-	voiceRx.LinkCvar( "voice_scale" ); // same cvar, placeholder for now
+	voiceRx.LinkCvar( "voice_overdrive" ); // receive ducking amount
 	AddItem( voiceRx );
 
 	openMic.szName = "Open Microphone (Voice Activation)";
