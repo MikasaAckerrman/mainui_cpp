@@ -54,7 +54,7 @@ bool CMenuFrameButton::KeyUp( int key )
 
 void CMenuFrameButton::Draw()
 {
-	bool focused = ( this == m_pParent->ItemAtCursor() );
+	bool focused = ( m_pParent && this == m_pParent->ItemAtCursor() );
 	bool pressed = m_bPressed;
 
 	// Colors — CS 1.6 style grey button, customizable via TrackerScheme
