@@ -15,8 +15,13 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_bDragging = false;
 	m_bResizing = false;
 	m_iResizeEdge = RESIZE_NONE;
-	bAllowDrag = true;
+
+	// We implement our own drag/resize end-to-end. Tell the base class to keep
+	// its m_bHolding system disabled so it doesn't interfere on KeyDown/KeyUp
+	// (parent toggles m_bHolding inside DragDrop() when bAllowDrag is true).
+	bAllowDrag = false;
 	bAllowResize = true;
+
 	m_iTitleH = FRAME_TITLE_HEIGHT;
 	m_iBorderW = FRAME_BORDER_WIDTH;
 }
@@ -45,12 +50,11 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button is in top-right corner of title bar
-	// Use same size as DrawTitleBar (m_iTitleH - 6) but with +2px padding for touch
+	// Close button glyph rect (matches DrawTitleBar layout); +2px padding for touch.
 	int btnSize = m_iTitleH - 6;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
 	int btnY = m_scPos.y + 3;
-	int pad = 2; // extra touch-friendly padding around glyph
+	int pad = 2;
 	return ( x >= btnX - pad && x <= btnX + btnSize + pad &&
 	         y >= btnY - pad && y <= btnY + btnSize + pad );
 }
@@ -63,7 +67,7 @@ int CMenuFrame::HitTestResize( int x, int y )
 	int grip = (int)(FRAME_RESIZE_GRIP * uiStatic.scaleX);
 	int gripY = (int)(FRAME_RESIZE_GRIP * uiStatic.scaleY);
 
-	// Check if cursor is inside the window at all
+	// Inside the window?
 	if( x < m_scPos.x || x > m_scPos.x + m_scSize.w ||
 	    y < m_scPos.y || y > m_scPos.y + m_scSize.h )
 		return RESIZE_NONE;
@@ -72,10 +76,10 @@ int CMenuFrame::HitTestResize( int x, int y )
 	bool nearRight  = ( x > m_scPos.x + m_scSize.w - grip );
 	bool nearBottom = ( y > m_scPos.y + m_scSize.h - gripY );
 
-	// Only corners and bottom edge trigger resize
+	// Only bottom edge / bottom corners trigger resize (PC reference behavior).
 	if( nearBottom && nearLeft )  return RESIZE_BOTTOMLEFT;
 	if( nearBottom && nearRight ) return RESIZE_BOTTOMRIGHT;
-	if( nearBottom )             return RESIZE_BOTTOM;
+	if( nearBottom )              return RESIZE_BOTTOM;
 
 	return RESIZE_NONE;
 }
@@ -95,46 +99,43 @@ void CMenuFrame::DrawTitleBar()
 	// Title bar background
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
 
-	// 1px separator line at bottom of title bar (between title and content/tabs)
+	// 1px separator line at bottom of title bar
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, sepColor );
 
-	// Title text
+	// Title text — small font (Tahoma 11px feel), vertically centered.
+	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
+	if( textH < 8 ) textH = 8;
 	if( m_szTitle && m_szTitle[0] )
 	{
-		UI_DrawString( uiStatic.hDefaultFont,
-			m_scPos.x + 8, m_scPos.y, m_scSize.w - m_iTitleH - 8, m_iTitleH,
-			m_szTitle, titleFg, m_iTitleH - 4, QM_LEFT, ETF_FORCECOL );
+		UI_DrawString( uiStatic.hSmallFont,
+			m_scPos.x + 6, m_scPos.y, m_scSize.w - m_iTitleH - 6, m_iTitleH,
+			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] — drawn as a glyph (two crossing diagonal lines)
+	// Close button [X] — sharp 1px diagonal lines (PC CS 1.6 reference)
 	int btnSize = m_iTitleH - 6;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
 	int btnY = m_scPos.y + 3;
 
-	unsigned int btnColor = titleFg;
 	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
-	if( hovered )
-		btnColor = 0xFFFF4040; // red on hover
+	unsigned int btnColor = hovered ? 0xFFFF4040 : titleFg;
 
-	// Draw X glyph using small filled rects (simulated diagonal lines)
-	// We draw two diagonals as a series of 1-2px filled squares
-	int pad = btnSize / 5; // padding inside the button area
+	int pad = 3;
 	int x0 = btnX + pad;
 	int y0 = btnY + pad;
 	int x1 = btnX + btnSize - pad;
 	int y1 = btnY + btnSize - pad;
-	int steps = (x1 - x0);
-	if( steps < 4 ) steps = 4;
+	int span = x1 - x0;
+	if( span < 4 ) span = 4;
 
-	for( int i = 0; i <= steps; i++ )
+	// Two thin diagonals (1px squares stepped along longer axis)
+	for( int i = 0; i <= span; i++ )
 	{
-		int px = x0 + (x1 - x0) * i / steps;
-		int py = y0 + (y1 - y0) * i / steps;
-		// Forward diagonal (\)
-		UI_FillRect( px, py, 2, 2, btnColor );
-		// Back diagonal (/)
-		int py2 = y1 - (y1 - y0) * i / steps;
-		UI_FillRect( px, py2, 2, 2, btnColor );
+		int px = x0 + i;
+		int py1 = y0 + i;            // top-left → bottom-right
+		int py2 = y1 - i;            // bottom-left → top-right
+		UI_FillRect( px, py1, 1, 1, btnColor );
+		UI_FillRect( px, py2, 1, 1, btnColor );
 	}
 }
 
@@ -144,56 +145,66 @@ void CMenuFrame::DrawBorder()
 	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
 
 	// Double bevel: outer ring = dark, inner ring = bright
-	// This matches the CS 1.6 PC / Source Engine frame style from issue #17.
-	//
-	// Layout (2px total border drawn OUTSIDE the window rect):
-	//   outer 1px: dark on all 4 sides
-	//   inner 1px: bright on all 4 sides (classic raised bevel feel)
-
 	int x = m_scPos.x;
 	int y = m_scPos.y;
 	int w = m_scSize.w;
 	int h = m_scSize.h;
 
-	// --- Outer ring (dark, 1px) ---
-	// Top
-	UI_FillRect( x - 2, y - 2, w + 4, 1, dark );
-	// Bottom
-	UI_FillRect( x - 2, y + h + 1, w + 4, 1, dark );
-	// Left
-	UI_FillRect( x - 2, y - 2, 1, h + 4, dark );
-	// Right
-	UI_FillRect( x + w + 1, y - 2, 1, h + 4, dark );
+	// Outer ring (dark, 1px)
+	UI_FillRect( x - 2, y - 2,     w + 4, 1,     dark );  // top
+	UI_FillRect( x - 2, y + h + 1, w + 4, 1,     dark );  // bottom
+	UI_FillRect( x - 2, y - 2,     1,     h + 4, dark );  // left
+	UI_FillRect( x + w + 1, y - 2, 1,     h + 4, dark );  // right
 
-	// --- Inner ring (bright, 1px) ---
-	// Top
-	UI_FillRect( x - 1, y - 1, w + 2, 1, bright );
-	// Bottom
-	UI_FillRect( x - 1, y + h, w + 2, 1, bright );
-	// Left
-	UI_FillRect( x - 1, y - 1, 1, h + 2, bright );
-	// Right
-	UI_FillRect( x + w, y - 1, 1, h + 2, bright );
+	// Inner ring (bright, 1px)
+	UI_FillRect( x - 1, y - 1, w + 2, 1,     bright );    // top
+	UI_FillRect( x - 1, y + h, w + 2, 1,     bright );    // bottom
+	UI_FillRect( x - 1, y - 1, 1,     h + 2, bright );    // left
+	UI_FillRect( x + w, y - 1, 1,     h + 2, bright );    // right
 }
 
-void CMenuFrame::ApplyResize()
-{
-	if( !m_bResizing )
-		return;
+// ─── Drag/Resize math ────────────────────────────────────────────────────────
 
-	int dx = uiStatic.cursorX - m_resizeStartCursor.x;
-	int dy = uiStatic.cursorY - m_resizeStartCursor.y;
+void CMenuFrame::UpdateDrag( int x, int y )
+{
+	int dx = x - m_actionStartCursor.x;
+	int dy = y - m_actionStartCursor.y;
+
+	int newX = m_actionStartPos.x + dx;
+	int newY = m_actionStartPos.y + dy;
+
+	// Always keep at least 60px of title bar visible so user can drag back.
+	int minVisible = (int)(60 * uiStatic.scaleX);
+	if( minVisible < 30 ) minVisible = 30;
+
+	if( newX < -m_scSize.w + minVisible ) newX = -m_scSize.w + minVisible;
+	if( newX > ScreenWidth - minVisible )  newX = ScreenWidth - minVisible;
+	if( newY < 0 ) newY = 0;
+	if( newY > ScreenHeight - m_iTitleH ) newY = ScreenHeight - m_iTitleH;
+
+	m_scPos.x = newX;
+	m_scPos.y = newY;
+
+	// Sync logical coords so any later VidInit doesn't snap us back
+	pos.x = (int)(m_scPos.x / uiStatic.scaleX);
+	pos.y = (int)(m_scPos.y / uiStatic.scaleY);
+
+	CalcItemsPositions();
+}
+
+void CMenuFrame::UpdateResize( int x, int y )
+{
+	int dx = x - m_actionStartCursor.x;
+	int dy = y - m_actionStartCursor.y;
 
 	int minW = (int)(FRAME_MIN_W * uiStatic.scaleX);
 	int minH = (int)(FRAME_MIN_H * uiStatic.scaleY);
 
-	int newX = m_resizeStartPos.x;
-	int newY = m_resizeStartPos.y;
-	int newW = m_resizeStartSize.w;
-	int newH = m_resizeStartSize.h;
+	int newX = m_actionStartPos.x;
+	int newY = m_actionStartPos.y;
+	int newW = m_actionStartSize.w;
+	int newH = m_actionStartSize.h;
 
-	// Adjust based on edge being dragged
-	// HitTestResize only returns BOTTOM, BOTTOMLEFT, BOTTOMRIGHT
 	switch( m_iResizeEdge )
 	{
 	case RESIZE_BOTTOM:
@@ -210,25 +221,31 @@ void CMenuFrame::ApplyResize()
 		break;
 	}
 
-	// Enforce minimum size
+	// Min size — anchor BOTTOMLEFT to the right edge so window doesn't jump
 	if( newW < minW )
 	{
 		if( m_iResizeEdge == RESIZE_BOTTOMLEFT )
-			newX = m_resizeStartPos.x + m_resizeStartSize.w - minW;
+			newX = m_actionStartPos.x + m_actionStartSize.w - minW;
 		newW = minW;
 	}
 	if( newH < minH )
-	{
 		newH = minH;
+
+	// Screen clamp — done AFTER min-size enforcement.
+	// For BOTTOMLEFT, if newX went negative, shift right and shrink the gain.
+	if( newX < 0 )
+	{
+		if( m_iResizeEdge == RESIZE_BOTTOMLEFT )
+		{
+			newW += newX;        // newX is negative, so this shrinks newW
+			if( newW < minW )
+				newW = minW;
+		}
+		newX = 0;
 	}
-
-	// Clamp to screen
-	if( newX < 0 ) { newW += newX; newX = 0; }
-	if( newY < 0 ) { newH += newY; newY = 0; }
-	if( newX + newW > ScreenWidth ) newW = ScreenWidth - newX;
+	if( newY < 0 ) newY = 0;
+	if( newX + newW > ScreenWidth )  newW = ScreenWidth  - newX;
 	if( newY + newH > ScreenHeight ) newH = ScreenHeight - newY;
-
-	// Re-enforce minimum after clamping
 	if( newW < minW ) newW = minW;
 	if( newH < minH ) newH = minH;
 
@@ -237,44 +254,37 @@ void CMenuFrame::ApplyResize()
 	m_scSize.w = newW;
 	m_scSize.h = newH;
 
-	CalcItemsPositions();
-	CalcItemsSizes();
-
-	// Sync logical coordinates so base class doesn't overwrite
 	pos.x = (int)(m_scPos.x / uiStatic.scaleX);
 	pos.y = (int)(m_scPos.y / uiStatic.scaleY);
 	size.w = (int)(m_scSize.w / uiStatic.scaleX);
 	size.h = (int)(m_scSize.h / uiStatic.scaleY);
+
+	CalcItemsPositions();
+	CalcItemsSizes();
+}
+
+void CMenuFrame::ApplyResize()
+{
+	// Idempotent fallback for subclasses that override Draw.
+	if( m_bResizing )
+		UpdateResize( uiStatic.cursorX, uiStatic.cursorY );
 }
 
 void CMenuFrame::ApplyDrag()
 {
-	if( !m_bDragging )
-		return;
-
-	m_scPos.x = uiStatic.cursorX - m_dragOffset.x;
-	m_scPos.y = uiStatic.cursorY - m_dragOffset.y;
-
-	// Clamp to screen
-	if( m_scPos.x < 0 ) m_scPos.x = 0;
-	if( m_scPos.y < 0 ) m_scPos.y = 0;
-	if( m_scPos.x + m_scSize.w > ScreenWidth ) m_scPos.x = ScreenWidth - m_scSize.w;
-	if( m_scPos.y + m_scSize.h > ScreenHeight ) m_scPos.y = ScreenHeight - m_scSize.h;
-
-	CalcItemsPositions();
-
-	// Sync logical coordinates
-	pos.x = (int)(m_scPos.x / uiStatic.scaleX);
-	pos.y = (int)(m_scPos.y / uiStatic.scaleY);
+	if( m_bDragging )
+		UpdateDrag( uiStatic.cursorX, uiStatic.cursorY );
 }
+
+// ─── Render ──────────────────────────────────────────────────────────────────
 
 void CMenuFrame::Draw()
 {
-	// Compute scaled title height and border
 	m_iTitleH = (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY);
 	m_iBorderW = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
+	// Safety net: if MouseMove dispatch was missed for any reason, reapply now.
 	ApplyResize();
 	ApplyDrag();
 
@@ -282,42 +292,45 @@ void CMenuFrame::Draw()
 	DrawTitleBar();
 	DrawBorder();
 
-	// Draw child items
 	CMenuItemsHolder::Draw();
 }
+
+// ─── Input ───────────────────────────────────────────────────────────────────
 
 bool CMenuFrame::KeyDown( int key )
 {
 	if( UI::Key::IsLeftMouse( key ) )
 	{
+		// Close button — consume here, action fires on KeyUp.
 		if( IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
-		{
-			return true; // consume, handle on KeyUp
-		}
+			return true;
 
-		// Check resize edges/corners before anything else
+		// Resize edges/corners take priority over child clicks.
 		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
 		if( edge != RESIZE_NONE )
 		{
 			m_bResizing = true;
 			m_iResizeEdge = edge;
-			m_resizeStartCursor = Point( uiStatic.cursorX, uiStatic.cursorY );
-			m_resizeStartPos = m_scPos;
-			m_resizeStartSize = m_scSize;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
 			return true;
 		}
 
-		// Let child items handle the click first
+		// Let child items handle the click (button, slider, checkbox, …)
 		if( BaseClass::KeyDown( key ) )
 			return true;
 
-		// No child consumed it — start drag from anywhere in window
+		// No child claimed it — start drag from anywhere inside the window.
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
 			m_bDragging = true;
-			m_dragOffset.x = uiStatic.cursorX - m_scPos.x;
-			m_dragOffset.y = uiStatic.cursorY - m_scPos.y;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -362,9 +375,19 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
-	// Update positions during drag
-	if( m_bDragging )
+	// Drag/resize updates are driven HERE — synchronously with the cursor event,
+	// not deferred to Draw(). This is the key fix for touch-screen reliability.
+	if( m_bResizing )
+	{
+		UpdateResize( x, y );
 		return true;
+	}
+
+	if( m_bDragging )
+	{
+		UpdateDrag( x, y );
+		return true;
+	}
 
 	return BaseClass::MouseMove( x, y );
 }

@@ -6,6 +6,7 @@ Copyright (C) 2024 DragonSlayer Team
 #include "extdll_menu.h"
 #include "BaseMenu.h"
 #include "FrameButton.h"
+#include "Frame.h"
 #include "Utils.h"
 #include "keydefs.h"
 
@@ -89,12 +90,14 @@ void CMenuFrameButton::Draw()
 	// Right edge
 	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, bottomRight );
 
-	// Text
+	// Text — small font (Tahoma 11px feel) for PC parity.
 	unsigned int textColor = focused ? textFocus : textNorm;
 	if( iFlags & QMF_GRAYED )
 		textColor = Scheme_GetColor( g_Scheme.labelDisabledFg1, 0xFF505050 );
 
-	UI_DrawString( uiStatic.hDefaultFont,
+	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
+	if( textH < 8 ) textH = 8;
+	UI_DrawString( uiStatic.hSmallFont,
 		m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h,
-		szName, textColor, m_scChSize, QM_CENTER, ETF_FORCECOL );
+		szName, textColor, textH, QM_CENTER, ETF_FORCECOL );
 }

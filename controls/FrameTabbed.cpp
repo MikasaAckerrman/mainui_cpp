@@ -132,8 +132,8 @@ void CMenuFrameTabbed::DrawTabs()
 			fg = tabText;
 		}
 
-		UI_DrawString( uiStatic.hDefaultFont, x, tabY, tabW, m_iTabH,
-			m_tabs[i].name, fg, m_iTabH - 4, QM_CENTER, ETF_FORCECOL );
+		UI_DrawString( uiStatic.hSmallFont, x, tabY, tabW, m_iTabH,
+			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
 
 		// Separator between tabs
 		if( i < m_iNumTabs - 1 )
