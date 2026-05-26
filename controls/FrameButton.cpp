@@ -1,0 +1,101 @@
+/*
+FrameButton.cpp -- CS 1.6 / Source Engine style flat button with bevel border
+Copyright (C) 2024 DragonSlayer Team
+*/
+
+#include "extdll_menu.h"
+#include "BaseMenu.h"
+#include "FrameButton.h"
+#include "Utils.h"
+#include "keydefs.h"
+
+CMenuFrameButton::CMenuFrameButton() : BaseClass()
+{
+	iFlags = 0;
+	eTextAlignment = QM_CENTER;
+	eFocusAnimation = QM_HIGHLIGHTIFFOCUS;
+}
+
+void CMenuFrameButton::VidInit()
+{
+	BaseClass::VidInit();
+}
+
+bool CMenuFrameButton::KeyDown( int key )
+{
+	if( UI::Key::IsEnter( key ) && !(iFlags & QMF_MOUSEONLY) )
+	{
+		_Event( QM_PRESSED );
+		return true;
+	}
+	if( UI::Key::IsLeftMouse( key ) && ( iFlags & QMF_HASMOUSEFOCUS ) )
+	{
+		_Event( QM_PRESSED );
+		return true;
+	}
+	return false;
+}
+
+bool CMenuFrameButton::KeyUp( int key )
+{
+	bool handled = false;
+
+	if( UI::Key::IsEnter( key ) && !(iFlags & QMF_MOUSEONLY) )
+		handled = true;
+	else if( UI::Key::IsLeftMouse( key ) && ( iFlags & QMF_HASMOUSEFOCUS ) )
+		handled = true;
+
+	if( handled )
+	{
+		_Event( QM_RELEASED );
+		PlayLocalSound( uiStatic.sounds[SND_LAUNCH] );
+	}
+
+	return handled;
+}
+
+void CMenuFrameButton::Draw()
+{
+	bool focused = ( this == m_pParent->ItemAtCursor() );
+	bool pressed = m_bPressed;
+
+	// Colors — CS 1.6 style grey button
+	unsigned int bgNormal  = 0xFF3C3C3C; // medium grey
+	unsigned int bgHover   = 0xFF4A4A4A; // slightly lighter on hover
+	unsigned int bgPressed = 0xFF2D2D2D; // darker when pressed
+	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFF6E6E6E );
+	unsigned int dark      = Scheme_GetColor( g_Scheme.borderDark, 0xFF222222 );
+	unsigned int textNorm  = Scheme_GetColor( g_Scheme.buttonTextColor, 0xFFF0ECE0 );
+	unsigned int textFocus = Scheme_GetColor( g_Scheme.buttonArmedTextColor, 0xFFFFFFFF );
+
+	// Background fill
+	unsigned int bg = bgNormal;
+	if( pressed )
+		bg = bgPressed;
+	else if( focused )
+		bg = bgHover;
+
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
+
+	// Bevel border (swap bright/dark when pressed for "pushed" effect)
+	unsigned int topLeft = pressed ? dark : bright;
+	unsigned int bottomRight = pressed ? bright : dark;
+
+	// Top edge
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, topLeft );
+	// Left edge
+	UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, topLeft );
+	// Bottom edge
+	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, bottomRight );
+	// Right edge
+	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, bottomRight );
+
+	// Text
+	unsigned int textColor = focused ? textFocus : textNorm;
+	if( iFlags & QMF_GRAYED )
+		textColor = Scheme_GetColor( g_Scheme.labelDisabledFg1, 0xFF505050 );
+
+	UI_DrawString( uiStatic.hDefaultFont,
+		m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h,
+		szName, textColor, m_scChSize, QM_CENTER, ETF_FORCECOL );
+}

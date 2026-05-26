@@ -97,47 +97,52 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabY = m_scPos.y + m_iTitleH;
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
-	unsigned int tabBg = Scheme_GetColor( g_Scheme.frameBgColor, uiPromptBgColor );
-	unsigned int tabSelBg = Scheme_GetColor( g_Scheme.listSelectedBgColor, 0xFF4A3520 );
+	// CS 1.6 PC style: darker tab strip background, bright underline on active
+	unsigned int tabStripBg = 0xFF2D2D2D; // dark strip bg
+	unsigned int tabSelBg = Scheme_GetColor( g_Scheme.frameBgColor, 0xE6282828 ); // blends with content
 	unsigned int tabText = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9080 );
 	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFF0ECE0 );
+	unsigned int accentColor = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4A3520 );
 	unsigned int borderColor = Scheme_GetColor( g_Scheme.borderDark, 0xC4282828 );
 
 	int hovered = TabAtCursor();
 
+	// Fill tab strip background
+	UI_FillRect( m_scPos.x, tabY, m_scSize.w, m_iTabH, tabStripBg );
+
 	for( int i = 0; i < m_iNumTabs; i++ )
 	{
 		int x = m_scPos.x + i * tabW;
-		unsigned int bg, fg;
+		unsigned int fg;
 
 		if( i == m_iActiveTab )
 		{
-			bg = tabSelBg;
+			// Active tab: blend with content bg, highlight text
+			UI_FillRect( x, tabY, tabW, m_iTabH, tabSelBg );
 			fg = tabSelText;
+			// Accent underline (2px) on active tab
+			UI_FillRect( x + 2, tabY + m_iTabH - 2, tabW - 4, 2, accentColor );
 		}
 		else if( i == hovered )
 		{
-			bg = tabBg;
 			fg = tabSelText;
 		}
 		else
 		{
-			bg = tabBg;
 			fg = tabText;
 		}
 
-		UI_FillRect( x, tabY, tabW, m_iTabH, bg );
 		UI_DrawString( uiStatic.hDefaultFont, x, tabY, tabW, m_iTabH,
 			m_tabs[i].name, fg, m_iTabH - 4, QM_CENTER, ETF_FORCECOL );
 
 		// Separator between tabs
 		if( i < m_iNumTabs - 1 )
 		{
-			UI_FillRect( x + tabW - 1, tabY + 2, 1, m_iTabH - 4, borderColor );
+			UI_FillRect( x + tabW - 1, tabY + 4, 1, m_iTabH - 8, borderColor );
 		}
 	}
 
-	// Line below tabs
+	// Thin line below entire tab strip
 	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, borderColor );
 }
 

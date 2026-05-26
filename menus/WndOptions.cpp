@@ -10,6 +10,7 @@ Each tab has real controls linked to cvars.
 #include "extdll_menu.h"
 #include "BaseMenu.h"
 #include "controls/FrameTabbed.h"
+#include "controls/FrameButton.h"
 #include "Action.h"
 #include "Slider.h"
 #include "CheckBox.h"
@@ -19,26 +20,6 @@ Each tab has real controls linked to cvars.
 #include "keydefs.h"
 #include "Utils.h"
 #include "TrackerScheme.h"
-
-// ─── Button helper ────────────────────────────────────────────────────
-// Simple clickable text button drawn with a flat bg + hover highlight.
-// Used for OK/Cancel/Apply at bottom of Options.
-class CMenuFlatButton : public CMenuAction
-{
-public:
-	CMenuFlatButton()
-	{
-		m_bLimitBySize = true;
-	}
-	void Init( const char *name, int x, int y, int w, int h )
-	{
-		szName = name;
-		SetRect( x, y, w, h );
-		unsigned int bg = Scheme_GetColor( g_Scheme.buttonBgColor, 0x40505040 );
-		unsigned int hover = Scheme_GetColor( g_Scheme.buttonArmedBgColor, 0x60707050 );
-		SetBackground( bg, hover );
-	}
-};
 
 // ─── Options window ───────────────────────────────────────────────────
 
@@ -56,9 +37,9 @@ private:
 	void CancelSettings();
 
 	// ─── Bottom buttons (always visible — added before tabs) ───
-	CMenuFlatButton btnOK;
-	CMenuFlatButton btnCancel;
-	CMenuFlatButton btnApply;
+	CMenuFrameButton btnOK;
+	CMenuFrameButton btnCancel;
+	CMenuFrameButton btnApply;
 
 	// ─── Multiplayer tab ───
 	CMenuField     playerName;
@@ -169,7 +150,8 @@ void CMenuWndOptions::_Init()
 	int btnY = h - 56; // from window top (logical), will be offset by GetPositionOffset
 
 	// ─── Bottom buttons — added BEFORE any tab so they're always visible ───
-	btnOK.Init( "OK", 16, btnY, btnW, btnH );
+	btnOK.szName = "OK";
+	btnOK.SetRect( 16, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnOK.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
@@ -178,7 +160,8 @@ void CMenuWndOptions::_Init()
 	});
 	AddItem( btnOK );
 
-	btnCancel.Init( "Cancel", 16 + btnW + 8, btnY, btnW, btnH );
+	btnCancel.szName = "Cancel";
+	btnCancel.SetRect( 16 + btnW + 8, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnCancel.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
@@ -186,7 +169,8 @@ void CMenuWndOptions::_Init()
 	});
 	AddItem( btnCancel );
 
-	btnApply.Init( "Apply", 16 + (btnW + 8) * 2, btnY, btnW, btnH );
+	btnApply.szName = "Apply";
+	btnApply.SetRect( 16 + (btnW + 8) * 2, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnApply.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
