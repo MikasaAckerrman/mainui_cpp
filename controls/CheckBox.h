@@ -77,6 +77,7 @@ public:
 
 	CColor colorText;
 private:
+	bool m_bInsideFrame;
 	Point m_scTextPos;
 	Size m_scTextSize;
 };

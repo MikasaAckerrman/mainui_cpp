@@ -65,6 +65,7 @@ private:
 
 	int m_iSliderOutlineWidth;
 	Size m_scCenterBox;
+	bool m_bInsideFrame;
 };
 
 #endif // MENU_SLIDER_H

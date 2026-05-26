@@ -48,15 +48,18 @@ void CMenuCheckBox::VidInit( void )
 {
 	colorText.SetDefault( uiColorHelp );
 
+	// Cache frame detection for consistent layout/draw behavior
+	m_bInsideFrame = ( m_pParent && m_pParent->IsFrame() );
+
 	// When inside a Frame, use compact 13x13 checkbox style
-	if( m_pParent && m_pParent->IsFrame() )
+	if( m_bInsideFrame )
 	{
 		SetSize( 13, 13 );
 	}
 
 	BaseClass::VidInit();
 
-	if( m_pParent && m_pParent->IsFrame() )
+	if( m_bInsideFrame )
 	{
 		// Position text closer to the compact box
 		m_scTextPos.x = m_scPos.x + (int)(16 * uiStatic.scaleX);
@@ -151,7 +154,7 @@ void CMenuCheckBox::Draw( void )
 	}
 
 	// Frame-style programmatic drawing: 13x13 sunken bevel box + checkmark glyph
-	if( m_pParent && m_pParent->IsFrame() )
+	if( m_bInsideFrame )
 	{
 		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
 		unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );

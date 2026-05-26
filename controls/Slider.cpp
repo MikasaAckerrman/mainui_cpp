@@ -21,7 +21,7 @@ GNU General Public License for more details.
 #include "Frame.h"
 
 CMenuSlider::CMenuSlider() : BaseClass(), m_flMinValue(), m_flMaxValue(), m_flCurValue(),
-	m_flDrawStep(), m_iNumSteps(), m_flRange(), m_iKeepSlider()
+	m_flDrawStep(), m_iNumSteps(), m_flRange(), m_iKeepSlider(), m_bInsideFrame( false )
 {
 	m_iSliderOutlineWidth = 6;
 
@@ -51,6 +51,9 @@ void CMenuSlider::VidInit(  )
 
 	colorBase.SetDefault( uiColorWhite );
 	colorFocus.SetDefault( uiColorWhite );
+
+	// Cache frame detection for consistent layout/draw behavior
+	m_bInsideFrame = ( m_pParent && m_pParent->IsFrame() );
 
 	BaseClass::VidInit();
 
@@ -196,7 +199,7 @@ void CMenuSlider::Draw( void )
 		* ( m_scSize.w - m_iSliderOutlineWidth - (m_scCenterBox.w) );
 
 	// Frame-style programmatic drawing: sunken groove track + raised bevel thumb
-	if( m_pParent && m_pParent->IsFrame() )
+	if( m_bInsideFrame )
 	{
 		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
 		unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
@@ -221,7 +224,10 @@ void CMenuSlider::Draw( void )
 		int thumbH = (int)(20 * uiStatic.scaleY);
 		if( thumbW < 7 ) thumbW = 7;
 		if( thumbH < 12 ) thumbH = 12;
-		int thumbX = sliderX;
+
+		// Recalculate thumb position using actual programmatic thumb width
+		float fraction = ( m_flCurValue - m_flMinValue ) / ( m_flMaxValue - m_flMinValue );
+		int thumbX = m_scPos.x + (int)( fraction * (float)( m_scSize.w - thumbW ) );
 		int thumbY = m_scPos.y + m_scSize.h / 2 - thumbH / 2;
 
 		// Thumb fill (medium grey)
