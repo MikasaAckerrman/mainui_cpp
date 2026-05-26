@@ -15,6 +15,7 @@ the existing AddServerToList callback mechanism.
 #include "extdll_menu.h"
 #include "BaseMenu.h"
 #include "controls/FrameTabbed.h"
+#include "controls/FrameButton.h"
 #include "Table.h"
 #include "Action.h"
 #include "Field.h"
@@ -40,21 +41,6 @@ public:
 	}
 };
 
-// ─── Flat button ─────────────────────────────────────────────────────
-class CMenuSBButton : public CMenuAction
-{
-public:
-	CMenuSBButton() { m_bLimitBySize = true; }
-	void Init( const char *name, int x, int y, int w, int h )
-	{
-		szName = name;
-		SetRect( x, y, w, h );
-		unsigned int bg = Scheme_GetColor( g_Scheme.buttonBgColor, 0x40505040 );
-		unsigned int hover = Scheme_GetColor( g_Scheme.buttonArmedBgColor, 0x60707050 );
-		SetBackground( bg, hover );
-	}
-};
-
 // ─── Server Browser window ───────────────────────────────────────────
 
 class CMenuWndServerBrowser : public CMenuFrameTabbed
@@ -72,9 +58,9 @@ private:
 	void ConnectToSelected();
 
 	// Bottom buttons (always visible)
-	CMenuSBButton btnConnect;
-	CMenuSBButton btnRefresh;
-	CMenuSBButton btnStop;
+	CMenuFrameButton btnConnect;
+	CMenuFrameButton btnRefresh;
+	CMenuFrameButton btnStop;
 
 	// Internet tab
 	CMenuTable       internetTable;
@@ -124,7 +110,8 @@ void CMenuWndServerBrowser::_Init()
 	int btnY = h - 80;
 
 	// ─── Bottom buttons (before tabs — always visible) ───
-	btnConnect.Init( "Connect", 16, btnY, btnW, btnH );
+	btnConnect.szName = "Connect";
+	btnConnect.SetRect( 16, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnConnect.onReleased,
 	{
 		CMenuWndServerBrowser *self = (CMenuWndServerBrowser*)pSelf->GetParent( CMenuWndServerBrowser );
@@ -132,7 +119,8 @@ void CMenuWndServerBrowser::_Init()
 	});
 	AddItem( btnConnect );
 
-	btnRefresh.Init( "Refresh", 16 + btnW + 8, btnY, btnW, btnH );
+	btnRefresh.szName = "Refresh";
+	btnRefresh.SetRect( 16 + btnW + 8, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnRefresh.onReleased,
 	{
 		CMenuWndServerBrowser *self = (CMenuWndServerBrowser*)pSelf->GetParent( CMenuWndServerBrowser );
@@ -140,7 +128,8 @@ void CMenuWndServerBrowser::_Init()
 	});
 	AddItem( btnRefresh );
 
-	btnStop.Init( "Stop", 16 + (btnW + 8) * 2, btnY, btnW, btnH );
+	btnStop.szName = "Stop";
+	btnStop.SetRect( 16 + (btnW + 8) * 2, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnStop.onReleased,
 	{
 		// stop refreshing

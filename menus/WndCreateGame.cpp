@@ -10,6 +10,7 @@ Start Server button always visible.
 #include "extdll_menu.h"
 #include "BaseMenu.h"
 #include "controls/FrameTabbed.h"
+#include "controls/FrameButton.h"
 #include "Field.h"
 #include "Action.h"
 #include "CheckBox.h"
@@ -19,21 +20,6 @@ Start Server button always visible.
 #include "keydefs.h"
 #include "Utils.h"
 #include "TrackerScheme.h"
-
-// ─── Flat button ─────────────────────────────────────────────────────
-class CMenuCGButton : public CMenuAction
-{
-public:
-	CMenuCGButton() { m_bLimitBySize = true; }
-	void Init( const char *name, int x, int y, int w, int h )
-	{
-		szName = name;
-		SetRect( x, y, w, h );
-		unsigned int bg = Scheme_GetColor( g_Scheme.buttonBgColor, 0x40505040 );
-		unsigned int hover = Scheme_GetColor( g_Scheme.buttonArmedBgColor, 0x60707050 );
-		SetBackground( bg, hover );
-	}
-};
 
 // ─── Create Game window ──────────────────────────────────────────────
 
@@ -49,8 +35,8 @@ private:
 	void StartServer();
 
 	// Bottom buttons (always visible)
-	CMenuCGButton btnStart;
-	CMenuCGButton btnCancel;
+	CMenuFrameButton btnStart;
+	CMenuFrameButton btnCancel;
 
 	// ─── Server tab ───
 	CMenuField   hostName;
@@ -121,7 +107,8 @@ void CMenuWndCreateGame::_Init()
 	int btnY = h - 80;
 
 	// ─── Bottom buttons (always visible) ───
-	btnStart.Init( "Start Server", 16, btnY, btnW + 10, btnH );
+	btnStart.szName = "Start Server";
+	btnStart.SetRect( 16, btnY, btnW + 10, btnH );
 	SET_EVENT_MULTI( btnStart.onReleased,
 	{
 		CMenuWndCreateGame *self = (CMenuWndCreateGame*)pSelf->GetParent( CMenuWndCreateGame );
@@ -129,7 +116,8 @@ void CMenuWndCreateGame::_Init()
 	});
 	AddItem( btnStart );
 
-	btnCancel.Init( "Cancel", 16 + btnW + 18, btnY, btnW - 20, btnH );
+	btnCancel.szName = "Cancel";
+	btnCancel.SetRect( 16 + btnW + 18, btnY, btnW - 20, btnH );
 	SET_EVENT_MULTI( btnCancel.onReleased,
 	{
 		CMenuWndCreateGame *self = (CMenuWndCreateGame*)pSelf->GetParent( CMenuWndCreateGame );
