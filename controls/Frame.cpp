@@ -14,6 +14,7 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_szTitle = title;
 	m_bDragging = false;
 	m_bResizing = false;
+	m_bNeedsAnchor = false;
 	m_bUserMoved = false;
 	m_iResizeEdge = RESIZE_NONE;
 
@@ -328,13 +329,14 @@ void CMenuFrame::UpdateResize( int x, int y )
 void CMenuFrame::ApplyResize()
 {
 	// Idempotent fallback for subclasses that override Draw.
-	if( m_bResizing )
+	// Don't apply if still waiting for first MouseMove to capture anchor.
+	if( m_bResizing && !m_bNeedsAnchor )
 		UpdateResize( uiStatic.cursorX, uiStatic.cursorY );
 }
 
 void CMenuFrame::ApplyDrag()
 {
-	if( m_bDragging )
+	if( m_bDragging && !m_bNeedsAnchor )
 		UpdateDrag( uiStatic.cursorX, uiStatic.cursorY );
 }
 
@@ -374,9 +376,9 @@ bool CMenuFrame::KeyDown( int key )
 		{
 			m_bResizing = true;
 			m_bUserMoved = true;
+			m_bNeedsAnchor = true;
 			m_iResizeEdge = edge;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
+			// Anchor will be captured on first MouseMove to avoid stale cursor
 			m_actionStartPos = m_scPos;
 			m_actionStartSize = m_scSize;
 			return true;
@@ -391,8 +393,8 @@ bool CMenuFrame::KeyDown( int key )
 		{
 			m_bDragging = true;
 			m_bUserMoved = true;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
+			m_bNeedsAnchor = true;
+			// Anchor will be captured on first MouseMove to avoid stale cursor
 			m_actionStartPos = m_scPos;
 			m_actionStartSize = m_scSize;
 			return true;
@@ -452,12 +454,33 @@ bool CMenuFrame::MouseMove( int x, int y )
 	// This gives real-time visual feedback as the user drags.
 	if( m_bResizing )
 	{
+		if( m_bNeedsAnchor )
+		{
+			// First MouseMove after resize started: capture the REAL cursor position
+			// as anchor. This avoids the Android bug where uiStatic.cursorX/Y is
+			// stale (0,0) at KeyDown time. No delta applied on this first event.
+			m_actionStartCursor.x = x;
+			m_actionStartCursor.y = y;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
+			m_bNeedsAnchor = false;
+			return true;
+		}
 		UpdateResize( x, y );
 		return true;
 	}
 
 	if( m_bDragging )
 	{
+		if( m_bNeedsAnchor )
+		{
+			m_actionStartCursor.x = x;
+			m_actionStartCursor.y = y;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
+			m_bNeedsAnchor = false;
+			return true;
+		}
 		UpdateDrag( x, y );
 		return true;
 	}
