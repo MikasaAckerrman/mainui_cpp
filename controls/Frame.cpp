@@ -53,8 +53,8 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 30x30 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(30 * uiStatic.scaleY);
+	// Close button: 22x22 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(22 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -174,8 +174,8 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 30x30 logical px with GoldSrc double border
-	int btnSize = (int)(30 * uiStatic.scaleY);
+	// Close button [X] - 22x22 logical px with GoldSrc double border
+	int btnSize = (int)(22 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;

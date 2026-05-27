@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 CMenuDropDown::CMenuDropDown() : BaseClass()
 {
-	SetSize( 120, 35 );
+	SetSize( 120, 30 );
 	SetCharSize( QM_BOLDFONT );
 
 	eTextAlignment = QM_LEFT;

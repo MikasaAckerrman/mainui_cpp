@@ -4,7 +4,7 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar (40px) with text and close button (30x30 bevel box with X glyph)
+- Title bar (26px) with text and close button (22x22 bevel box with X glyph)
 - Double border (1px outer dark outline + 1px inner raised bevel)
 - Sunken groove separator below title bar
 - Drag from anywhere in the window
@@ -18,8 +18,8 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-// PC CS 1.6 original = 40px title bar (confirmed from source-engine PaintBackground)
-#define FRAME_TITLE_HEIGHT 40  // logical pixels
+// PC CS 1.6 compact = 26px title bar
+#define FRAME_TITLE_HEIGHT 26  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width

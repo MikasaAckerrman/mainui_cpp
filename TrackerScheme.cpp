@@ -284,7 +284,7 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.frameTitleBarTop    = 0xFF7A7D73; // title bar top edge
 		g_Scheme.frameTitleBarBottom = 0xFF363930; // title bar bottom edge
 
-		g_Scheme.borderBright        = 0xFF767D6A; // 118,125,106
+		g_Scheme.borderBright        = 0xFF6B7260; // 107,114,96
 		g_Scheme.borderDark          = 0xFF30342B; // 48,52,43
 		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
