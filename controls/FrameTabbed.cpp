@@ -154,12 +154,6 @@ void CMenuFrameTabbed::DrawTabs()
 		}
 		// Active tab: NO bottom border (merges with content area below)
 
-		// 1px divider between tabs (GoldSrc style)
-		if( i < m_iNumTabs - 1 )
-		{
-			UI_FillRect( x + tabW - 1, ty + 2, 1, th - 4, dark );
-		}
-
 		// Tab label text - centered, using hSmallFont (Tahoma)
 		UI_DrawString( uiStatic.hSmallFont, x, ty, tabW, th,
 			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
