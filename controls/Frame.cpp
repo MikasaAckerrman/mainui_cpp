@@ -452,6 +452,24 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
+	// On Android, the first MouseMove after KeyDown carries the REAL touch position.
+	// If it differs significantly from captured startCursor, re-anchor to prevent jump.
+	if( m_bDragging || m_bResizing )
+	{
+		int dx = x - m_actionStartCursor.x;
+		int dy = y - m_actionStartCursor.y;
+
+		// If first movement is a huge jump (>50px distance), the KeyDown cursor was stale.
+		// Re-anchor so the window doesn't teleport.
+		if( (dx * dx + dy * dy) > 2500 ) // 50*50 = 2500
+		{
+			m_actionStartCursor.x = x;
+			m_actionStartCursor.y = y;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
+		}
+	}
+
 	// Drag/resize updates are driven HERE — synchronously with the cursor event.
 	// This gives real-time visual feedback as the user drags.
 	if( m_bResizing )
