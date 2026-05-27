@@ -60,7 +60,7 @@ void CMenuFrameButton::Draw()
 
 	// Colors — CS 1.6 style grey button, customizable via TrackerScheme
 	unsigned int schemeBg = g_Scheme.buttonBgColor;
-	unsigned int bgNormal  = schemeBg ? schemeBg : 0xFF4A4A4A;
+	unsigned int bgNormal  = schemeBg ? schemeBg : 0xFF5B6350;
 	unsigned int bgHover   = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF585858;
 	unsigned int bgPressed = 0xFF353535;
 	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );

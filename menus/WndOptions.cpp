@@ -145,21 +145,23 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.72f);
-	int h = (int)(768 * 0.70f);
+	int w = (int)(uiStatic.width * 0.62f);
+	int h = (int)(768 * 0.78f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
 
-	// Content area width for controls (10px padding each side)
-	int cw = w - 20;
-	int btnW = 85;
-	int btnH = 24;
+	// Content area dimensions
+	int pad = 16;
+	int cw = w - pad * 2;
+	int btnW = 120;
+	int btnH = 32;
+	int btnGap = 12;
 	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
-	int btnY = contentH - btnH - 8;
-	int rightEdge = cw + 10; // which is w - 10
+	int btnY = contentH - btnH - pad;
+	int rightEdge = w - pad;
 
-	// Bottom buttons - right-aligned, added BEFORE any tab so always visible
+	// Bottom buttons - right-aligned with 16px padding, added BEFORE any tab so always visible
 	// Order from right: Apply, Cancel, OK
 	btnApply.szName = "Apply";
 	btnApply.SetRect( rightEdge - btnW, btnY, btnW, btnH );
@@ -171,7 +173,7 @@ void CMenuWndOptions::_Init()
 	AddItem( btnApply );
 
 	btnCancel.szName = "Cancel";
-	btnCancel.SetRect( rightEdge - btnW*2 - 6, btnY, btnW, btnH );
+	btnCancel.SetRect( rightEdge - btnW * 2 - btnGap, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnCancel.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
@@ -180,7 +182,7 @@ void CMenuWndOptions::_Init()
 	AddItem( btnCancel );
 
 	btnOK.szName = "OK";
-	btnOK.SetRect( rightEdge - btnW*3 - 12, btnY, btnW, btnH );
+	btnOK.SetRect( rightEdge - btnW * 3 - btnGap * 2, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnOK.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
@@ -192,55 +194,67 @@ void CMenuWndOptions::_Init()
 	// ---- TAB: Multi ----
 	AddTab( "Multi" );
 
-	// 2-column layout
-	int leftColW = (int)(cw * 0.35f);
-	int rightCol = 10 + leftColW + 10;
-	int rightColW = cw - leftColW - 10;
+	// 2-column grid layout
+	int leftColW = (int)(cw * 0.45f);
+	int rightCol = pad + leftColW + pad;
+	int rightColW = cw - leftColW - pad;
+	int fieldH = 22;
+	int labelGap = 6;
+	int groupGap = 16;
 
-	// Left column
-	avatarPreview.szName = "Model Preview";
+	// Left column - Avatar section
+	int ly = pad;
+
+	avatarPreview.szName = "Avatar";
 	avatarPreview.iFlags |= QMF_INACTIVE;
-	avatarPreview.SetRect( 10, 8, leftColW, 90 );
+	avatarPreview.SetRect( pad, ly, 100, 100 );
 	AddItem( avatarPreview );
 
-	btnUpload.szName = "Upload";
-	btnUpload.SetRect( 10, 106, 65, 20 );
+	btnUpload.szName = "Upload...";
+	btnUpload.SetRect( pad + 100 + 8, ly, 100, 24 );
 	AddItem( btnUpload );
 
 	modelSelect.szName = "";
 	modelSelect.AddItem( "arctic", "arctic" );
 	modelSelect.AddItem( "guerilla", "guerilla" );
 	modelSelect.AddItem( "leet", "leet" );
-	modelSelect.SetRect( 10, 134, leftColW, 22 );
+	modelSelect.SetRect( pad + 100 + 8, ly + 24 + labelGap, 140, fieldH );
 	AddItem( modelSelect );
 
-	logoPreview.szName = "Logo Preview";
+	ly += 100 + groupGap;
+
+	// Left column - Logo section
+	logoPreview.szName = "Logo";
 	logoPreview.iFlags |= QMF_INACTIVE;
-	logoPreview.SetRect( 10, 166, leftColW, 66 );
+	logoPreview.SetRect( pad, ly, 100, 100 );
 	AddItem( logoPreview );
 
 	logoSelect.szName = "";
 	logoSelect.AddItem( "lambda", "lambda" );
 	logoSelect.AddItem( "skull", "skull" );
 	logoSelect.AddItem( "cross", "cross" );
-	logoSelect.SetRect( 10, 240, leftColW, 22 );
+	logoSelect.SetRect( pad + 100 + 8, ly, 140, fieldH );
 	AddItem( logoSelect );
 
 	btnColor.szName = "Change Color";
-	btnColor.SetRect( 10, 270, 90, 20 );
+	btnColor.SetRect( pad + 100 + 8, ly + fieldH + labelGap, 120, 24 );
 	AddItem( btnColor );
 
 	// Right column
+	int ry = pad;
+
 	playerName.szName = "Player Name";
 	playerName.iMaxLength = 32;
-	playerName.SetRect( rightCol, 8, rightColW, 28 );
+	playerName.SetRect( rightCol, ry + labelGap, rightColW, fieldH );
 	playerName.LinkCvar( "name" );
 	AddItem( playerName );
+
+	ry += labelGap + fieldH + groupGap;
 
 	adminPassword.szName = "VIP/Admin Password";
 	adminPassword.iMaxLength = 64;
 	adminPassword.bHideInput = true;
-	adminPassword.SetRect( rightCol, 52, rightColW, 28 );
+	adminPassword.SetRect( rightCol, ry + labelGap, rightColW, fieldH );
 	adminPassword.LinkCvar( "password" );
 	AddItem( adminPassword );
 
@@ -249,11 +263,11 @@ void CMenuWndOptions::_Init()
 
 	kbHint.szName = "Use console for key binds: bind <key> <command>";
 	kbHint.iFlags |= QMF_INACTIVE;
-	kbHint.SetCoord( 10, 8 );
+	kbHint.SetCoord( pad, 8 );
 	AddItem( kbHint );
 
 	developerConsole.szName = "Enable Developer Console (~)";
-	developerConsole.SetCoord( 10, 42 );
+	developerConsole.SetCoord( pad, 42 );
 	developerConsole.LinkCvar( "con_enable" );
 	AddItem( developerConsole );
 
@@ -262,22 +276,22 @@ void CMenuWndOptions::_Init()
 
 	mouseSens.szName = "Mouse Sensitivity";
 	mouseSens.Setup( 0.5f, 20.0f, 0.5f );
-	mouseSens.SetRect( 10, 8, cw, 28 );
+	mouseSens.SetRect( pad, 8, cw, 28 );
 	mouseSens.LinkCvar( "sensitivity" );
 	AddItem( mouseSens );
 
 	rawInput.szName = "Raw Input";
-	rawInput.SetCoord( 10, 48 );
+	rawInput.SetCoord( pad, 48 );
 	rawInput.LinkCvar( "m_rawinput" );
 	AddItem( rawInput );
 
 	mouseFilter.szName = "Mouse Filter";
-	mouseFilter.SetCoord( 10, 76 );
+	mouseFilter.SetCoord( pad, 76 );
 	mouseFilter.LinkCvar( "m_filter" );
 	AddItem( mouseFilter );
 
 	invertMouse.szName = "Invert Mouse";
-	invertMouse.SetCoord( 10, 104 );
+	invertMouse.SetCoord( pad, 104 );
 	invertMouse.LinkCvar( "lookspring" );
 	AddItem( invertMouse );
 
@@ -286,29 +300,29 @@ void CMenuWndOptions::_Init()
 
 	sndVolume.szName = "Sound Effects Volume";
 	sndVolume.Setup( 0.0f, 1.0f, 0.05f );
-	sndVolume.SetRect( 10, 8, cw, 28 );
+	sndVolume.SetRect( pad, 8, cw, 28 );
 	sndVolume.LinkCvar( "volume" );
 	AddItem( sndVolume );
 
 	musicVolume.szName = "MP3 Volume";
 	musicVolume.Setup( 0.0f, 1.0f, 0.05f );
-	musicVolume.SetRect( 10, 48, cw, 28 );
+	musicVolume.SetRect( pad, 48, cw, 28 );
 	musicVolume.LinkCvar( "MP3Volume" );
 	AddItem( musicVolume );
 
 	suitVolume.szName = "HEV Suit Volume";
 	suitVolume.Setup( 0.0f, 1.0f, 0.05f );
-	suitVolume.SetRect( 10, 88, cw, 28 );
+	suitVolume.SetRect( pad, 88, cw, 28 );
 	suitVolume.LinkCvar( "suitvolume" );
 	AddItem( suitVolume );
 
 	eax.szName = "Enable EAX (requires EAX-capable card)";
-	eax.SetCoord( 10, 128 );
+	eax.SetCoord( pad, 128 );
 	eax.LinkCvar( "s_eax" );
 	AddItem( eax );
 
 	a3d.szName = "Enable A3D";
-	a3d.SetCoord( 10, 156 );
+	a3d.SetCoord( pad, 156 );
 	a3d.LinkCvar( "s_a3d" );
 	AddItem( a3d );
 
@@ -317,36 +331,36 @@ void CMenuWndOptions::_Init()
 
 	brightness.szName = "Brightness";
 	brightness.Setup( 0.0f, 3.0f, 0.1f );
-	brightness.SetRect( 10, 8, cw, 28 );
+	brightness.SetRect( pad, 8, cw, 28 );
 	brightness.LinkCvar( "brightness" );
 	AddItem( brightness );
 
 	gamma.szName = "Gamma";
 	gamma.Setup( 0.5f, 3.0f, 0.1f );
-	gamma.SetRect( 10, 48, cw, 28 );
+	gamma.SetRect( pad, 48, cw, 28 );
 	gamma.LinkCvar( "gamma" );
 	AddItem( gamma );
 
 	dispMode.szName = "Display Mode";
 	dispMode.AddItem( "Fullscreen", 1 );
 	dispMode.AddItem( "Windowed", 0 );
-	dispMode.SetRect( 10, 88, 200, 28 );
+	dispMode.SetRect( pad, 88, 200, fieldH );
 	dispMode.LinkCvar( "fullscreen", CMenuEditable::CVAR_VALUE );
 	AddItem( dispMode );
 
 	vsync.szName = "V-Sync";
-	vsync.SetCoord( 10, 128 );
+	vsync.SetCoord( pad, 128 );
 	vsync.LinkCvar( "gl_vsync" );
 	AddItem( vsync );
 
 	hdr.szName = "Overbright";
-	hdr.SetCoord( 10, 156 );
+	hdr.SetCoord( pad, 156 );
 	hdr.LinkCvar( "gl_overbright" );
 	AddItem( hdr );
 
 	fov.szName = "Field of View";
 	fov.Setup( 70.0f, 120.0f, 5.0f );
-	fov.SetRect( 10, 188, cw, 28 );
+	fov.SetRect( pad, 188, cw, 28 );
 	fov.LinkCvar( "default_fov" );
 	AddItem( fov );
 
@@ -354,28 +368,28 @@ void CMenuWndOptions::_Init()
 	AddTab( "System" );
 
 	showHud.szName = "Draw HUD";
-	showHud.SetCoord( 10, 8 );
+	showHud.SetCoord( pad, 8 );
 	showHud.LinkCvar( "hud_draw" );
 	AddItem( showHud );
 
 	showWeapon.szName = "Show Weapon Model";
-	showWeapon.SetCoord( 10, 36 );
+	showWeapon.SetCoord( pad, 36 );
 	showWeapon.LinkCvar( "r_drawviewmodel" );
 	AddItem( showWeapon );
 
 	showRadar.szName = "Show Radar/Overview";
-	showRadar.SetCoord( 10, 64 );
+	showRadar.SetCoord( pad, 64 );
 	showRadar.LinkCvar( "overview_mode" );
 	AddItem( showRadar );
 
 	developerMode.szName = "Developer Mode";
-	developerMode.SetCoord( 10, 100 );
+	developerMode.SetCoord( pad, 100 );
 	developerMode.LinkCvar( "developer" );
 	AddItem( developerMode );
 
 	systemHint.szName = "System information and diagnostics.";
 	systemHint.iFlags |= QMF_INACTIVE;
-	systemHint.SetCoord( 10, 134 );
+	systemHint.SetCoord( pad, 134 );
 	AddItem( systemHint );
 
 	SetActiveTab( 0 );
@@ -386,8 +400,8 @@ void CMenuWndOptions::_VidInit()
 	if( m_bUserMoved )
 		return;
 
-	int w = (int)(uiStatic.width * 0.72f);
-	int h = (int)(768 * 0.70f);
+	int w = (int)(uiStatic.width * 0.62f);
+	int h = (int)(768 * 0.78f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
