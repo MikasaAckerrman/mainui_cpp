@@ -51,6 +51,7 @@ struct SchemeColors
 	// Tabs / PropertySheet
 	unsigned int tabTextColor;
 	unsigned int tabSelectedTextColor;
+	unsigned int tabActiveBgColor;
 
 	// Menu
 	unsigned int menuTextColor;
