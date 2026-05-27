@@ -2,7 +2,7 @@
 WndOptions.cpp -- CS 1.6 PC-style windowed Options dialog
 Copyright (C) 2024 DragonSlayer Team
 
-CMenuFrameTabbed with Multi/Keys/Mouse/Audio/Video/System tabs.
+CMenuFrameTabbed with 8 Russian-named tabs.
 OK/Cancel/Apply buttons always visible at bottom (right-aligned).
 Each tab has real controls linked to cvars.
 */
@@ -39,15 +39,23 @@ private:
 	CMenuFrameButton btnCancel;
 	CMenuFrameButton btnApply;
 
-	// Multiplayer tab
-	CMenuField       playerName;
-	CMenuField       adminPassword;
+	// Multiplayer tab - labels
+	CMenuAction      avatarLabel;
+	CMenuAction      logoLabel;
+	CMenuAction      playerNameLabel;
+	CMenuAction      passwordLabel;
+	CMenuAction      logoHint;
+
+	// Multiplayer tab - controls
 	CMenuAction      avatarPreview;
 	CMenuFrameButton btnUpload;
 	CMenuDropDownStr modelSelect;
 	CMenuAction      logoPreview;
 	CMenuDropDownStr logoSelect;
 	CMenuFrameButton btnColor;
+	CMenuFrameButton btnAdvanced;
+	CMenuField       playerName;
+	CMenuField       adminPassword;
 
 	// Keyboard tab
 	CMenuAction    kbHint;
@@ -74,14 +82,17 @@ private:
 	CMenuCheckBox    hdr;
 	CMenuSlider      fov;
 
-	// HUD (now in System tab)
+	// HUD tab
 	CMenuCheckBox  showHud;
 	CMenuCheckBox  showWeapon;
 	CMenuCheckBox  showRadar;
 
+	// Account tab
+	CMenuAction    accountHint;
+
 	// System tab
-	CMenuAction    systemHint;
 	CMenuCheckBox  developerMode;
+	CMenuAction    systemHint;
 };
 
 static CMenuWndOptions *s_pWndOptions = NULL;
@@ -145,23 +156,29 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.62f);
-	int h = (int)(768 * 0.78f);
+	int w = (int)(uiStatic.width * 0.78f);
+	int h = (int)(768 * 0.75f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
 
-	// Content area dimensions
-	int pad = 16;
-	int cw = w - pad * 2;
-	int btnW = 120;
-	int btnH = 32;
-	int btnGap = 12;
+	// Padding and spacing
+	int pad = 24;           // outer padding from window edge
+	int cw = w - pad * 2;  // content width
+	int btnW = 150;         // button width
+	int btnH = 40;          // button height
+	int btnGap = 16;        // gap between buttons
+	int fieldH = 38;        // input/dropdown height
+	int labelGap = 8;       // gap between label and input below it
+	int groupGap = 24;      // gap between groups
+	int colGap = 64;        // gap between columns
+
+	// Content area
 	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
 	int btnY = contentH - btnH - pad;
 	int rightEdge = w - pad;
 
-	// Bottom buttons - right-aligned with 16px padding, added BEFORE any tab so always visible
+	// ---- Bottom buttons (added BEFORE any tab, so always visible) ----
 	// Order from right: Apply, Cancel, OK
 	btnApply.szName = "Apply";
 	btnApply.SetRect( rightEdge - btnW, btnY, btnW, btnH );
@@ -191,205 +208,256 @@ void CMenuWndOptions::_Init()
 	});
 	AddItem( btnOK );
 
-	// ---- TAB: Multi ----
-	AddTab( "Multi" );
+	// ---- TAB 0: Multiplayer ----
+	AddTab( (const char*)u8"\u041C\u0443\u043B\u044C\u0442\u0438\u043F\u043B\u0435\u0435\u0440" );
 
-	// 2-column grid layout
+	// Two-column layout
 	int leftColW = (int)(cw * 0.45f);
-	int rightCol = pad + leftColW + pad;
-	int rightColW = cw - leftColW - pad;
-	int fieldH = 22;
-	int labelGap = 6;
-	int groupGap = 16;
+	int rightCol = pad + leftColW + colGap;
+	int rightColW = cw - leftColW - colGap;
 
 	// Left column - Avatar section
 	int ly = pad;
 
-	avatarPreview.szName = "Avatar";
+	avatarLabel.szName = (const char*)u8"\u0410\u0432\u0430\u0442\u0430\u0440";
+	avatarLabel.iFlags |= QMF_INACTIVE;
+	avatarLabel.SetCoord( pad, ly );
+	AddItem( avatarLabel );
+
+	ly += FRAME_TEXT_HEIGHT + labelGap;
+
+	avatarPreview.szName = "";
 	avatarPreview.iFlags |= QMF_INACTIVE;
-	avatarPreview.SetRect( pad, ly, 100, 100 );
+	avatarPreview.SetRect( pad, ly, 128, 128 );
 	AddItem( avatarPreview );
 
-	btnUpload.szName = "Upload...";
-	btnUpload.SetRect( pad + 100 + 8, ly, 100, 24 );
+	btnUpload.szName = (const char*)u8"\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C...";
+	btnUpload.SetRect( pad + 128 + labelGap, ly, 110, 32 );
 	AddItem( btnUpload );
 
 	modelSelect.szName = "";
 	modelSelect.AddItem( "arctic", "arctic" );
 	modelSelect.AddItem( "guerilla", "guerilla" );
 	modelSelect.AddItem( "leet", "leet" );
-	modelSelect.SetRect( pad + 100 + 8, ly + 24 + labelGap, 140, fieldH );
+	modelSelect.SetRect( pad + 128 + labelGap, ly + 32 + labelGap, 140, fieldH );
 	AddItem( modelSelect );
 
-	ly += 100 + groupGap;
+	ly += 128 + groupGap;
 
 	// Left column - Logo section
-	logoPreview.szName = "Logo";
+	logoLabel.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F";
+	logoLabel.iFlags |= QMF_INACTIVE;
+	logoLabel.SetCoord( pad, ly );
+	AddItem( logoLabel );
+
+	ly += FRAME_TEXT_HEIGHT + labelGap;
+
+	logoPreview.szName = "";
 	logoPreview.iFlags |= QMF_INACTIVE;
-	logoPreview.SetRect( pad, ly, 100, 100 );
+	logoPreview.SetRect( pad, ly, 128, 128 );
 	AddItem( logoPreview );
 
 	logoSelect.szName = "";
 	logoSelect.AddItem( "lambda", "lambda" );
 	logoSelect.AddItem( "skull", "skull" );
 	logoSelect.AddItem( "cross", "cross" );
-	logoSelect.SetRect( pad + 100 + 8, ly, 140, fieldH );
+	logoSelect.SetRect( pad + 128 + labelGap, ly, 140, fieldH );
 	AddItem( logoSelect );
 
-	btnColor.szName = "Change Color";
-	btnColor.SetRect( pad + 100 + 8, ly + fieldH + labelGap, 120, 24 );
+	btnColor.szName = (const char*)u8"\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0446\u0432\u0435\u0442";
+	btnColor.SetRect( pad + 128 + labelGap, ly + fieldH + labelGap, 130, 32 );
 	AddItem( btnColor );
 
-	// Right column
-	int ry = pad;
+	ly += 128 + groupGap;
 
-	playerName.szName = "Player Name";
+	// Helper text
+	logoHint.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043E\u043C.";
+	logoHint.iFlags |= QMF_INACTIVE;
+	logoHint.SetCoord( pad, ly );
+	AddItem( logoHint );
+
+	ly += FRAME_TEXT_HEIGHT + groupGap;
+
+	// Advanced button
+	btnAdvanced.szName = (const char*)u8"\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E...";
+	btnAdvanced.SetRect( pad, ly, 150, 32 );
+	AddItem( btnAdvanced );
+
+	// Right column
+	int ry = 70;
+
+	playerNameLabel.szName = (const char*)u8"\u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430";
+	playerNameLabel.iFlags |= QMF_INACTIVE;
+	playerNameLabel.SetCoord( rightCol, ry );
+	AddItem( playerNameLabel );
+
+	ry += FRAME_TEXT_HEIGHT + labelGap;
+
+	playerName.szName = "";
 	playerName.iMaxLength = 32;
-	playerName.SetRect( rightCol, ry + labelGap, rightColW, fieldH );
+	playerName.SetRect( rightCol, ry, rightColW, fieldH );
 	playerName.LinkCvar( "name" );
 	AddItem( playerName );
 
-	ry += labelGap + fieldH + groupGap;
+	ry += fieldH + groupGap;
 
-	adminPassword.szName = "VIP/Admin Password";
+	passwordLabel.szName = (const char*)u8"\u041F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F VIP/Admin \u0434\u043E\u0441\u0442\u0443\u043F\u0430";
+	passwordLabel.iFlags |= QMF_INACTIVE;
+	passwordLabel.SetCoord( rightCol, ry );
+	AddItem( passwordLabel );
+
+	ry += FRAME_TEXT_HEIGHT + labelGap;
+
+	adminPassword.szName = "";
 	adminPassword.iMaxLength = 64;
 	adminPassword.bHideInput = true;
-	adminPassword.SetRect( rightCol, ry + labelGap, rightColW, fieldH );
+	adminPassword.SetRect( rightCol, ry, rightColW, fieldH );
 	adminPassword.LinkCvar( "password" );
 	AddItem( adminPassword );
 
-	// ---- TAB: Keys ----
-	AddTab( "Keys" );
+	// ---- TAB 1: Keyboard ----
+	AddTab( (const char*)u8"\u041A\u043B\u0430\u0432\u0438\u0430\u0442\u0443\u0440\u0430" );
 
-	kbHint.szName = "Use console for key binds: bind <key> <command>";
+	kbHint.szName = (const char*)u8"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043B\u0430\u0432\u0438\u0448 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0447\u0435\u0440\u0435\u0437 \u043A\u043E\u043D\u0441\u043E\u043B\u044C: bind <key> <command>";
 	kbHint.iFlags |= QMF_INACTIVE;
-	kbHint.SetCoord( pad, 8 );
+	kbHint.SetCoord( pad, pad );
 	AddItem( kbHint );
 
-	developerConsole.szName = "Enable Developer Console (~)";
-	developerConsole.SetCoord( pad, 42 );
+	developerConsole.szName = (const char*)u8"\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043A\u043E\u043D\u0441\u043E\u043B\u044C \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0430 (~)";
+	developerConsole.SetCoord( pad, pad + groupGap + FRAME_TEXT_HEIGHT );
 	developerConsole.LinkCvar( "con_enable" );
 	AddItem( developerConsole );
 
-	// ---- TAB: Mouse ----
-	AddTab( "Mouse" );
+	// ---- TAB 2: Mouse ----
+	AddTab( (const char*)u8"\u041C\u044B\u0448\u044C" );
 
-	mouseSens.szName = "Mouse Sensitivity";
+	mouseSens.szName = (const char*)u8"\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043C\u044B\u0448\u0438";
 	mouseSens.Setup( 0.5f, 20.0f, 0.5f );
-	mouseSens.SetRect( pad, 8, cw, 28 );
+	mouseSens.SetRect( pad, pad, cw, 28 );
 	mouseSens.LinkCvar( "sensitivity" );
 	AddItem( mouseSens );
 
-	rawInput.szName = "Raw Input";
-	rawInput.SetCoord( pad, 48 );
+	rawInput.szName = (const char*)u8"\u041F\u0440\u044F\u043C\u043E\u0439 \u0432\u0432\u043E\u0434";
+	rawInput.SetCoord( pad, pad + 40 );
 	rawInput.LinkCvar( "m_rawinput" );
 	AddItem( rawInput );
 
-	mouseFilter.szName = "Mouse Filter";
-	mouseFilter.SetCoord( pad, 76 );
+	mouseFilter.szName = (const char*)u8"\u0424\u0438\u043B\u044C\u0442\u0440 \u043C\u044B\u0448\u0438";
+	mouseFilter.SetCoord( pad, pad + 68 );
 	mouseFilter.LinkCvar( "m_filter" );
 	AddItem( mouseFilter );
 
-	invertMouse.szName = "Invert Mouse";
-	invertMouse.SetCoord( pad, 104 );
+	invertMouse.szName = (const char*)u8"\u0418\u043D\u0432\u0435\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043C\u044B\u0448\u044C";
+	invertMouse.SetCoord( pad, pad + 96 );
 	invertMouse.LinkCvar( "lookspring" );
 	AddItem( invertMouse );
 
-	// ---- TAB: Audio ----
-	AddTab( "Audio" );
+	// ---- TAB 3: Audio ----
+	AddTab( (const char*)u8"\u0417\u0432\u0443\u043A" );
 
-	sndVolume.szName = "Sound Effects Volume";
+	sndVolume.szName = (const char*)u8"\u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C \u0437\u0432\u0443\u043A\u043E\u0432";
 	sndVolume.Setup( 0.0f, 1.0f, 0.05f );
-	sndVolume.SetRect( pad, 8, cw, 28 );
+	sndVolume.SetRect( pad, pad, cw, 28 );
 	sndVolume.LinkCvar( "volume" );
 	AddItem( sndVolume );
 
-	musicVolume.szName = "MP3 Volume";
+	musicVolume.szName = (const char*)u8"\u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C MP3";
 	musicVolume.Setup( 0.0f, 1.0f, 0.05f );
-	musicVolume.SetRect( pad, 48, cw, 28 );
+	musicVolume.SetRect( pad, pad + 40, cw, 28 );
 	musicVolume.LinkCvar( "MP3Volume" );
 	AddItem( musicVolume );
 
-	suitVolume.szName = "HEV Suit Volume";
+	suitVolume.szName = (const char*)u8"\u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C HEV";
 	suitVolume.Setup( 0.0f, 1.0f, 0.05f );
-	suitVolume.SetRect( pad, 88, cw, 28 );
+	suitVolume.SetRect( pad, pad + 80, cw, 28 );
 	suitVolume.LinkCvar( "suitvolume" );
 	AddItem( suitVolume );
 
-	eax.szName = "Enable EAX (requires EAX-capable card)";
-	eax.SetCoord( pad, 128 );
+	eax.szName = (const char*)u8"\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C EAX";
+	eax.SetCoord( pad, pad + 120 );
 	eax.LinkCvar( "s_eax" );
 	AddItem( eax );
 
-	a3d.szName = "Enable A3D";
-	a3d.SetCoord( pad, 156 );
+	a3d.szName = (const char*)u8"\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C A3D";
+	a3d.SetCoord( pad, pad + 148 );
 	a3d.LinkCvar( "s_a3d" );
 	AddItem( a3d );
 
-	// ---- TAB: Video ----
-	AddTab( "Video" );
+	// ---- TAB 4: Video ----
+	AddTab( (const char*)u8"\u0412\u0438\u0434\u0435\u043E" );
 
-	brightness.szName = "Brightness";
+	brightness.szName = (const char*)u8"\u042F\u0440\u043A\u043E\u0441\u0442\u044C";
 	brightness.Setup( 0.0f, 3.0f, 0.1f );
-	brightness.SetRect( pad, 8, cw, 28 );
+	brightness.SetRect( pad, pad, cw, 28 );
 	brightness.LinkCvar( "brightness" );
 	AddItem( brightness );
 
-	gamma.szName = "Gamma";
+	gamma.szName = (const char*)u8"\u0413\u0430\u043C\u043C\u0430";
 	gamma.Setup( 0.5f, 3.0f, 0.1f );
-	gamma.SetRect( pad, 48, cw, 28 );
+	gamma.SetRect( pad, pad + 40, cw, 28 );
 	gamma.LinkCvar( "gamma" );
 	AddItem( gamma );
 
-	dispMode.szName = "Display Mode";
-	dispMode.AddItem( "Fullscreen", 1 );
-	dispMode.AddItem( "Windowed", 0 );
-	dispMode.SetRect( pad, 88, 200, fieldH );
+	dispMode.szName = (const char*)u8"\u0420\u0435\u0436\u0438\u043C \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F";
+	dispMode.AddItem( (const char*)u8"\u041F\u043E\u043B\u043D\u044B\u0439 \u044D\u043A\u0440\u0430\u043D", 1 );
+	dispMode.AddItem( (const char*)u8"\u041E\u043A\u043E\u043D\u043D\u044B\u0439", 0 );
+	dispMode.SetRect( pad, pad + 80, 200, fieldH );
 	dispMode.LinkCvar( "fullscreen", CMenuEditable::CVAR_VALUE );
 	AddItem( dispMode );
 
 	vsync.szName = "V-Sync";
-	vsync.SetCoord( pad, 128 );
+	vsync.SetCoord( pad, pad + 80 + fieldH + labelGap );
 	vsync.LinkCvar( "gl_vsync" );
 	AddItem( vsync );
 
 	hdr.szName = "Overbright";
-	hdr.SetCoord( pad, 156 );
+	hdr.SetCoord( pad, pad + 80 + fieldH + labelGap + 28 );
 	hdr.LinkCvar( "gl_overbright" );
 	AddItem( hdr );
 
-	fov.szName = "Field of View";
+	fov.szName = (const char*)u8"\u041F\u043E\u043B\u0435 \u0437\u0440\u0435\u043D\u0438\u044F";
 	fov.Setup( 70.0f, 120.0f, 5.0f );
-	fov.SetRect( pad, 188, cw, 28 );
+	fov.SetRect( pad, pad + 80 + fieldH + labelGap + 56 + labelGap, cw, 28 );
 	fov.LinkCvar( "default_fov" );
 	AddItem( fov );
 
-	// ---- TAB: System ----
-	AddTab( "System" );
+	// ---- TAB 5: HUD ----
+	AddTab( "HUD" );
 
-	showHud.szName = "Draw HUD";
-	showHud.SetCoord( pad, 8 );
+	showHud.szName = (const char*)u8"\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C HUD";
+	showHud.SetCoord( pad, pad );
 	showHud.LinkCvar( "hud_draw" );
 	AddItem( showHud );
 
-	showWeapon.szName = "Show Weapon Model";
-	showWeapon.SetCoord( pad, 36 );
+	showWeapon.szName = (const char*)u8"\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u043E\u0440\u0443\u0436\u0438\u0435";
+	showWeapon.SetCoord( pad, pad + 28 );
 	showWeapon.LinkCvar( "r_drawviewmodel" );
 	AddItem( showWeapon );
 
-	showRadar.szName = "Show Radar/Overview";
-	showRadar.SetCoord( pad, 64 );
+	showRadar.szName = (const char*)u8"\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0440\u0430\u0434\u0430\u0440";
+	showRadar.SetCoord( pad, pad + 56 );
 	showRadar.LinkCvar( "overview_mode" );
 	AddItem( showRadar );
 
-	developerMode.szName = "Developer Mode";
-	developerMode.SetCoord( pad, 100 );
+	// ---- TAB 6: Account ----
+	AddTab( (const char*)u8"\u0410\u043A\u043A\u0430\u0443\u043D\u0442" );
+
+	accountHint.szName = (const char*)u8"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430";
+	accountHint.iFlags |= QMF_INACTIVE;
+	accountHint.SetCoord( pad, pad );
+	AddItem( accountHint );
+
+	// ---- TAB 7: System ----
+	AddTab( (const char*)u8"\u0421\u0438\u0441\u0442\u0435\u043C\u0430" );
+
+	developerMode.szName = (const char*)u8"\u0420\u0435\u0436\u0438\u043C \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A\u0430";
+	developerMode.SetCoord( pad, pad );
 	developerMode.LinkCvar( "developer" );
 	AddItem( developerMode );
 
-	systemHint.szName = "System information and diagnostics.";
+	systemHint.szName = (const char*)u8"\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F \u043E \u0441\u0438\u0441\u0442\u0435\u043C\u0435 \u0438 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430.";
 	systemHint.iFlags |= QMF_INACTIVE;
-	systemHint.SetCoord( pad, 134 );
+	systemHint.SetCoord( pad, pad + 36 );
 	AddItem( systemHint );
 
 	SetActiveTab( 0 );
@@ -399,9 +467,8 @@ void CMenuWndOptions::_VidInit()
 {
 	if( m_bUserMoved )
 		return;
-
-	int w = (int)(uiStatic.width * 0.62f);
-	int h = (int)(768 * 0.78f);
+	int w = (int)(uiStatic.width * 0.78f);
+	int h = (int)(768 * 0.75f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );

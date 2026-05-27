@@ -91,13 +91,14 @@ protected:
 	// State
 	bool m_bDragging;
 	bool m_bResizing;
+	bool m_bNeedsAnchor;  // true until first MouseMove captures the real anchor
 	int  m_iResizeEdge;
 
 	// Set true once user drags/resizes; prevents VidInit from snapping back
 	bool m_bUserMoved;
 
-	// Captured at KeyDown — start cursor position and start window rect.
-	// Used identically for drag and resize so we never accumulate floating error.
+	// Captured on first MouseMove after drag/resize starts — avoids stale cursor
+	// on Android where uiStatic.cursorX/Y may be (0,0) at KeyDown time.
 	Point m_actionStartCursor;
 	Point m_actionStartPos;
 	Size  m_actionStartSize;
