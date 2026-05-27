@@ -2,7 +2,7 @@
 {
 	"Colors"
 	{
-		// CS 1.6 olive/military green palette
+		// CS 1.6 GoldSrc VGUI pixel-perfect palette
 		"White"				"255 255 255 255"
 		"OffWhite"			"220 220 220 255"
 		"LightGray"			"200 200 200 255"
@@ -10,15 +10,18 @@
 		"MedOlive"			"75 80 50 255"
 		"DarkOlive"			"55 58 35 255"
 		"DarkerOlive"		"35 38 22 255"
-		"TitleOlive"		"60 60 40 255"
+		"TitleOlive"		"91 93 86 255"
 		"Black"				"0 0 0 255"
 		"TransBlack"		"0 0 0 128"
 		"ListBG"			"45 50 35 230"
-		"FieldBG"			"50 55 38 230"
-		"FrameBG"			"75 75 50 230"
+		"FieldBG"			"85 96 75 230"
+		"FrameBG"			"95 104 79 230"
+		"MainBG"			"95 104 79 255"
 		"SelectionBG"		"90 90 50 255"
 		"Highlight"			"80 85 50 64"
-		"ActiveTabGreen"	"90 120 50 255"
+		"ActiveTabGreen"	"110 119 72 255"
+		"TabInactive"		"88 96 79 255"
+		"TabActiveText"		"213 200 107 255"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -33,8 +36,8 @@
 		"FrameTitleBar.DisabledBgColor"	"DarkerOlive"
 
 		// ===== Borders =====
-		"Border.Bright"					"LightGray"
-		"Border.Dark"					"DarkerOlive"
+		"Border.Bright"					"117 125 105 255"
+		"Border.Dark"					"47 52 43 255"
 		"Border.Selection"				"Black"
 
 		// ===== Buttons =====

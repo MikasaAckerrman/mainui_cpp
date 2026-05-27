@@ -19,6 +19,7 @@ GNU General Public License for more details.
 #include "Field.h"
 #include "Utils.h"
 #include "utflib.h"
+#include "TrackerScheme.h"
 
 CMenuField::CMenuField() : BaseClass()
 {
@@ -453,11 +454,18 @@ void CMenuField::Draw( void )
 	}
 	else
 	{
-		// draw the background
-		UI_FillRect( newPos, m_scSize, uiInputBgColor );
+		// GoldSrc inset style: fill with field bg, then draw sunken border
+		unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
+		unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 
-		// draw the rectangle
-		UI_DrawRectangle( newPos, m_scSize, uiInputFgColor );
+		UI_FillRect( newPos, m_scSize, fieldBg );
+
+		// Inset border: dark top+left, bright bottom+right
+		UI_FillRect( newPos.x, newPos.y, m_scSize.w, 1, dark );                    // top
+		UI_FillRect( newPos.x, newPos.y, 1, m_scSize.h, dark );                    // left
+		UI_FillRect( newPos.x, newPos.y + m_scSize.h - 1, m_scSize.w, 1, bright ); // bottom
+		UI_FillRect( newPos.x + m_scSize.w - 1, newPos.y, 1, m_scSize.h, bright ); // right
 	}
 
 	textHeight = y - (m_scChSize * 1.5f);

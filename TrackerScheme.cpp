@@ -270,20 +270,20 @@ void UI_LoadTrackerScheme( void )
 	{
 		Con_Printf( "TrackerScheme: not found, applying built-in CS 1.6 defaults\n" );
 
-		// Apply CS 1.6 olive/military green palette
-		g_Scheme.frameBgColor        = 0xE64B4B32; // 75,75,50,230
-		g_Scheme.frameTitleBarBg     = 0xFF3C3C28; // 60,60,40,255
+		// Apply CS 1.6 GoldSrc VGUI palette (pixel-perfect reference)
+		g_Scheme.frameBgColor        = 0xE65F684F; // 95,104,79, alpha 230
+		g_Scheme.frameTitleBarBg     = 0xFF5B5D56; // 91,93,86
 		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
-		g_Scheme.frameBorderColor    = 0xFF4B5032; // olive border
+		g_Scheme.frameBorderColor    = 0xFF2F342B; // dark border
 
-		g_Scheme.borderBright        = 0xFFC8C8C8; // 200,200,200,255
-		g_Scheme.borderDark          = 0xFF232616; // 35,38,22,255
+		g_Scheme.borderBright        = 0xFF757D69; // 117,125,105
+		g_Scheme.borderDark          = 0xFF2F342B; // 47,52,43
 		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
 		g_Scheme.buttonTextColor     = 0xFFFFFFFF; // white
-		g_Scheme.buttonBgColor       = 0x00000000; // transparent
+		g_Scheme.buttonBgColor       = 0xFF5B6350; // 91,99,80
 		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF; // white on hover
-		g_Scheme.buttonArmedBgColor  = 0x40505032; // olive tinted highlight
+		g_Scheme.buttonArmedBgColor  = 0xFF6B7360; // 107,115,96
 		g_Scheme.buttonDepressedTextColor = 0xFFA0A0A0; // dimmed grey
 
 		g_Scheme.labelTextColor      = 0xFFC8C8C8; // 200,200,200 light grey
@@ -299,20 +299,20 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.listHeaderTextColor = 0xFFA0A0A0;
 
 		g_Scheme.fieldTextColor      = 0xFFFFFFFF;
-		g_Scheme.fieldBgColor        = 0xE6323726; // 50,55,38,230
+		g_Scheme.fieldBgColor        = 0xE655604B; // 85,96,75, alpha 230
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
 		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 
-		g_Scheme.tabTextColor        = 0xFFA0A0A0;
-		g_Scheme.tabSelectedTextColor= 0xFFFFFFFF;
-		g_Scheme.tabActiveBgColor    = 0xFF5A7832; // 90,120,50,255
+		g_Scheme.tabTextColor        = 0xFF9C9C9C;
+		g_Scheme.tabSelectedTextColor= 0xFFD5C86B; // 213,200,107
+		g_Scheme.tabActiveBgColor    = 0xFF6E7748; // 110,119,72
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
-		g_Scheme.menuBgColor         = 0xE64B4B32; // 75,75,50,230
+		g_Scheme.menuBgColor         = 0xE65F684F; // 95,104,79,230
 		g_Scheme.menuArmedTextColor  = 0xFFFFFFFF;
 		g_Scheme.menuArmedBgColor    = 0xFF5A5A32; // 90,90,50,255
 
-		g_Scheme.bgColor             = 0xE64B4B32; // 75,75,50,230
+		g_Scheme.bgColor             = 0xE65F684F; // 95,104,79,230
 		g_Scheme.fgColor             = 0xFFFFFFFF;
 		g_Scheme.windowBgColor       = 0xE62D3223; // 45,50,35,230
 		g_Scheme.windowFgColor       = 0xFFFFFFFF;

@@ -58,13 +58,13 @@ void CMenuFrameButton::Draw()
 	bool focused = ( m_pParent && this == m_pParent->ItemAtCursor() );
 	bool pressed = m_bPressed;
 
-	// Colors — CS 1.6 style grey button, customizable via TrackerScheme
+	// Colors - GoldSrc VGUI style button, customizable via TrackerScheme
 	unsigned int schemeBg = g_Scheme.buttonBgColor;
 	unsigned int bgNormal  = schemeBg ? schemeBg : 0xFF5B6350;
-	unsigned int bgHover   = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF585858;
+	unsigned int bgHover   = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF6B7360;
 	unsigned int bgPressed = 0xFF353535;
-	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
-	unsigned int dark      = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
+	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	unsigned int dark      = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 	unsigned int textNorm  = Scheme_GetColor( g_Scheme.buttonTextColor, 0xFFFFFFFF );
 	unsigned int textFocus = Scheme_GetColor( g_Scheme.buttonArmedTextColor, 0xFFFFFFFF );
 
@@ -78,7 +78,7 @@ void CMenuFrameButton::Draw()
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
 	// Double-layer border: outer dark outline + inner raised/sunken bevel
-	unsigned int outerDark = Scheme_GetColor( g_Scheme.borderDark, 0xFF222222 );
+	unsigned int outerDark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 
 	// Outer dark outline (1px all around)
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, outerDark );

@@ -30,7 +30,7 @@ GNU General Public License for more details.
 #include "BitmapFont.h"
 #include "utflib.h"
 
-#define DEFAULT_MENUFONT "Trebuchet MS"
+#define DEFAULT_MENUFONT "Tahoma"
 #define DEFAULT_CONFONT  "Tahoma"
 #define DEFAULT_WEIGHT   500
 

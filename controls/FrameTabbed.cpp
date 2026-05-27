@@ -98,36 +98,30 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabY = m_scPos.y + m_iTitleH;
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
-	// CS 1.6 PC card-style tab colors from scheme
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6B7348 );
-	unsigned int inactiveBg = 0xFF4F5647;
-	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF6B745E );
-	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342C );
+	// GoldSrc VGUI tab colors
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6E7748 );
+	unsigned int inactiveBg = 0xFF58604F; // 88,96,79
+	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
-	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD6C66A );
+	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD5C86B );
 
 	int hovered = TabAtCursor();
-	int inactiveOffset = 2; // inactive tabs drawn 2px lower
 
 	for( int i = 0; i < m_iNumTabs; i++ )
 	{
 		int x = m_scPos.x + i * tabW;
-		int ty, th;
+		int ty = tabY;
+		int th = m_iTabH;
 		unsigned int bg, fg;
 
 		if( i == m_iActiveTab )
 		{
-			// Active tab: full height, merges with content area
-			ty = tabY;
-			th = m_iTabH;
 			bg = activeBg;
 			fg = tabSelText;
 		}
 		else
 		{
-			// Inactive tab: offset down 2px, shorter
-			ty = tabY + inactiveOffset;
-			th = m_iTabH - inactiveOffset;
 			bg = inactiveBg;
 			fg = ( i == hovered ) ? tabSelText : tabText;
 		}
@@ -135,21 +129,19 @@ void CMenuFrameTabbed::DrawTabs()
 		// Tab background fill
 		UI_FillRect( x, ty, tabW, th, bg );
 
-		// Raised bevel: bright on top + left
-		UI_FillRect( x, ty, tabW, 1, bright );       // top edge
-		UI_FillRect( x, ty, 1, th, bright );          // left edge
-
-		// Raised bevel: dark on bottom + right
-		UI_FillRect( x + tabW - 1, ty, 1, th, dark ); // right edge
+		// Border system: top bright, left bright, right dark
+		UI_FillRect( x, ty, tabW, 1, bright );        // top edge
+		UI_FillRect( x, ty, 1, th, bright );           // left edge
+		UI_FillRect( x + tabW - 1, ty, 1, th, dark );  // right edge
 
 		if( i != m_iActiveTab )
 		{
-			// Inactive tabs get a bottom border
+			// Inactive tabs: bottom dark border
 			UI_FillRect( x, ty + th - 1, tabW, 1, dark );
 		}
-		// Active tab: no bottom border (merges with content area below)
+		// Active tab: NO bottom border (merges with content area below)
 
-		// Tab label text
+		// Tab label text - centered, using hSmallFont (Tahoma)
 		UI_DrawString( uiStatic.hSmallFont, x, ty, tabW, th,
 			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
 	}
