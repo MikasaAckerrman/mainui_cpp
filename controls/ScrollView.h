@@ -23,9 +23,6 @@ private:
 	bool IsRectVisible( Point pt, Size sz );
 	void DrawScrollBar();
 
-	Point m_scScrollBarPos;
-	Size  m_scScrollBarSize;
-	bool  m_bScrollBarSliding;
 	bool  m_bDisableScrolling; // can't actually scroll due to item placement
 	bool  m_bHoldingMouse1;
 	bool  m_bGestureOnContent; // true if gesture started in content area (not scrollbar)

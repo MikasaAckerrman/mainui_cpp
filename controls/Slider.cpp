@@ -194,9 +194,11 @@ void CMenuSlider::Draw( void )
 	m_flCurValue = bound( m_flMinValue, m_flCurValue, m_flMaxValue );
 
 	// calc slider position
-	sliderX = m_scPos.x + (m_iSliderOutlineWidth/2) // start
-		+ ( ( m_flCurValue - m_flMinValue ) / ( m_flMaxValue - m_flMinValue ) )  // calc fractional part
-		* ( m_scSize.w - m_iSliderOutlineWidth - (m_scCenterBox.w) );
+	float legacyFrac = 0.0f;
+	if( m_flMaxValue > m_flMinValue )
+		legacyFrac = ( m_flCurValue - m_flMinValue ) / ( m_flMaxValue - m_flMinValue );
+	sliderX = m_scPos.x + (m_iSliderOutlineWidth/2)
+		+ (int)( legacyFrac * ( m_scSize.w - m_iSliderOutlineWidth - (m_scCenterBox.w) ) );
 
 	// Frame-style programmatic drawing: sunken groove track + raised bevel thumb
 	if( m_bInsideFrame )
@@ -226,7 +228,8 @@ void CMenuSlider::Draw( void )
 		if( thumbH < 12 ) thumbH = 12;
 
 		// Recalculate thumb position using actual programmatic thumb width
-		float fraction = ( m_flCurValue - m_flMinValue ) / ( m_flMaxValue - m_flMinValue );
+		float range = m_flMaxValue - m_flMinValue;
+		float fraction = ( range > 0.0f ) ? ( m_flCurValue - m_flMinValue ) / range : 0.0f;
 		int thumbX = m_scPos.x + (int)( fraction * (float)( m_scSize.w - thumbW ) );
 		int thumbY = m_scPos.y + m_scSize.h / 2 - thumbH / 2;
 

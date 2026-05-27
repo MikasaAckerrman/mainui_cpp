@@ -79,6 +79,7 @@ int CMenuFrameTabbed::TabAtCursor()
 	int tabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
 	int tabY = m_scPos.y + titleH;
 	int tabW = m_scSize.w / m_iNumTabs;
+	if( tabW <= 0 ) return -1;
 
 	if( uiStatic.cursorY < tabY || uiStatic.cursorY > tabY + tabH )
 		return -1;

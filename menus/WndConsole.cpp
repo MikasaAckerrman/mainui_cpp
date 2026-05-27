@@ -366,6 +366,8 @@ void CMenuWndConsole::Draw()
 	if( lastVisibleFromBottom >= m_iLineCount )
 		lastVisibleFromBottom = m_iLineCount - 1;
 
+	HFont drawFont = uiStatic.hConsoleFont ? uiStatic.hConsoleFont : uiStatic.hSmallFont;
+
 	for( int i = lastVisibleFromBottom; i >= firstVisibleFromBottom; i-- )
 	{
 		// i=0 is the newest line, i=1 is one before that, etc.
@@ -377,7 +379,7 @@ void CMenuWndConsole::Draw()
 			break;
 
 		unsigned int color = m_lineColors[ringIdx];
-		UI_DrawString( uiStatic.hConsoleFont, contentX, drawY, contentW, lineH,
+		UI_DrawString( drawFont, contentX, drawY, contentW, lineH,
 			m_lines[ringIdx], color, lineH, QM_LEFT, ETF_FORCECOL | ETF_NO_WRAP );
 	}
 
