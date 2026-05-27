@@ -359,6 +359,7 @@ void CWindowStack::KeyDownEvent( int key )
 				if( stack[i]->IsRoot() )
 				{
 					active = i;
+					stack[i]->MouseMove( uiStatic.cursorX, uiStatic.cursorY );
 					stack[i]->KeyDown( key );
 					return;
 				}
@@ -371,6 +372,7 @@ void CWindowStack::KeyDownEvent( int key )
 					uiStatic.cursorY >= pos.y && uiStatic.cursorY <= pos.y + sz.h )
 				{
 					active = i;
+					stack[i]->MouseMove( uiStatic.cursorX, uiStatic.cursorY );
 					stack[i]->KeyDown( key );
 					return;
 				}
