@@ -92,6 +92,9 @@ protected:
 	bool m_bResizing;
 	int  m_iResizeEdge;
 
+	// Set true once user drags/resizes; prevents VidInit from snapping back
+	bool m_bUserMoved;
+
 	// Captured at KeyDown — start cursor position and start window rect.
 	// Used identically for drag and resize so we never accumulate floating error.
 	Point m_actionStartCursor;

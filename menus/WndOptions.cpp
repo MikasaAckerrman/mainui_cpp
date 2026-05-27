@@ -397,6 +397,9 @@ void CMenuWndOptions::_Init()
 
 void CMenuWndOptions::_VidInit()
 {
+	if( m_bUserMoved )
+		return;
+
 	int w = (int)(uiStatic.width * 0.72f);
 	int h = (int)(768 * 0.70f);
 	int x = (uiStatic.width - w) / 2;
