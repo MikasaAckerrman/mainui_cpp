@@ -4,7 +4,7 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar (28px) with text and close button (18x18 bevel box with X glyph)
+- Title bar (32px) with text and close button (24x24 bevel box with X glyph)
 - Double border (1px outer dark outline + 1px inner raised bevel)
 - Sunken groove separator below title bar
 - Drag from anywhere in the window
