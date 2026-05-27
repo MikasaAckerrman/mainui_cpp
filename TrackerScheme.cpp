@@ -278,14 +278,14 @@ void UI_LoadTrackerScheme( void )
 
 		// Apply CS 1.6 GoldSrc VGUI palette (pixel-perfect reference)
 		g_Scheme.frameBgColor        = 0xE65F684E; // 95,104,78, alpha 230
-		g_Scheme.frameTitleBarBg     = 0xFF5E6058; // 94,96,88
+		g_Scheme.frameTitleBarBg     = 0xE65F684F; // matches frameBgColor - title blends with body
 		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
-		g_Scheme.frameBorderColor    = 0xFF30342B; // dark border
-		g_Scheme.frameTitleBarTop    = 0xFF7A7D73; // title bar top edge
-		g_Scheme.frameTitleBarBottom = 0xFF363930; // title bar bottom edge
+		g_Scheme.frameBorderColor    = 0xC8282C24; // dark border, semi-transparent
+		g_Scheme.frameTitleBarTop    = 0xFF697259; // subtle top edge
+		g_Scheme.frameTitleBarBottom = 0xFF4B543B; // subtle bottom separator
 
-		g_Scheme.borderBright        = 0xFF5F6558; // 95,101,88
-		g_Scheme.borderDark          = 0xFF30342B; // 48,52,43
+		g_Scheme.borderBright        = 0xC85F6558; // 95,101,88, alpha 200
+		g_Scheme.borderDark          = 0xC8282C24; // 40,44,36, alpha 200
 		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
 		g_Scheme.buttonTextColor     = 0xFFFFFFFF; // white
@@ -311,10 +311,10 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
 		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 
-		g_Scheme.tabTextColor        = 0xFF9C9C9C;
+		g_Scheme.tabTextColor        = 0xFFDCDCDC; // OffWhite for inactive tabs
 		g_Scheme.tabSelectedTextColor= 0xFFBFB85E; // 191,184,94
-		g_Scheme.tabActiveBgColor    = 0xFF5E6542; // 94,101,66
-		g_Scheme.tabInactiveBgColor  = 0xFF58604F; // 88,96,79
+		g_Scheme.tabActiveBgColor    = 0xE65D664D; // nearly same as frameBg
+		g_Scheme.tabInactiveBgColor  = 0xE64E5643; // slightly darker than frame
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
 		g_Scheme.menuBgColor         = 0xE65F684F; // 95,104,79,230

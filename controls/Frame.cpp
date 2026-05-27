@@ -146,21 +146,20 @@ void CMenuFrame::DrawBackground()
 
 void CMenuFrame::DrawTitleBar()
 {
-	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF5E6058 );
+	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
-	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
 
-	// Title bar 3-band gradient (GoldSrc style)
-	unsigned int titleTop = Scheme_GetColor( g_Scheme.frameTitleBarTop, 0xFF7A7D73 );
-	unsigned int titleMain = titleBg;
-	unsigned int titleBot = Scheme_GetColor( g_Scheme.frameTitleBarBottom, 0xFF363930 );
+	// Title bar uses the SAME color as frame body so it blends seamlessly (CS 1.6 style)
+	unsigned int titleTop = Scheme_GetColor( g_Scheme.frameTitleBarTop, 0xFF697259 );
+	unsigned int titleBot = Scheme_GetColor( g_Scheme.frameTitleBarBottom, 0xFF4B543B );
 
-	// Top edge - 1px bright
+	// Top edge - 1px subtle highlight
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, titleTop );
-	// Main body
-	UI_FillRect( m_scPos.x, m_scPos.y + 1, m_scSize.w, m_iTitleH - 2, titleMain );
-	// Bottom edge - 1px dark
+	// Main body - same as frame background
+	UI_FillRect( m_scPos.x, m_scPos.y + 1, m_scSize.w, m_iTitleH - 2, bgColor );
+	// Bottom edge - 1px subtle separator
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, titleBot );
 
 	// Title text - Tahoma 11px, padding-left 8px, vertically centered.
@@ -224,25 +223,18 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF30342B );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xC8282C24 );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;
 	int w = m_scSize.w;
 	int h = m_scSize.h;
 
-	// Layer 1: outer dark outline (1px, all around)
-	UI_FillRect( x - 2, y - 2, w + 4, 1, dark );     // top
-	UI_FillRect( x - 2, y + h + 1, w + 4, 1, dark );  // bottom
-	UI_FillRect( x - 2, y - 2, 1, h + 4, dark );      // left
-	UI_FillRect( x + w + 1, y - 2, 1, h + 4, dark );  // right
-
-	// Layer 2: inner raised bevel (1px, bright top+left, dark bottom+right)
-	UI_FillRect( x - 1, y - 1, w + 2, 1, bright );    // top (bright)
-	UI_FillRect( x - 1, y - 1, 1, h + 2, bright );    // left (bright)
-	UI_FillRect( x - 1, y + h, w + 2, 1, dark );      // bottom (dark)
-	UI_FillRect( x + w, y - 1, 1, h + 2, dark );      // right (dark)
+	// Single 1px outer dark outline (thin, soft - CS 1.6 style)
+	UI_FillRect( x - 1, y - 1, w + 2, 1, dark );     // top
+	UI_FillRect( x - 1, y + h, w + 2, 1, dark );     // bottom
+	UI_FillRect( x - 1, y - 1, 1, h + 2, dark );     // left
+	UI_FillRect( x + w, y - 1, 1, h + 2, dark );     // right
 }
 
 void CMenuFrame::DrawResizeGrip()
