@@ -407,6 +407,15 @@ bool CMenuFrame::KeyUp( int key )
 {
 	if( UI::Key::IsLeftMouse( key ) )
 	{
+		// Close button takes priority over pending drag/resize
+		if( !m_bDragging && !m_bResizing && IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
+		{
+			m_bDragPending = false;
+			m_bResizePending = false;
+			Hide();
+			return true;
+		}
+
 		if( m_bDragPending )
 		{
 			m_bDragPending = false;
@@ -428,12 +437,6 @@ bool CMenuFrame::KeyUp( int key )
 		if( m_bDragging )
 		{
 			m_bDragging = false;
-			return true;
-		}
-
-		if( IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
-		{
-			Hide();
 			return true;
 		}
 	}
