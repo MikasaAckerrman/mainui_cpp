@@ -99,12 +99,12 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
 	// CS 1.6 PC card-style tab colors from scheme
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6F7A45 );
-	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.borderDark, 0xFF4E5645 );
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6B7348 );
+	unsigned int inactiveBg = 0xFF4F5647;
 	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF6B745E );
 	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342C );
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
-	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD7C76A );
+	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD6C66A );
 
 	int hovered = TabAtCursor();
 	int inactiveOffset = 2; // inactive tabs drawn 2px lower

@@ -4,7 +4,7 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar (32px) with text and close button (24x24 bevel box with X glyph)
+- Title bar (40px) with text and close button (30x30 bevel box with X glyph)
 - Double border (1px outer dark outline + 1px inner raised bevel)
 - Sunken groove separator below title bar
 - Drag from anywhere in the window
@@ -18,8 +18,8 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-// PC CS 1.6 original = 32px title bar (confirmed from source-engine PaintBackground)
-#define FRAME_TITLE_HEIGHT 32  // logical pixels
+// PC CS 1.6 original = 40px title bar (confirmed from source-engine PaintBackground)
+#define FRAME_TITLE_HEIGHT 40  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width
@@ -95,11 +95,6 @@ protected:
 
 	// Set true once user drags/resizes; prevents VidInit from snapping back
 	bool m_bUserMoved;
-
-	// Deferred drag/resize: KeyDown sets pending; MouseMove converts to active.
-	// This avoids capturing stale uiStatic.cursorX/Y on Android touch (often 0,0).
-	bool m_bDragPending;
-	bool m_bResizePending;
 
 	// Captured at KeyDown — start cursor position and start window rect.
 	// Used identically for drag and resize so we never accumulate floating error.
