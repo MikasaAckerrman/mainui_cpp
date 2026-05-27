@@ -2,22 +2,23 @@
 {
 	"Colors"
 	{
-		// CS 1.6 original neutral grey palette
+		// CS 1.6 olive/military green palette
 		"White"				"255 255 255 255"
 		"OffWhite"			"220 220 220 255"
 		"LightGray"			"200 200 200 255"
 		"DullWhite"			"160 160 160 255"
-		"MedGray"			"85 85 85 255"
-		"DarkGray"			"64 64 64 255"
-		"DarkerGray"		"40 40 40 255"
-		"TitleGray"			"75 75 75 255"
+		"MedOlive"			"75 80 50 255"
+		"DarkOlive"			"55 58 35 255"
+		"DarkerOlive"		"35 38 22 255"
+		"TitleOlive"		"60 60 40 255"
 		"Black"				"0 0 0 255"
 		"TransBlack"		"0 0 0 128"
-		"ListBG"			"45 45 45 230"
-		"FieldBG"			"50 50 50 230"
-		"FrameBG"			"60 60 60 230"
-		"SelectionBG"		"74 74 90 255"
-		"Highlight"			"80 80 80 64"
+		"ListBG"			"45 50 35 230"
+		"FieldBG"			"50 55 38 230"
+		"FrameBG"			"75 75 50 230"
+		"SelectionBG"		"90 90 50 255"
+		"Highlight"			"80 85 50 64"
+		"ActiveTabGreen"	"90 120 50 255"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -26,14 +27,14 @@
 		// ===== Frame / Windows =====
 		"Frame.BgColor"					"FrameBG"
 		"Frame.OutOfFocusBgColor"		"FrameBG"
-		"FrameTitleBar.BgColor"			"TitleGray"
+		"FrameTitleBar.BgColor"			"TitleOlive"
 		"FrameTitleBar.TextColor"		"White"
 		"FrameTitleBar.DisabledTextColor" "DullWhite"
-		"FrameTitleBar.DisabledBgColor"	"DarkerGray"
+		"FrameTitleBar.DisabledBgColor"	"DarkerOlive"
 
 		// ===== Borders =====
 		"Border.Bright"					"LightGray"
-		"Border.Dark"					"DarkerGray"
+		"Border.Dark"					"DarkerOlive"
 		"Border.Selection"				"Black"
 
 		// ===== Buttons =====
@@ -53,8 +54,8 @@
 		"Label.TextColor"				"LightGray"
 		"Label.TextBrightColor"			"White"
 		"Label.TextDullColor"			"DullWhite"
-		"Label.DisabledFgColor1"		"DarkGray"
-		"Label.DisabledFgColor2"		"DarkerGray"
+		"Label.DisabledFgColor1"		"DarkOlive"
+		"Label.DisabledFgColor2"		"DarkerOlive"
 
 		// ===== List / Table =====
 		"ListPanel.TextColor"			"White"
@@ -79,11 +80,12 @@
 		"TextEntry.SelectedBgColor"		"SelectionBG"
 		"TextEntry.CursorColor"			"White"
 		"TextEntry.DisabledTextColor"	"DullWhite"
-		"TextEntry.DisabledBgColor"		"DarkerGray"
+		"TextEntry.DisabledBgColor"		"DarkerOlive"
 
 		// ===== Tabs / PropertySheet =====
 		"PropertySheet.TextColor"		"DullWhite"
 		"PropertySheet.SelectedTextColor" "White"
+		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
 
 		// ===== Menu =====
 		"Menu.TextColor"				"White"
@@ -93,20 +95,20 @@
 
 		// ===== Scrollbar =====
 		"ScrollBarButton.FgColor"		"DullWhite"
-		"ScrollBarButton.BgColor"		"DarkerGray"
+		"ScrollBarButton.BgColor"		"DarkerOlive"
 		"ScrollBarButton.ArmedFgColor"	"White"
-		"ScrollBarButton.ArmedBgColor"	"DarkerGray"
-		"ScrollBarSlider.FgColor"		"DarkGray"
-		"ScrollBarSlider.BgColor"		"DarkerGray"
+		"ScrollBarButton.ArmedBgColor"	"DarkerOlive"
+		"ScrollBarSlider.FgColor"		"DarkOlive"
+		"ScrollBarSlider.BgColor"		"DarkerOlive"
 
 		// ===== Slider =====
 		"Slider.NobColor"				"LightGray"
 		"Slider.TextColor"				"White"
-		"Slider.TrackColor"				"DarkGray"
+		"Slider.TrackColor"				"DarkOlive"
 
 		// ===== Tooltip =====
 		"Tooltip.TextColor"				"White"
-		"Tooltip.BgColor"				"TitleGray"
+		"Tooltip.BgColor"				"TitleOlive"
 
 		// ===== Generic panel =====
 		"Panel.FgColor"					"White"

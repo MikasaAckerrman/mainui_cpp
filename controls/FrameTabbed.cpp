@@ -99,7 +99,7 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
 	// CS 1.6 PC card-style tab colors from scheme
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF3C3C3C );
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF5A7832 );
 	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
 	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
 	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );

@@ -208,6 +208,8 @@ static void BaseSettingsHandler( const char *key, const char *value )
 		g_Scheme.tabTextColor = color;
 	else if( !stricmp( key, "PropertySheet.SelectedTextColor" ) )
 		g_Scheme.tabSelectedTextColor = color;
+	else if( !stricmp( key, "PropertySheet.ActiveTabBgColor" ) )
+		g_Scheme.tabActiveBgColor = color;
 
 	// Menu
 	else if( !stricmp( key, "Menu.TextColor" ) )
@@ -268,50 +270,51 @@ void UI_LoadTrackerScheme( void )
 	{
 		Con_Printf( "TrackerScheme: not found, applying built-in CS 1.6 defaults\n" );
 
-		// Apply CS 1.6 original neutral grey palette
-		g_Scheme.frameBgColor        = 0xE63C3C3C; // 60,60,60,230
-		g_Scheme.frameTitleBarBg     = 0xFF4B4B4B; // 75,75,75,255
+		// Apply CS 1.6 olive/military green palette
+		g_Scheme.frameBgColor        = 0xE64B4B32; // 75,75,50,230
+		g_Scheme.frameTitleBarBg     = 0xFF3C3C28; // 60,60,40,255
 		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
-		g_Scheme.frameBorderColor    = 0xFF5C5C5C; // 92,92,92,255
+		g_Scheme.frameBorderColor    = 0xFF4B5032; // olive border
 
 		g_Scheme.borderBright        = 0xFFC8C8C8; // 200,200,200,255
-		g_Scheme.borderDark          = 0xFF282828; // 40,40,40,255
+		g_Scheme.borderDark          = 0xFF232616; // 35,38,22,255
 		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
 		g_Scheme.buttonTextColor     = 0xFFFFFFFF; // white
 		g_Scheme.buttonBgColor       = 0x00000000; // transparent
 		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF; // white on hover
-		g_Scheme.buttonArmedBgColor  = 0x40505050; // subtle grey highlight
+		g_Scheme.buttonArmedBgColor  = 0x40505032; // olive tinted highlight
 		g_Scheme.buttonDepressedTextColor = 0xFFA0A0A0; // dimmed grey
 
 		g_Scheme.labelTextColor      = 0xFFC8C8C8; // 200,200,200 light grey
 		g_Scheme.labelBrightColor    = 0xFFFFFFFF; // white
 		g_Scheme.labelDimColor       = 0xFFA0A0A0; // 160,160,160
-		g_Scheme.labelDisabledFg1    = 0xFF404040;
-		g_Scheme.labelDisabledFg2    = 0xFF282828;
+		g_Scheme.labelDisabledFg1    = 0xFF373A23; // 55,58,35
+		g_Scheme.labelDisabledFg2    = 0xFF232616; // 35,38,22
 
 		g_Scheme.listTextColor       = 0xFFFFFFFF;
-		g_Scheme.listBgColor         = 0xE62D2D2D; // 45,45,45,230
+		g_Scheme.listBgColor         = 0xE62D3223; // 45,50,35,230
 		g_Scheme.listSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.listSelectedBgColor = 0xFF4A4A5A; // blue-grey selection
+		g_Scheme.listSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 		g_Scheme.listHeaderTextColor = 0xFFA0A0A0;
 
 		g_Scheme.fieldTextColor      = 0xFFFFFFFF;
-		g_Scheme.fieldBgColor        = 0xE6323232; // 50,50,50,230
+		g_Scheme.fieldBgColor        = 0xE6323726; // 50,55,38,230
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.fieldSelectedBgColor = 0xFF4A4A5A;
+		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 
 		g_Scheme.tabTextColor        = 0xFFA0A0A0;
 		g_Scheme.tabSelectedTextColor= 0xFFFFFFFF;
+		g_Scheme.tabActiveBgColor    = 0xFF5A7832; // 90,120,50,255
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
-		g_Scheme.menuBgColor         = 0xE63C3C3C;
+		g_Scheme.menuBgColor         = 0xE64B4B32; // 75,75,50,230
 		g_Scheme.menuArmedTextColor  = 0xFFFFFFFF;
-		g_Scheme.menuArmedBgColor    = 0xFF4A4A5A;
+		g_Scheme.menuArmedBgColor    = 0xFF5A5A32; // 90,90,50,255
 
-		g_Scheme.bgColor             = 0xE63C3C3C;
+		g_Scheme.bgColor             = 0xE64B4B32; // 75,75,50,230
 		g_Scheme.fgColor             = 0xFFFFFFFF;
-		g_Scheme.windowBgColor       = 0xE62D2D2D;
+		g_Scheme.windowBgColor       = 0xE62D3223; // 45,50,35,230
 		g_Scheme.windowFgColor       = 0xFFFFFFFF;
 
 		// Also update legacy mainui globals
