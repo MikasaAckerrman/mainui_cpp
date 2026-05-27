@@ -81,14 +81,12 @@ protected:
 	int HitTestResize( int x, int y );
 
 	// Drag/resize update primitives — apply state given an absolute cursor (x,y).
-	// Called from MouseMove() (primary) and from ApplyDrag/ApplyResize in Draw()
-	// (idempotent fallback for the case where MouseMove was missed).
+	// Called exclusively from MouseMove() where coordinates are always real.
 	void UpdateDrag( int x, int y );
 	void UpdateResize( int x, int y );
 
-	// Legacy hooks that re-apply state from uiStatic.cursorX/Y. Kept so subclasses
-	// like CMenuWndConsole that override Draw can still call them; they are
-	// idempotent with the MouseMove path (same start state → same final state).
+	// Legacy wrappers that call UpdateDrag/UpdateResize with uiStatic.cursorX/Y.
+	// NOT safe to call from Draw() on Android (stale coordinates). Kept for API.
 	void ApplyResize();
 	void ApplyDrag();
 
