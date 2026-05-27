@@ -86,7 +86,7 @@ bool CMenuScrollView::KeyDown( int key )
 					int thumbH = (int)((float)visibleH / (float)m_iMax * trackH);
 					if( thumbH < 16 ) thumbH = 16;
 
-					int scrollRange = m_iMax - visibleH;
+					int scrollRange = ( m_iMax > visibleH ) ? m_iMax - visibleH : 0;
 					int thumbRange = trackH - thumbH;
 					int thumbY = trackTop;
 					if( scrollRange > 0 && thumbRange > 0 )
@@ -110,7 +110,8 @@ bool CMenuScrollView::KeyDown( int key )
 				}
 
 				// Consume the click so children don't get it
-				newPos = bound( 0, newPos, m_iMax - m_scSize.h );
+				int maxScroll = ( m_iMax > m_scSize.h ) ? m_iMax - m_scSize.h : 0;
+				newPos = bound( 0, newPos, maxScroll );
 				if( newPos != m_iPos )
 				{
 					m_iPos = newPos;
@@ -126,7 +127,8 @@ bool CMenuScrollView::KeyDown( int key )
 		}
 
 		// TODO: overscrolling
-		newPos = bound( 0, newPos, m_iMax - m_scSize.h );
+		int maxScroll = ( m_iMax > m_scSize.h ) ? m_iMax - m_scSize.h : 0;
+		newPos = bound( 0, newPos, maxScroll );
 
 		// recalc
 		if( newPos != m_iPos )
@@ -176,7 +178,7 @@ bool CMenuScrollView::MouseMove( int x, int y )
 
 		if( thumbRange > 0 )
 		{
-			int scrollRange = m_iMax - visibleH;
+			int scrollRange = ( m_iMax > visibleH ) ? m_iMax - visibleH : 0;
 			int dy = y - m_iScrollBarDragStartY;
 			int newPos = m_iScrollBarDragStartPos + (int)((float)dy / (float)thumbRange * scrollRange);
 			newPos = bound( 0, newPos, scrollRange );
@@ -298,7 +300,7 @@ void CMenuScrollView::DrawScrollBar()
 	if( thumbH < 16 ) thumbH = 16;
 	if( thumbH > trackH ) thumbH = trackH;
 
-	int scrollRange = m_iMax - visibleH;
+	int scrollRange = ( m_iMax > visibleH ) ? m_iMax - visibleH : 0;
 	int thumbRange = trackH - thumbH;
 	int thumbY = trackTop;
 	if( scrollRange > 0 && thumbRange > 0 )
@@ -348,7 +350,8 @@ void CMenuScrollView::Draw()
 			newPos -= ( uiStatic.cursorY - m_HoldingPoint.y ) / 2;
 
 			// TODO: overscrolling
-			newPos = bound( 0, newPos, m_iMax - m_scSize.h );
+			int maxScroll = ( m_iMax > m_scSize.h ) ? m_iMax - m_scSize.h : 0;
+			newPos = bound( 0, newPos, maxScroll );
 
 			// recalc
 			if( newPos != m_iPos )
