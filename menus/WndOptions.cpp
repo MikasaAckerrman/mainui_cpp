@@ -40,17 +40,11 @@ private:
 	public:
 		void Draw() override
 		{
-			unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-			unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
-
 			// Dark fill inside
 			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, 0xFF1A1A1A );
 
 			// GoldSrc inset border: dark top+left, bright bottom+right
-			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, dark );                    // top
-			UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, dark );                    // left
-			UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, bright ); // bottom
-			UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, bright ); // right
+			DrawGoldSrcInset( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h );
 		}
 	};
 
@@ -64,16 +58,11 @@ private:
 		{
 			bool focused = ( m_pParent && this == m_pParent->ItemAtCursor() );
 			unsigned int bg = focused ? 0xFF6B7360 : 0xFF5B6350;
-			unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-			unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 
 			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
 			// Raised border
-			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, bright );
-			UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, bright );
-			UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, dark );
-			UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, dark );
+			DrawGoldSrcRaised( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h );
 
 			// Draw eye glyph (simple ellipse shape)
 			unsigned int glyphColor = 0xFFFFFFFF;
@@ -99,17 +88,12 @@ private:
 	public:
 		void Draw() override
 		{
-			unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-			unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 			unsigned int bg = 0xFF4A4A4A;
 
 			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
 			// Raised border
-			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, bright );
-			UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, bright );
-			UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, dark );
-			UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, dark );
+			DrawGoldSrcRaised( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h );
 
 			// Draw "S" shape for Steam
 			unsigned int sColor = 0xFFFFFFFF;

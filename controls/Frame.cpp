@@ -9,28 +9,6 @@ Copyright (C) 2024 DragonSlayer Team
 #include "Utils.h"
 #include "keydefs.h"
 
-// Draw GoldSrc-style inset border (sunken look: dark top+left, bright bottom+right)
-static void DrawGoldSrcInset(int x, int y, int w, int h)
-{
-	unsigned int dark = Scheme_GetColor(g_Scheme.borderDark, 0xFF2F342B);
-	unsigned int bright = Scheme_GetColor(g_Scheme.borderBright, 0xFF757D69);
-	UI_FillRect(x, y, w, 1, dark);            // top
-	UI_FillRect(x, y, 1, h, dark);            // left
-	UI_FillRect(x, y + h - 1, w, 1, bright);  // bottom
-	UI_FillRect(x + w - 1, y, 1, h, bright);  // right
-}
-
-// Draw GoldSrc-style raised border (raised look: bright top+left, dark bottom+right)
-static void DrawGoldSrcRaised(int x, int y, int w, int h)
-{
-	unsigned int dark = Scheme_GetColor(g_Scheme.borderDark, 0xFF2F342B);
-	unsigned int bright = Scheme_GetColor(g_Scheme.borderBright, 0xFF757D69);
-	UI_FillRect(x, y, w, 1, bright);          // top
-	UI_FillRect(x, y, 1, h, bright);          // left
-	UI_FillRect(x, y + h - 1, w, 1, dark);    // bottom
-	UI_FillRect(x + w - 1, y, 1, h, dark);    // right
-}
-
 CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 {
 	m_szTitle = title;
@@ -116,11 +94,17 @@ void CMenuFrame::DrawBackground()
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH, m_scSize.w, m_scSize.h - m_iTitleH, bgColor );
 
 	// GoldSrc subtle noise/grain effect - sparse grid, position-based hash
+	// Skip noise on very small windows where it would be imperceptible
+	int areaW = m_scSize.w;
+	int areaH = m_scSize.h - m_iTitleH;
+	if( areaW * areaH < 10000 )
+		return;
+
 	int startX = m_scPos.x;
 	int startY = m_scPos.y + m_iTitleH;
-	int endX = m_scPos.x + m_scSize.w;
-	int endY = m_scPos.y + m_scSize.h;
-	int step = 3; // every 3rd pixel
+	int endX = m_scPos.x + areaW;
+	int endY = m_scPos.y + m_iTitleH + areaH;
+	int step = 6; // every 6th pixel - sparser for performance
 
 	unsigned int r = (bgColor >> 16) & 0xFF;
 	unsigned int g = (bgColor >> 8) & 0xFF;

@@ -456,16 +456,11 @@ void CMenuField::Draw( void )
 	{
 		// GoldSrc inset style: fill with field bg, then draw sunken border
 		unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
-		unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-		unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 
 		UI_FillRect( newPos, m_scSize, fieldBg );
 
 		// Inset border: dark top+left, bright bottom+right
-		UI_FillRect( newPos.x, newPos.y, m_scSize.w, 1, dark );                    // top
-		UI_FillRect( newPos.x, newPos.y, 1, m_scSize.h, dark );                    // left
-		UI_FillRect( newPos.x, newPos.y + m_scSize.h - 1, m_scSize.w, 1, bright ); // bottom
-		UI_FillRect( newPos.x + m_scSize.w - 1, newPos.y, 1, m_scSize.h, bright ); // right
+		DrawGoldSrcInset( newPos.x, newPos.y, m_scSize.w, m_scSize.h );
 	}
 
 	textHeight = y - (m_scChSize * 1.5f);

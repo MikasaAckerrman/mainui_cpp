@@ -82,4 +82,26 @@ inline unsigned int Scheme_GetColor( unsigned int schemeColor, unsigned int fall
 	return schemeColor ? schemeColor : fallback;
 }
 
+// GoldSrc-style inset border (sunken look: dark top+left, bright bottom+right)
+inline void DrawGoldSrcInset( int x, int y, int w, int h )
+{
+	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	UI_FillRect( x, y, w, 1, dark );            // top
+	UI_FillRect( x, y, 1, h, dark );            // left
+	UI_FillRect( x, y + h - 1, w, 1, bright );  // bottom
+	UI_FillRect( x + w - 1, y, 1, h, bright );  // right
+}
+
+// GoldSrc-style raised border (raised look: bright top+left, dark bottom+right)
+inline void DrawGoldSrcRaised( int x, int y, int w, int h )
+{
+	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	UI_FillRect( x, y, w, 1, bright );          // top
+	UI_FillRect( x, y, 1, h, bright );          // left
+	UI_FillRect( x, y + h - 1, w, 1, dark );    // bottom
+	UI_FillRect( x + w - 1, y, 1, h, dark );    // right
+}
+
 #endif // TRACKERCHEME_H
