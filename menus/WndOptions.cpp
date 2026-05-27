@@ -218,8 +218,9 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.60f);
-	int h = (int)(768 * 0.90f);
+	int w = (int)(uiStatic.width * 0.52f);
+	int h = (int)(768 * 1.0f);
+	if(h > 768 - 8) h = 768 - 8;
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
@@ -228,16 +229,16 @@ void CMenuWndOptions::_Init()
 	int pad = 18;           // outer padding from window edge
 	int cw = w - pad * 2;  // content width
 	int btnW = 130;         // button width
-	int btnH = 34;          // button height
+	int btnH = 36;          // button height
 	int btnGap = 12;        // gap between buttons
-	int fieldH = 28;        // input/dropdown height
+	int fieldH = 22;        // input/dropdown height
 	int labelGap = 8;       // gap between label and input below it
 	int groupGap = 16;      // gap between groups
 	int colGap = 48;        // gap between columns
 
 	// Content area
 	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
-	int btnY = contentH - btnH - pad + 12; // raised 12px higher
+	int btnY = contentH - btnH - pad + 14; // raised 14px higher
 	int rightEdge = w - pad;
 
 	// ---- Bottom buttons (added BEFORE any tab, so always visible) ----
@@ -281,7 +282,7 @@ void CMenuWndOptions::_Init()
 	AddTab( (const char*)u8"\u041C\u0443\u043B\u044C\u0442\u0438\u043F\u043B\u0435\u0435\u0440" );
 
 	// Two-column layout - GoldSrc precise spacing
-	int leftColW = 128 + labelGap + 200; // preview(128) + gap + controls
+	int leftColW = 96 + labelGap + 200; // preview(96) + gap + controls
 	int rightCol = pad + leftColW + colGap;
 	int rightColW = w - rightCol - pad;
 	if( rightColW < 200 ) rightColW = 200;
@@ -298,21 +299,21 @@ void CMenuWndOptions::_Init()
 
 	avatarPreview.szName = "";
 	avatarPreview.iFlags |= QMF_INACTIVE;
-	avatarPreview.SetRect( pad, ly, 128, 128 );
+	avatarPreview.SetRect( pad, ly, 96, 96 );
 	AddItem( avatarPreview );
 
 	btnUpload.szName = (const char*)u8"\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C...";
-	btnUpload.SetRect( pad, ly + 128 + labelGap, 140, 32 );
+	btnUpload.SetRect( pad + 96 + labelGap, ly, 140, 32 );
 	AddItem( btnUpload );
 
 	modelSelect.szName = "";
 	modelSelect.AddItem( "arctic", "arctic" );
 	modelSelect.AddItem( "guerilla", "guerilla" );
 	modelSelect.AddItem( "leet", "leet" );
-	modelSelect.SetRect( pad + 128 + labelGap, ly + (128 - fieldH) / 2, 140, fieldH );
+	modelSelect.SetRect( pad + 96 + labelGap, ly + (96 - fieldH) / 2, 175, fieldH );
 	AddItem( modelSelect );
 
-	ly += 128 + labelGap + 32 + groupGap;
+	ly += 96 + labelGap + 32 + groupGap;
 
 	// Left column - Logo section
 	logoLabel.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F";
@@ -324,29 +325,29 @@ void CMenuWndOptions::_Init()
 
 	logoPreview.szName = "";
 	logoPreview.iFlags |= QMF_INACTIVE;
-	logoPreview.SetRect( pad, ly, 128, 128 );
+	logoPreview.SetRect( pad, ly, 96, 96 );
 	AddItem( logoPreview );
 
 	logoSelect.szName = "";
 	logoSelect.AddItem( "lambda", "lambda" );
 	logoSelect.AddItem( "skull", "skull" );
 	logoSelect.AddItem( "cross", "cross" );
-	logoSelect.SetRect( pad + 128 + labelGap, ly + (128 - fieldH) / 2, 140, fieldH );
+	logoSelect.SetRect( pad + 96 + labelGap, ly + (96 - fieldH) / 2, 175, fieldH );
 	AddItem( logoSelect );
 
 	btnColor.szName = (const char*)u8"\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0446\u0432\u0435\u0442";
-	btnColor.SetRect( pad, ly + 128 + labelGap, 140, 32 );
+	btnColor.SetRect( pad, ly + 96 + labelGap, 140, 32 );
 	AddItem( btnColor );
 
 	// Helper text below logo section
 	logoHint.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043E\u043C.";
 	logoHint.iFlags |= QMF_INACTIVE;
-	logoHint.SetCoord( pad, ly + 128 + labelGap + 32 + labelGap );
+	logoHint.SetCoord( pad, ly + 96 + labelGap + 32 + labelGap );
 	AddItem( logoHint );
 
 	// Advanced button at bottom of left column
 	btnAdvanced.szName = (const char*)u8"\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E...";
-	btnAdvanced.SetRect( pad, ly + 128 + labelGap + 32 + labelGap + FRAME_TEXT_HEIGHT + groupGap, 180, 32 );
+	btnAdvanced.SetRect( pad, ly + 96 + labelGap + 32 + labelGap + FRAME_TEXT_HEIGHT + groupGap, 234, 32 );
 	AddItem( btnAdvanced );
 
 	// Right column
@@ -544,8 +545,9 @@ void CMenuWndOptions::_VidInit()
 {
 	if( m_bUserMoved )
 		return;
-	int w = (int)(uiStatic.width * 0.60f);
-	int h = (int)(768 * 0.90f);
+	int w = (int)(uiStatic.width * 0.52f);
+	int h = (int)(768 * 1.0f);
+	if(h > 768 - 8) h = 768 - 8;
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );

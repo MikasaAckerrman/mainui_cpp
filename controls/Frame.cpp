@@ -53,8 +53,8 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 22x22 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(22 * uiStatic.scaleY);
+	// Close button: 26x26 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(26 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -173,8 +173,8 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 22x22 logical px with GoldSrc double border
-	int btnSize = (int)(22 * uiStatic.scaleY);
+	// Close button [X] - 26x26 logical px with GoldSrc double border
+	int btnSize = (int)(26 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -197,7 +197,7 @@ void CMenuFrame::DrawTitleBar()
 	UI_FillRect( btnX + 1, btnY + btnSize - 2, btnSize - 2, 1, dark );      // bottom
 	UI_FillRect( btnX + btnSize - 2, btnY + 1, 1, btnSize - 2, dark );      // right
 
-	// X glyph - 2px wide diagonal strokes for visibility
+	// X glyph - 3px wide diagonal strokes for visibility
 	unsigned int glyphColor = titleFg;
 	int pad = (int)(5 * uiStatic.scaleY);
 	if( pad < 3 ) pad = 3;
@@ -213,11 +213,13 @@ void CMenuFrame::DrawTitleBar()
 		int px = x0 + i;
 		int py1 = y0 + (i * (y1 - y0)) / span;
 		int py2 = y1 - (i * (y1 - y0)) / span;
-		// 2px wide strokes
+		// 3px wide strokes
 		UI_FillRect( px, py1, 1, 1, glyphColor );
 		UI_FillRect( px, py1 + 1, 1, 1, glyphColor );
+		UI_FillRect( px, py1 + 2, 1, 1, glyphColor );
 		UI_FillRect( px, py2, 1, 1, glyphColor );
 		UI_FillRect( px, py2 - 1, 1, 1, glyphColor );
+		UI_FillRect( px, py2 - 2, 1, 1, glyphColor );
 	}
 }
 
