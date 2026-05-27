@@ -4,8 +4,9 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar with text and close button (X glyph)
-- Double bevel border (1px outer dark + 1px inner bright)
+- Title bar (28px) with text and close button (18x18 bevel box with X glyph)
+- Double border (1px outer dark outline + 1px inner raised bevel)
+- Sunken groove separator below title bar
 - Drag from anywhere in the window
 - Resize from bottom edge / bottom corners
 - All drag/resize state updates happen synchronously inside MouseMove(x,y),
@@ -17,13 +18,13 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-// CS 1.6 PC reference: ~22px title bar, 20px tab strip, 11-12px text font.
-#define FRAME_TITLE_HEIGHT 22  // logical pixels
+// PC CS 1.6 original = 28px title bar (confirmed from source-engine PaintBackground)
+#define FRAME_TITLE_HEIGHT 28  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width
-#define FRAME_MIN_H        140 // minimum logical height
-#define FRAME_TEXT_HEIGHT  12  // logical pixels — Tahoma 11px feel
+#define FRAME_MIN_H        160 // minimum logical height (accounts for bigger title bar)
+#define FRAME_TEXT_HEIGHT  12  // logical pixels - Tahoma 11px feel
 
 enum EResizeEdge
 {
