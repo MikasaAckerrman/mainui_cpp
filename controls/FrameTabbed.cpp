@@ -91,6 +91,19 @@ int CMenuFrameTabbed::TabAtCursor()
 	return idx;
 }
 
+bool CMenuFrameTabbed::IsInTabBar( int x, int y )
+{
+	if( m_iNumTabs == 0 )
+		return false;
+
+	int titleH = (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY);
+	int tabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
+	int tabY = m_scPos.y + titleH;
+
+	return ( x >= m_scPos.x && x <= m_scPos.x + m_scSize.w &&
+	         y >= tabY && y <= tabY + tabH );
+}
+
 void CMenuFrameTabbed::DrawTabs()
 {
 	m_iTabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
@@ -174,6 +187,7 @@ bool CMenuFrameTabbed::KeyUp( int key )
 		int tab = TabAtCursor();
 		if( tab >= 0 && tab != m_iActiveTab )
 		{
+			m_bDragPending = false; // Clear pending drag set by Frame::KeyDown
 			SetActiveTab( tab );
 			PlayLocalSound( uiStatic.sounds[SND_LAUNCH] );
 			return true;

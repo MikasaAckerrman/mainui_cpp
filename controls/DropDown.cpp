@@ -155,6 +155,9 @@ void CMenuDropDown::SetMenuOpen( bool isOpen )
 
 void CMenuDropDown::Draw()
 {
+	if( m_szNames.Count() == 0 )
+		return;
+
 	uint textflags = ETF_NO_WRAP;
 	unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
 	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );

@@ -73,6 +73,10 @@ protected:
 	bool IsInTitleBar( int x, int y );
 	bool IsOnCloseButton( int x, int y );
 
+	// Virtual: returns true if (x,y) is inside a tab strip area.
+	// Base Frame has no tabs, so always returns false.
+	virtual bool IsInTabBar( int x, int y ) { return false; }
+
 	// Returns which edge/corner the cursor is on (inside grab zone)
 	int HitTestResize( int x, int y );
 
