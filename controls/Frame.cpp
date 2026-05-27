@@ -403,10 +403,6 @@ void CMenuFrame::Draw()
 	m_iBorderW = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
-	// Safety net: if MouseMove dispatch was missed for any reason, reapply now.
-	ApplyResize();
-	ApplyDrag();
-
 	DrawBackground();
 	DrawTitleBar();
 	DrawBorder();
