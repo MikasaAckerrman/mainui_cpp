@@ -10,7 +10,9 @@
 		"MedOlive"			"75 80 50 255"
 		"DarkOlive"			"55 58 35 255"
 		"DarkerOlive"		"35 38 22 255"
-		"TitleOlive"		"91 93 86 255"
+		"TitleOlive"		"94 96 88 255"
+		"TitleTopEdge"		"122 125 115 255"
+		"TitleBottomEdge"	"54 57 48 255"
 		"Black"				"0 0 0 255"
 		"TransBlack"		"0 0 0 128"
 		"ListBG"			"45 50 35 230"
@@ -19,9 +21,9 @@
 		"MainBG"			"95 104 79 255"
 		"SelectionBG"		"90 90 50 255"
 		"Highlight"			"80 85 50 64"
-		"ActiveTabGreen"	"110 119 72 255"
+		"ActiveTabGreen"	"112 120 75 255"
 		"TabInactive"		"88 96 79 255"
-		"TabActiveText"		"213 200 107 255"
+		"TabActiveText"		"209 196 105 255"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -32,12 +34,14 @@
 		"Frame.OutOfFocusBgColor"		"FrameBG"
 		"FrameTitleBar.BgColor"			"TitleOlive"
 		"FrameTitleBar.TextColor"		"White"
+		"FrameTitleBar.TopEdgeColor"		"TitleTopEdge"
+		"FrameTitleBar.BottomEdgeColor"	"TitleBottomEdge"
 		"FrameTitleBar.DisabledTextColor" "DullWhite"
 		"FrameTitleBar.DisabledBgColor"	"DarkerOlive"
 
 		// ===== Borders =====
-		"Border.Bright"					"117 125 105 255"
-		"Border.Dark"					"47 52 43 255"
+		"Border.Bright"					"118 125 106 255"
+		"Border.Dark"					"48 52 43 255"
 		"Border.Selection"				"Black"
 
 		// ===== Buttons =====
@@ -89,6 +93,7 @@
 		"PropertySheet.TextColor"		"DullWhite"
 		"PropertySheet.SelectedTextColor" "White"
 		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
+		"PropertySheet.InactiveTabBgColor" "TabInactive"
 
 		// ===== Menu =====
 		"Menu.TextColor"				"White"

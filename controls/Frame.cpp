@@ -53,8 +53,8 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 28x28 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(28 * uiStatic.scaleY);
+	// Close button: 30x30 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(30 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -90,7 +90,7 @@ int CMenuFrame::HitTestResize( int x, int y )
 
 void CMenuFrame::DrawBackground()
 {
-	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684F );
+	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH, m_scSize.w, m_scSize.h - m_iTitleH, bgColor );
 
 	// GoldSrc subtle noise/grain effect - sparse grid, position-based hash
@@ -146,17 +146,22 @@ void CMenuFrame::DrawBackground()
 
 void CMenuFrame::DrawTitleBar()
 {
-	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF5B5D56 );
+	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF5E6058 );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
-	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
 
-	// Title bar background - full width inside border
-	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
+	// Title bar 3-band gradient (GoldSrc style)
+	unsigned int titleTop = Scheme_GetColor( g_Scheme.frameTitleBarTop, 0xFF7A7D73 );
+	unsigned int titleMain = titleBg;
+	unsigned int titleBot = Scheme_GetColor( g_Scheme.frameTitleBarBottom, 0xFF363930 );
 
-	// 3D title bar border: top edge bright, bottom edge dark
-	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, bright );
-	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, dark );
+	// Top edge - 1px bright
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, titleTop );
+	// Main body
+	UI_FillRect( m_scPos.x, m_scPos.y + 1, m_scSize.w, m_iTitleH - 2, titleMain );
+	// Bottom edge - 1px dark
+	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, titleBot );
 
 	// Title text - Tahoma 11px, padding-left 8px, vertically centered.
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
@@ -169,8 +174,8 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 28x28 logical px with GoldSrc double border
-	int btnSize = (int)(28 * uiStatic.scaleY);
+	// Close button [X] - 30x30 logical px with GoldSrc double border
+	int btnSize = (int)(30 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -178,7 +183,7 @@ void CMenuFrame::DrawTitleBar()
 	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
 
 	// Button background
-	unsigned int btnBg = hovered ? 0xFF5A5A5A : 0xFF4A4A4A;
+	unsigned int btnBg = hovered ? Scheme_GetColor( g_Scheme.buttonArmedBgColor, 0xFF5A5A5A ) : Scheme_GetColor( g_Scheme.buttonBgColor, 0xFF4A4A4A );
 	UI_FillRect( btnX, btnY, btnSize, btnSize, btnBg );
 
 	// Outer dark border (1px all around)
@@ -219,8 +224,8 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF2F342B );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF30342B );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;
@@ -386,12 +391,32 @@ void CMenuFrame::UpdateResize( int x, int y )
 
 void CMenuFrame::ApplyResize()
 {
+	if( m_bResizePending )
+	{
+		// Safety: if MouseMove never transitioned us, activate now using current cursor
+		m_bResizePending = false;
+		m_bResizing = true;
+		m_actionStartCursor.x = uiStatic.cursorX;
+		m_actionStartCursor.y = uiStatic.cursorY;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
+	}
 	if( m_bResizing )
 		UpdateResize( uiStatic.cursorX, uiStatic.cursorY );
 }
 
 void CMenuFrame::ApplyDrag()
 {
+	if( m_bDragPending )
+	{
+		// Safety: if MouseMove never transitioned us, activate now using current cursor
+		m_bDragPending = false;
+		m_bDragging = true;
+		m_actionStartCursor.x = uiStatic.cursorX;
+		m_actionStartCursor.y = uiStatic.cursorY;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
+	}
 	if( m_bDragging )
 		UpdateDrag( uiStatic.cursorX, uiStatic.cursorY );
 }
@@ -433,6 +458,8 @@ bool CMenuFrame::KeyDown( int key )
 			m_bResizePending = true;
 			m_bUserMoved = true;
 			m_iResizeEdge = edge;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
 			return true;
 		}
 
@@ -440,21 +467,15 @@ bool CMenuFrame::KeyDown( int key )
 		if( BaseClass::KeyDown( key ) )
 			return true;
 
-		// No child claimed it — start drag from the title bar...
+		// No child claimed it — start drag ONLY from title bar (GoldSrc behavior).
+		// Do NOT allow drag from window body - on Android, stale cursorX/Y in
+		// KeyDown causes false positive drag activation on any body touch.
 		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
 			m_bDragPending = true;
 			m_bUserMoved = true;
-			return true;
-		}
-
-		// ...or from anywhere unclaimed in the window body (but not the tab bar)
-		if( !IsInTabBar( uiStatic.cursorX, uiStatic.cursorY ) &&
-		    uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
-		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
-		{
-			m_bDragPending = true;
-			m_bUserMoved = true;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
 			return true;
 		}
 
@@ -514,10 +535,23 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
-	// Deferred drag activation: KeyDown set pending=true without capturing coordinates.
-	// The first MouseMove carries the REAL touch position, so we activate here.
+	// Deferred drag activation: KeyDown set pending=true and captured cursor position.
+	// The first MouseMove carries the REAL touch position on Android, so we activate here.
+	// Sanity check: if MouseMove position is wildly different from KeyDown position,
+	// this is a different touch gesture - cancel pending to prevent window jump.
 	if( m_bDragPending )
 	{
+		int ddx = x - m_actionStartCursor.x;
+		int ddy = y - m_actionStartCursor.y;
+		int dist2 = ddx * ddx + ddy * ddy;
+		int threshold = (int)(20 * uiStatic.scaleX);
+		if( dist2 > threshold * threshold * 4 )
+		{
+			// Touch event is from a different gesture, cancel pending
+			m_bDragPending = false;
+			return false;
+		}
+
 		m_bDragPending = false;
 		m_bDragging = true;
 		m_actionStartCursor.x = x;
@@ -528,6 +562,18 @@ bool CMenuFrame::MouseMove( int x, int y )
 
 	if( m_bResizePending )
 	{
+		int ddx = x - m_actionStartCursor.x;
+		int ddy = y - m_actionStartCursor.y;
+		int dist2 = ddx * ddx + ddy * ddy;
+		int threshold = (int)(20 * uiStatic.scaleX);
+		if( dist2 > threshold * threshold * 4 )
+		{
+			// Touch event is from a different gesture, cancel pending
+			m_bResizePending = false;
+			m_iResizeEdge = RESIZE_NONE;
+			return false;
+		}
+
 		m_bResizePending = false;
 		m_bResizing = true;
 		m_actionStartCursor.x = x;
