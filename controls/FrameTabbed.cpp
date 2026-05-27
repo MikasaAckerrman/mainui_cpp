@@ -112,12 +112,12 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 
 	// GoldSrc VGUI tab colors
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6E7748 );
-	unsigned int inactiveBg = 0xFF58604F; // 88,96,79
-	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
-	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6E754A );
+	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xFF58604F );
+	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
+	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
-	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD5C86B );
+	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD1C469 );
 
 	int hovered = TabAtCursor();
 
@@ -153,6 +153,12 @@ void CMenuFrameTabbed::DrawTabs()
 			UI_FillRect( x, ty + th - 1, tabW, 1, dark );
 		}
 		// Active tab: NO bottom border (merges with content area below)
+
+		// 1px divider between tabs (GoldSrc style)
+		if( i < m_iNumTabs - 1 )
+		{
+			UI_FillRect( x + tabW - 1, ty + 2, 1, th - 4, dark );
+		}
 
 		// Tab label text - centered, using hSmallFont (Tahoma)
 		UI_DrawString( uiStatic.hSmallFont, x, ty, tabW, th,

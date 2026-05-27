@@ -241,8 +241,8 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.78f);
-	int h = (int)(768 * 0.75f);
+	int w = (int)(uiStatic.width * 0.72f);
+	int h = (int)(768 * 0.87f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
@@ -309,7 +309,7 @@ void CMenuWndOptions::_Init()
 	AddItem( steamIcon );
 
 	// Left column - Avatar section
-	int ly = pad;
+	int ly = pad + 12;
 
 	avatarLabel.szName = (const char*)u8"\u0410\u0432\u0430\u0442\u0430\u0440";
 	avatarLabel.iFlags |= QMF_INACTIVE;
@@ -331,10 +331,10 @@ void CMenuWndOptions::_Init()
 	modelSelect.AddItem( "arctic", "arctic" );
 	modelSelect.AddItem( "guerilla", "guerilla" );
 	modelSelect.AddItem( "leet", "leet" );
-	modelSelect.SetRect( pad, ly + 128 + labelGap + 32 + labelGap, 200, fieldH );
+	modelSelect.SetRect( pad, ly + 128 + labelGap + 32 + labelGap, 236, fieldH );
 	AddItem( modelSelect );
 
-	ly += 128 + labelGap + 32 + labelGap + fieldH + groupGap;
+	ly += 128 + labelGap + 32 + labelGap + fieldH + groupGap + 18;
 
 	// Left column - Logo section
 	logoLabel.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F";
@@ -353,7 +353,7 @@ void CMenuWndOptions::_Init()
 	logoSelect.AddItem( "lambda", "lambda" );
 	logoSelect.AddItem( "skull", "skull" );
 	logoSelect.AddItem( "cross", "cross" );
-	logoSelect.SetRect( pad, ly + 128 + labelGap, 200, fieldH );
+	logoSelect.SetRect( pad, ly + 128 + labelGap, 236, fieldH );
 	AddItem( logoSelect );
 
 	btnColor.szName = (const char*)u8"\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0446\u0432\u0435\u0442";
@@ -372,7 +372,7 @@ void CMenuWndOptions::_Init()
 	AddItem( btnAdvanced );
 
 	// Right column
-	int ry = pad;
+	int ry = pad + 24;
 
 	playerNameLabel.szName = (const char*)u8"\u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430";
 	playerNameLabel.iFlags |= QMF_INACTIVE;
@@ -500,7 +500,7 @@ void CMenuWndOptions::_Init()
 	dispMode.szName = (const char*)u8"\u0420\u0435\u0436\u0438\u043C \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F";
 	dispMode.AddItem( (const char*)u8"\u041F\u043E\u043B\u043D\u044B\u0439 \u044D\u043A\u0440\u0430\u043D", 1 );
 	dispMode.AddItem( (const char*)u8"\u041E\u043A\u043E\u043D\u043D\u044B\u0439", 0 );
-	dispMode.SetRect( pad, pad + 80, 200, fieldH );
+	dispMode.SetRect( pad, pad + 80, 236, fieldH );
 	dispMode.LinkCvar( "fullscreen", CMenuEditable::CVAR_VALUE );
 	AddItem( dispMode );
 
@@ -566,8 +566,8 @@ void CMenuWndOptions::_VidInit()
 {
 	if( m_bUserMoved )
 		return;
-	int w = (int)(uiStatic.width * 0.78f);
-	int h = (int)(768 * 0.75f);
+	int w = (int)(uiStatic.width * 0.72f);
+	int h = (int)(768 * 0.87f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );

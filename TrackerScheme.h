@@ -20,6 +20,8 @@ struct SchemeColors
 	unsigned int frameTitleBarBg;
 	unsigned int frameTitleBarFg;
 	unsigned int frameBorderColor;
+	unsigned int frameTitleBarTop;
+	unsigned int frameTitleBarBottom;
 
 	// Buttons
 	unsigned int buttonTextColor;
@@ -52,6 +54,7 @@ struct SchemeColors
 	unsigned int tabTextColor;
 	unsigned int tabSelectedTextColor;
 	unsigned int tabActiveBgColor;
+	unsigned int tabInactiveBgColor;
 
 	// Menu
 	unsigned int menuTextColor;
