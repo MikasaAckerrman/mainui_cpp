@@ -4,7 +4,7 @@ Copyright (C) 2024 DragonSlayer Team
 
 A non-fullscreen draggable window with:
 - Dark background (from TrackerScheme)
-- Title bar (26px) with text and close button (22x22 bevel box with X glyph)
+- Title bar (36px) with text and close button (26x26 bevel box with X glyph)
 - Double border (1px outer dark outline + 1px inner raised bevel)
 - Sunken groove separator below title bar
 - Drag from anywhere in the window
@@ -19,12 +19,12 @@ A non-fullscreen draggable window with:
 #include "TrackerScheme.h"
 
 // PC CS 1.6 compact = 26px title bar
-#define FRAME_TITLE_HEIGHT 26  // logical pixels
+#define FRAME_TITLE_HEIGHT 36  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  16  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width
 #define FRAME_MIN_H        200 // minimum logical height (accounts for bigger title bar)
-#define FRAME_TEXT_HEIGHT  11  // logical pixels - Tahoma 11px feel
+#define FRAME_TEXT_HEIGHT  12  // logical pixels - Tahoma 11px feel
 
 enum EResizeEdge
 {

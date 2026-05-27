@@ -165,6 +165,9 @@ void CMenuFrameTabbed::DrawTabs()
 		UI_DrawString( uiStatic.hSmallFont, x, ty, tw, th,
 			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
 	}
+
+	// 1px horizontal separator line below the entire tab strip
+	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, 0xC8757B69 );
 }
 
 void CMenuFrameTabbed::Draw()
