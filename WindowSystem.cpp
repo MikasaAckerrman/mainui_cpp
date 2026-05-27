@@ -330,7 +330,57 @@ void CWindowStack::KeyUpEvent( int key )
 
 void CWindowStack::KeyDownEvent( int key )
 {
-	if( Current() ) Current()->KeyDown( key );
+	if( !Current() )
+		return;
+
+	// For left mouse clicks on non-root windows, check if click is outside active window
+	if( UI::Key::IsLeftMouse( key ) && !Current()->IsRoot() )
+	{
+		Point winPos = Current()->GetRenderPosition();
+		Size winSize = Current()->GetRenderSize();
+
+		// Check if cursor is outside the active window
+		if( uiStatic.cursorX < winPos.x || uiStatic.cursorX > winPos.x + winSize.w ||
+			uiStatic.cursorY < winPos.y || uiStatic.cursorY > winPos.y + winSize.h )
+		{
+			// Find which window in the stack the cursor hits (back to front, skip current)
+			FOR_EACH_LL_BACK( stack, i )
+			{
+				if( i == active )
+					continue;
+
+				if( FBitSet( stack[i]->iFlags, QMF_CLOSING ) )
+					continue;
+
+				if( FBitSet( stack[i]->iFlags, QMF_HIDDEN ) )
+					continue;
+
+				// Root window catches all remaining clicks
+				if( stack[i]->IsRoot() )
+				{
+					active = i;
+					stack[i]->KeyDown( key );
+					return;
+				}
+
+				// Non-root: hit test against bounds
+				Point pos = stack[i]->GetRenderPosition();
+				Size sz = stack[i]->GetRenderSize();
+
+				if( uiStatic.cursorX >= pos.x && uiStatic.cursorX <= pos.x + sz.w &&
+					uiStatic.cursorY >= pos.y && uiStatic.cursorY <= pos.y + sz.h )
+				{
+					active = i;
+					stack[i]->KeyDown( key );
+					return;
+				}
+			}
+
+			// No window found - still deliver to current
+		}
+	}
+
+	Current()->KeyDown( key );
 }
 
 void CWindowStack::CharEvent( int key )
