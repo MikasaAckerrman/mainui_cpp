@@ -32,7 +32,7 @@ GNU General Public License for more details.
 
 #define DEFAULT_MENUFONT "Tahoma"
 #define DEFAULT_CONFONT  "Tahoma"
-#define DEFAULT_WEIGHT   500
+#define DEFAULT_WEIGHT   400
 
 CFontManager *g_FontMgr;
 

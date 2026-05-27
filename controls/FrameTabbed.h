@@ -11,7 +11,7 @@ Each tab shows/hides a different panel of content.
 #include "Frame.h"
 
 #define MAX_FRAME_TABS 8
-#define FRAME_TAB_HEIGHT 36 // logical pixels - height of tab strip (CS 1.6 PC reference)
+#define FRAME_TAB_HEIGHT 32 // logical pixels - height of tab strip (CS 1.6 PC reference)
 
 class CMenuFrameTabbed : public CMenuFrame
 {

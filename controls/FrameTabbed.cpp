@@ -118,12 +118,12 @@ void CMenuFrameTabbed::DrawTabs()
 	int lastTabW = ( m_iNumTabs > 1 ) ? m_scSize.w - tabW * (m_iNumTabs - 1) : tabW;
 
 	// GoldSrc VGUI tab colors
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6E754A );
+	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF5E6542 );
 	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xFF58604F );
 	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
 	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
-	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFD1C469 );
+	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFBFB85E );
 
 	int hovered = TabAtCursor();
 

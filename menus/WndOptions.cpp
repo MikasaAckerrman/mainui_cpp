@@ -75,21 +75,22 @@ private:
 			// Raised border
 			DrawGoldSrcRaised( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h );
 
-			// Draw eye glyph (simple ellipse shape)
+			// Draw eye glyph - larger and thicker for mobile visibility
 			unsigned int glyphColor = 0xFFFFFFFF;
+			int pad = 4;
+			int eyeW = m_scSize.w - pad * 2;
+			int eyeH = m_scSize.h - pad * 2;
 			int cx = m_scPos.x + m_scSize.w / 2;
 			int cy = m_scPos.y + m_scSize.h / 2;
-			int rx = (int)(6 * uiStatic.scaleX);
-			int ry = (int)(3 * uiStatic.scaleY);
-			if( rx < 4 ) rx = 4;
-			if( ry < 2 ) ry = 2;
 
-			// Top arc
-			UI_FillRect( cx - rx, cy, rx * 2, 1, glyphColor );
-			UI_FillRect( cx - rx + 1, cy - 1, rx * 2 - 2, 1, glyphColor );
-			UI_FillRect( cx - rx + 1, cy + 1, rx * 2 - 2, 1, glyphColor );
-			// Pupil dot
-			UI_FillRect( cx - 1, cy - 1, 3, 3, glyphColor );
+			// Horizontal bar (eye shape) - 3px thick
+			UI_FillRect( cx - eyeW/3, cy - 1, eyeW*2/3, 3, glyphColor );
+			// Circle pupil - 5x5
+			UI_FillRect( cx - 2, cy - 2, 5, 5, glyphColor );
+			// Top arc hint
+			UI_FillRect( cx - eyeW/4, cy - 3, eyeW/2, 2, glyphColor );
+			// Bottom arc hint
+			UI_FillRect( cx - eyeW/4, cy + 2, eyeW/2, 2, glyphColor );
 		}
 	};
 
@@ -253,7 +254,7 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.65f);
+	int w = (int)(uiStatic.width * 0.60f);
 	int h = (int)(768 * 0.90f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
@@ -262,10 +263,10 @@ void CMenuWndOptions::_Init()
 	// Padding and spacing - GoldSrc pixel-perfect metrics
 	int pad = 18;           // outer padding from window edge
 	int cw = w - pad * 2;  // content width
-	int btnW = 150;         // button width
-	int btnH = 40;          // button height
-	int btnGap = 16;        // gap between buttons
-	int fieldH = 32;        // input/dropdown height
+	int btnW = 130;         // button width
+	int btnH = 34;          // button height
+	int btnGap = 12;        // gap between buttons
+	int fieldH = 28;        // input/dropdown height
 	int labelGap = 8;       // gap between label and input below it
 	int groupGap = 16;      // gap between groups
 	int colGap = 48;        // gap between columns
@@ -585,7 +586,7 @@ void CMenuWndOptions::_VidInit()
 {
 	if( m_bUserMoved )
 		return;
-	int w = (int)(uiStatic.width * 0.65f);
+	int w = (int)(uiStatic.width * 0.60f);
 	int h = (int)(768 * 0.90f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
