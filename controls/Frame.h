@@ -96,6 +96,11 @@ protected:
 	// Set true once user drags/resizes; prevents VidInit from snapping back
 	bool m_bUserMoved;
 
+	// Deferred drag/resize: KeyDown sets pending; MouseMove converts to active.
+	// This avoids capturing stale uiStatic.cursorX/Y on Android touch (often 0,0).
+	bool m_bDragPending;
+	bool m_bResizePending;
+
 	// Captured at KeyDown — start cursor position and start window rect.
 	// Used identically for drag and resize so we never accumulate floating error.
 	Point m_actionStartCursor;
