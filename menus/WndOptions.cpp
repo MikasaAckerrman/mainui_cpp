@@ -94,41 +94,6 @@ private:
 		}
 	};
 
-	// Inner class for Steam icon area
-	class CMenuSteamIcon : public CMenuAction
-	{
-	public:
-		void Draw() override
-		{
-			unsigned int bg = 0xFF4A4A4A;
-
-			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
-
-			// Raised border
-			DrawGoldSrcRaised( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h );
-
-			// Draw "S" shape for Steam
-			unsigned int sColor = 0xFFFFFFFF;
-			int x0 = m_scPos.x + (int)(6 * uiStatic.scaleX);
-			int y0 = m_scPos.y + (int)(5 * uiStatic.scaleY);
-			int sw = (int)(12 * uiStatic.scaleX);
-			int sh = (int)(14 * uiStatic.scaleY);
-			if( sw < 6 ) sw = 6;
-			if( sh < 7 ) sh = 7;
-
-			// Top bar
-			UI_FillRect( x0, y0, sw, 2, sColor );
-			// Left side top half
-			UI_FillRect( x0, y0, 2, sh / 2, sColor );
-			// Middle bar
-			UI_FillRect( x0, y0 + sh / 2 - 1, sw, 2, sColor );
-			// Right side bottom half
-			UI_FillRect( x0 + sw - 2, y0 + sh / 2, 2, sh / 2, sColor );
-			// Bottom bar
-			UI_FillRect( x0, y0 + sh - 2, sw, 2, sColor );
-		}
-	};
-
 	// Bottom buttons (always visible - added before tabs)
 	CMenuFrameButton btnOK;
 	CMenuFrameButton btnCancel;
@@ -153,7 +118,6 @@ private:
 	CMenuField       playerName;
 	CMenuField       adminPassword;
 	CMenuEyeButton   btnEye;
-	CMenuSteamIcon   steamIcon;
 
 	// Keyboard tab
 	CMenuAction    kbHint;
@@ -195,7 +159,7 @@ private:
 
 static CMenuWndOptions *s_pWndOptions = NULL;
 
-CMenuWndOptions::CMenuWndOptions() : CMenuFrameTabbed( "Options" )
+CMenuWndOptions::CMenuWndOptions() : CMenuFrameTabbed( (const char*)u8"\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438" )
 {
 }
 
@@ -294,7 +258,7 @@ void CMenuWndOptions::_Init()
 	btnSeparator.SetRect( pad, btnY - 8, cw, 1 );
 	AddItem( btnSeparator );
 
-	btnCancel.szName = "Cancel";
+	btnCancel.szName = (const char*)u8"\u041E\u0442\u043C\u0435\u043D\u0430";
 	btnCancel.SetRect( rightEdge - btnW * 2 - btnGap, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnCancel.onReleased,
 	{
@@ -322,18 +286,12 @@ void CMenuWndOptions::_Init()
 	int rightColW = w - rightCol - pad;
 	if( rightColW < 200 ) rightColW = 200;
 
-	// Steam icon - top left corner of multiplayer tab
-	steamIcon.szName = "";
-	steamIcon.iFlags |= QMF_INACTIVE;
-	steamIcon.SetRect( pad, pad, 24, 24 );
-	AddItem( steamIcon );
-
 	// Left column - Avatar section
 	int ly = pad + 12;
 
 	avatarLabel.szName = (const char*)u8"\u0410\u0432\u0430\u0442\u0430\u0440";
 	avatarLabel.iFlags |= QMF_INACTIVE;
-	avatarLabel.SetCoord( pad + 24 + labelGap, ly );
+	avatarLabel.SetCoord( pad, ly );
 	AddItem( avatarLabel );
 
 	ly += FRAME_TEXT_HEIGHT + labelGap;
@@ -351,10 +309,10 @@ void CMenuWndOptions::_Init()
 	modelSelect.AddItem( "arctic", "arctic" );
 	modelSelect.AddItem( "guerilla", "guerilla" );
 	modelSelect.AddItem( "leet", "leet" );
-	modelSelect.SetRect( pad, ly + 128 + labelGap + 32 + labelGap, 236, fieldH );
+	modelSelect.SetRect( pad + 128 + labelGap, ly + (128 - fieldH) / 2, 140, fieldH );
 	AddItem( modelSelect );
 
-	ly += 128 + labelGap + 32 + labelGap + fieldH + groupGap + 18;
+	ly += 128 + labelGap + 32 + groupGap;
 
 	// Left column - Logo section
 	logoLabel.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F";
@@ -373,22 +331,22 @@ void CMenuWndOptions::_Init()
 	logoSelect.AddItem( "lambda", "lambda" );
 	logoSelect.AddItem( "skull", "skull" );
 	logoSelect.AddItem( "cross", "cross" );
-	logoSelect.SetRect( pad, ly + 128 + labelGap, 236, fieldH );
+	logoSelect.SetRect( pad + 128 + labelGap, ly + (128 - fieldH) / 2, 140, fieldH );
 	AddItem( logoSelect );
 
 	btnColor.szName = (const char*)u8"\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0446\u0432\u0435\u0442";
-	btnColor.SetRect( pad, ly + 128 + labelGap + fieldH + labelGap, 140, 32 );
+	btnColor.SetRect( pad, ly + 128 + labelGap, 140, 32 );
 	AddItem( btnColor );
 
 	// Helper text below logo section
 	logoHint.szName = (const char*)u8"\u041B\u043E\u0433\u043E\u0442\u0438\u043F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 \u0441\u043E\u0435\u0434\u0438\u043D\u0435\u043D\u0438\u044F \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043E\u043C.";
 	logoHint.iFlags |= QMF_INACTIVE;
-	logoHint.SetCoord( pad, ly + 128 + labelGap + fieldH + labelGap + 32 + labelGap );
+	logoHint.SetCoord( pad, ly + 128 + labelGap + 32 + labelGap );
 	AddItem( logoHint );
 
 	// Advanced button at bottom of left column
 	btnAdvanced.szName = (const char*)u8"\u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u043E...";
-	btnAdvanced.SetRect( pad, ly + 128 + labelGap + fieldH + labelGap + 32 + labelGap + FRAME_TEXT_HEIGHT + groupGap, 180, 32 );
+	btnAdvanced.SetRect( pad, ly + 128 + labelGap + 32 + labelGap + FRAME_TEXT_HEIGHT + groupGap, 180, 32 );
 	AddItem( btnAdvanced );
 
 	// Right column
@@ -403,7 +361,7 @@ void CMenuWndOptions::_Init()
 
 	playerName.szName = "";
 	playerName.iMaxLength = 32;
-	playerName.SetRect( rightCol, ry, rightColW, fieldH );
+	playerName.SetRect( rightCol, ry, 200, fieldH );
 	playerName.LinkCvar( "name" );
 	AddItem( playerName );
 
@@ -419,14 +377,14 @@ void CMenuWndOptions::_Init()
 	adminPassword.szName = "";
 	adminPassword.iMaxLength = 64;
 	adminPassword.bHideInput = true;
-	adminPassword.SetRect( rightCol, ry, rightColW - 28 - labelGap, fieldH );
+	adminPassword.SetRect( rightCol, ry, 172, fieldH );
 	adminPassword.LinkCvar( "password" );
 	AddItem( adminPassword );
 
 	// Eye icon button to toggle password visibility
 	btnEye.szName = "";
 	btnEye.m_pField = &adminPassword;
-	btnEye.SetRect( rightCol + rightColW - 28, ry + (fieldH - 28) / 2, 28, 28 );
+	btnEye.SetRect( rightCol + 172 + 4, ry + (fieldH - 28) / 2, 28, 28 );
 	SET_EVENT_MULTI( btnEye.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
