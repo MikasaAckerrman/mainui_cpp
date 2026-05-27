@@ -1,9 +1,13 @@
 #include <VGUI_String.h>
 #include <string.h>
-#include <stdlib.h>
 
 namespace vgui
 {
+
+// Internal free function that uses the replaceable _free_func from vgui.cpp,
+// matching allocations done by vgui_strdup which uses _malloc_func.
+extern void vgui_internal_free(void* ptr);
+
 
 String::String()
 {
@@ -24,8 +28,7 @@ String::~String()
 {
 	if (_text)
 	{
-		// Use stdlib free since vgui_strdup uses malloc function pointer
-		free(_text);
+		vgui_internal_free(_text);
 		_text = null;
 	}
 }

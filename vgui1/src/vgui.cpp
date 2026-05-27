@@ -73,4 +73,10 @@ int vgui_dprintf2(const char* format, ...)
 	return ret;
 }
 
+void vgui_internal_free(void* ptr)
+{
+	if (_free_func && ptr)
+		_free_func(ptr);
+}
+
 }
