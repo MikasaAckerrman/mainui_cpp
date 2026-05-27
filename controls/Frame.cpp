@@ -14,6 +14,7 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_szTitle = title;
 	m_bDragging = false;
 	m_bResizing = false;
+	m_bUserMoved = false;
 	m_iResizeEdge = RESIZE_NONE;
 
 	// We implement our own drag/resize end-to-end. Tell the base class to keep
@@ -361,6 +362,7 @@ bool CMenuFrame::KeyDown( int key )
 		if( edge != RESIZE_NONE )
 		{
 			m_bResizing = true;
+			m_bUserMoved = true;
 			m_iResizeEdge = edge;
 			m_actionStartCursor.x = uiStatic.cursorX;
 			m_actionStartCursor.y = uiStatic.cursorY;
@@ -378,6 +380,7 @@ bool CMenuFrame::KeyDown( int key )
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
 			m_bDragging = true;
+			m_bUserMoved = true;
 			m_actionStartCursor.x = uiStatic.cursorX;
 			m_actionStartCursor.y = uiStatic.cursorY;
 			m_actionStartPos = m_scPos;
