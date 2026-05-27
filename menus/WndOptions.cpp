@@ -48,6 +48,17 @@ private:
 		}
 	};
 
+	// Inner class for 1px separator line
+	class CMenuSeparator : public CMenuAction
+	{
+	public:
+		void Draw() override
+		{
+			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h,
+				Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B ) );
+		}
+	};
+
 	// Inner class for eye toggle button
 	class CMenuEyeButton : public CMenuFrameButton
 	{
@@ -121,6 +132,7 @@ private:
 	CMenuFrameButton btnOK;
 	CMenuFrameButton btnCancel;
 	CMenuFrameButton btnApply;
+	CMenuSeparator   btnSeparator;
 
 	// Multiplayer tab - labels
 	CMenuAction      avatarLabel;
@@ -241,22 +253,22 @@ void CMenuWndOptions::CancelSettings()
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.72f);
-	int h = (int)(768 * 0.87f);
+	int w = (int)(uiStatic.width * 0.65f);
+	int h = (int)(768 * 0.90f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
 
 	// Padding and spacing - GoldSrc pixel-perfect metrics
-	int pad = 24;           // outer padding from window edge
+	int pad = 18;           // outer padding from window edge
 	int cw = w - pad * 2;  // content width
 	int btnW = 150;         // button width
 	int btnH = 40;          // button height
 	int btnGap = 16;        // gap between buttons
-	int fieldH = 38;        // input/dropdown height
+	int fieldH = 32;        // input/dropdown height
 	int labelGap = 8;       // gap between label and input below it
-	int groupGap = 24;      // gap between groups
-	int colGap = 64;        // gap between columns
+	int groupGap = 16;      // gap between groups
+	int colGap = 48;        // gap between columns
 
 	// Content area
 	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
@@ -273,6 +285,13 @@ void CMenuWndOptions::_Init()
 		self->ApplySettings();
 	});
 	AddItem( btnApply );
+	btnApply.iFlags |= QMF_GRAYED;
+
+	// 1px separator line above the buttons
+	btnSeparator.szName = "";
+	btnSeparator.iFlags |= QMF_INACTIVE;
+	btnSeparator.SetRect( pad, btnY - 8, cw, 1 );
+	AddItem( btnSeparator );
 
 	btnCancel.szName = "Cancel";
 	btnCancel.SetRect( rightEdge - btnW * 2 - btnGap, btnY, btnW, btnH );
@@ -566,8 +585,8 @@ void CMenuWndOptions::_VidInit()
 {
 	if( m_bUserMoved )
 		return;
-	int w = (int)(uiStatic.width * 0.72f);
-	int h = (int)(768 * 0.87f);
+	int w = (int)(uiStatic.width * 0.65f);
+	int h = (int)(768 * 0.90f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
