@@ -61,8 +61,8 @@ void CMenuCheckBox::VidInit( void )
 
 	if( m_bInsideFrame )
 	{
-		// Position text closer to the compact box
-		m_scTextPos.x = m_scPos.x + (int)(16 * uiStatic.scaleX);
+		// Position text right after the 13px checkbox box with 4px gap
+		m_scTextPos.x = m_scPos.x + m_scSize.w + (int)(4 * uiStatic.scaleX);
 		m_scTextPos.y = m_scPos.y;
 	}
 	else
