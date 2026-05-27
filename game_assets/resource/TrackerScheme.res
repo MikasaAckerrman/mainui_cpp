@@ -46,9 +46,9 @@
 
 		// ===== Buttons =====
 		"Button.TextColor"				"White"
-		"Button.BgColor"				"Blank"
+		"Button.BgColor"				"91 99 80 255"
 		"Button.ArmedTextColor"			"White"
-		"Button.ArmedBgColor"			"Highlight"
+		"Button.ArmedBgColor"			"107 115 96 255"
 		"Button.DepressedTextColor"		"DullWhite"
 		"Button.DepressedBgColor"		"Blank"
 
@@ -91,7 +91,7 @@
 
 		// ===== Tabs / PropertySheet =====
 		"PropertySheet.TextColor"		"OffWhite"
-		"PropertySheet.SelectedTextColor" "White"
+		"PropertySheet.SelectedTextColor" "TabActiveText"
 		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
 		"PropertySheet.InactiveTabBgColor" "TabInactive"
 
