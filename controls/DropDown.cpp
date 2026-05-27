@@ -158,7 +158,6 @@ void CMenuDropDown::Draw()
 	uint textflags = ETF_NO_WRAP;
 	unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
 	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 
 	if( iFlags & QMF_DROPSHADOW )
 		textflags |= ETF_SHADOW;
@@ -207,10 +206,7 @@ void CMenuDropDown::Draw()
 	UI_DrawString( font, selectedPos, selectedSize, m_szNames[m_iState], selectedTextColor, m_scChSize, eTextAlignment, textflags );
 
 	// GoldSrc inset border (dark top+left, bright bottom+right)
-	UI_FillRect( selectedPos.x, selectedPos.y, m_scItemSize.w, 1, dark );                           // top
-	UI_FillRect( selectedPos.x, selectedPos.y, 1, m_scItemSize.h, dark );                           // left
-	UI_FillRect( selectedPos.x, selectedPos.y + m_scItemSize.h - 1, m_scItemSize.w, 1, bright );    // bottom
-	UI_FillRect( selectedPos.x + m_scItemSize.w - 1, selectedPos.y, 1, m_scItemSize.h, bright );    // right
+	DrawGoldSrcInset( selectedPos.x, selectedPos.y, m_scItemSize.w, m_scItemSize.h );
 
 	// Arrow compartment separator (1px dark vertical line)
 	int arrowX = selectedPos.x + selectedSize.w;
