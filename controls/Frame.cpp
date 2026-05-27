@@ -466,15 +466,13 @@ bool CMenuFrame::KeyDown( int key )
 			return true;
 		}
 
-		// Fallback: allow drag from anywhere in the window body (empty areas)
-		// This only fires when no child item claimed the click above.
+		// Click landed inside the window but no child claimed it and it's not
+		// on the title bar or tab bar. Just consume it (prevents click-through
+		// to underlying windows) but do NOT start a drag. On Android, stale
+		// cursorX/Y in KeyDown would cause the window to fly to a corner.
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
-			m_bDragPending = true;
-			m_bUserMoved = true;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
 			return true;
 		}
 

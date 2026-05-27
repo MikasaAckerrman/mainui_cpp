@@ -219,8 +219,7 @@ void CMenuWndOptions::CancelSettings()
 void CMenuWndOptions::_Init()
 {
 	int w = (int)(uiStatic.width * 0.52f);
-	int h = (int)(768 * 1.0f);
-	if(h > 768 - 8) h = 768 - 8;
+	int h = 760; // full height capped with 8px margin
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
@@ -546,8 +545,7 @@ void CMenuWndOptions::_VidInit()
 	if( m_bUserMoved )
 		return;
 	int w = (int)(uiStatic.width * 0.52f);
-	int h = (int)(768 * 1.0f);
-	if(h > 768 - 8) h = 768 - 8;
+	int h = 760; // full height capped with 8px margin
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );

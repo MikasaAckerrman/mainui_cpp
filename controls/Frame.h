@@ -18,7 +18,7 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-// PC CS 1.6 compact = 26px title bar
+// CS 1.6 GoldSrc VGUI title bar height
 #define FRAME_TITLE_HEIGHT 36  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  16  // logical pixels - corner grab zone size
