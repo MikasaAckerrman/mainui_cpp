@@ -47,6 +47,7 @@ public:
 	CMenuFrame( const char *title = "Window" );
 
 	void Draw() override;
+	void VidInit() override;
 	bool KeyDown( int key ) override;
 	bool KeyUp( int key ) override;
 	bool MouseMove( int x, int y ) override;

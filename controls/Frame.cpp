@@ -216,6 +216,17 @@ void CMenuFrame::DrawResizeGrip()
 
 // ─── Drag/Resize math ────────────────────────────────────────────────────────
 
+void CMenuFrame::VidInit()
+{
+	_VidInit();
+	if( !m_bUserMoved )
+	{
+		CalcPosition();
+		CalcSizes();
+	}
+	VidInitItems();
+}
+
 void CMenuFrame::UpdateDrag( int x, int y )
 {
 	int dx = x - m_actionStartCursor.x;
