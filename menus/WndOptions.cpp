@@ -2,8 +2,8 @@
 WndOptions.cpp -- CS 1.6 PC-style windowed Options dialog
 Copyright (C) 2024 DragonSlayer Team
 
-CMenuFrameTabbed with Multiplayer/Keyboard/Audio/Video/Voice tabs.
-OK/Cancel/Apply buttons always visible at bottom.
+CMenuFrameTabbed with Multiplayer/Keyboard/Mouse/Audio/Video/HUD/Account/System tabs.
+OK/Cancel/Apply buttons always visible at bottom (right-aligned).
 Each tab has real controls linked to cvars.
 */
 
@@ -21,8 +21,6 @@ Each tab has real controls linked to cvars.
 #include "Utils.h"
 #include "TrackerScheme.h"
 
-// ─── Options window ───────────────────────────────────────────────────
-
 class CMenuWndOptions : public CMenuFrameTabbed
 {
 public:
@@ -36,44 +34,57 @@ private:
 	void ApplySettings();
 	void CancelSettings();
 
-	// ─── Bottom buttons (always visible — added before tabs) ───
+	// Bottom buttons (always visible - added before tabs)
 	CMenuFrameButton btnOK;
 	CMenuFrameButton btnCancel;
 	CMenuFrameButton btnApply;
 
-	// ─── Multiplayer tab ───
-	CMenuField     playerName;
-	CMenuCheckBox  sprayCrosshair;   // cl_crosshair_size approach
-	CMenuCheckBox  autoHelp;         // cl_autohelp
+	// Multiplayer tab
+	CMenuField       playerName;
+	CMenuField       adminPassword;
+	CMenuAction      avatarPreview;
+	CMenuFrameButton btnUpload;
+	CMenuDropDownStr modelSelect;
+	CMenuAction      logoPreview;
+	CMenuDropDownStr logoSelect;
+	CMenuFrameButton btnColor;
 
-	// ─── Keyboard tab ───
+	// Keyboard tab
 	CMenuAction    kbHint;
-	CMenuCheckBox  developerConsole; // con_enable style
-	CMenuSlider    mouseSens;        // sensitivity
-	CMenuCheckBox  rawInput;         // m_rawinput
-	CMenuCheckBox  mouseFilter;      // m_filter
-	CMenuCheckBox  invertMouse;      // lookspring
+	CMenuCheckBox  developerConsole;
 
-	// ─── Audio tab ───
-	CMenuSlider    sndVolume;        // volume
-	CMenuSlider    musicVolume;      // MP3Volume
-	CMenuSlider    suitVolume;       // suitvolume
-	CMenuCheckBox  eax;              // s_eax (placeholder)
-	CMenuCheckBox  a3d;              // s_a3d (placeholder)
+	// Mouse tab
+	CMenuSlider    mouseSens;
+	CMenuCheckBox  rawInput;
+	CMenuCheckBox  mouseFilter;
+	CMenuCheckBox  invertMouse;
 
-	// ─── Video tab ───
-	CMenuSlider    brightness;       // brightness
-	CMenuSlider    gamma;            // gamma
-	CMenuDropDownInt  dispMode;      // windowed/fullscreen
-	CMenuCheckBox  vsync;            // gl_vsync
-	CMenuCheckBox  hdr;              // gl_overbright
-	CMenuSlider    fov;              // default_fov
+	// Audio tab
+	CMenuSlider    sndVolume;
+	CMenuSlider    musicVolume;
+	CMenuSlider    suitVolume;
+	CMenuCheckBox  eax;
+	CMenuCheckBox  a3d;
 
-	// ─── Voice tab ───
-	CMenuCheckBox  voiceEnable;      // voice_modenable
-	CMenuSlider    voiceTx;          // voice_scale
-	CMenuSlider    voiceRx;          // voice_inputfromfile approach — placeholder
-	CMenuCheckBox  openMic;          // voice_vox
+	// Video tab
+	CMenuSlider      brightness;
+	CMenuSlider      gamma;
+	CMenuDropDownInt dispMode;
+	CMenuCheckBox    vsync;
+	CMenuCheckBox    hdr;
+	CMenuSlider      fov;
+
+	// HUD tab
+	CMenuCheckBox  showHud;
+	CMenuCheckBox  showWeapon;
+	CMenuCheckBox  showRadar;
+
+	// Account tab
+	CMenuAction    accountHint;
+
+	// System tab
+	CMenuAction    systemHint;
+	CMenuCheckBox  developerMode;
 };
 
 static CMenuWndOptions *s_pWndOptions = NULL;
@@ -84,10 +95,9 @@ CMenuWndOptions::CMenuWndOptions() : CMenuFrameTabbed( "Options" )
 
 void CMenuWndOptions::ApplySettings()
 {
-	// Write all cvars from editable controls
 	playerName.WriteCvar();
-	sprayCrosshair.WriteCvar();
-	autoHelp.WriteCvar();
+	adminPassword.WriteCvar();
+	developerConsole.WriteCvar();
 	mouseSens.WriteCvar();
 	rawInput.WriteCvar();
 	mouseFilter.WriteCvar();
@@ -103,17 +113,17 @@ void CMenuWndOptions::ApplySettings()
 	vsync.WriteCvar();
 	hdr.WriteCvar();
 	fov.WriteCvar();
-	voiceEnable.WriteCvar();
-	voiceTx.WriteCvar();
-	openMic.WriteCvar();
+	showHud.WriteCvar();
+	showWeapon.WriteCvar();
+	showRadar.WriteCvar();
+	developerMode.WriteCvar();
 }
 
 void CMenuWndOptions::CancelSettings()
 {
-	// Discard changes
 	playerName.DiscardChanges();
-	sprayCrosshair.DiscardChanges();
-	autoHelp.DiscardChanges();
+	adminPassword.DiscardChanges();
+	developerConsole.DiscardChanges();
 	mouseSens.DiscardChanges();
 	rawInput.DiscardChanges();
 	mouseFilter.DiscardChanges();
@@ -129,30 +139,51 @@ void CMenuWndOptions::CancelSettings()
 	vsync.DiscardChanges();
 	hdr.DiscardChanges();
 	fov.DiscardChanges();
-	voiceEnable.DiscardChanges();
-	voiceTx.DiscardChanges();
-	openMic.DiscardChanges();
+	showHud.DiscardChanges();
+	showWeapon.DiscardChanges();
+	showRadar.DiscardChanges();
+	developerMode.DiscardChanges();
 	Hide();
 }
 
 void CMenuWndOptions::_Init()
 {
-	int w = (int)(uiStatic.width * 0.62f);
-	int h = (int)(768 * 0.7f);
+	int w = (int)(uiStatic.width * 0.72f);
+	int h = (int)(768 * 0.70f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
 
 	// Content area width for controls (inside frame border+padding)
 	int cw = w - 32; // 16px padding each side
-	int btnW = 80;
-	int btnH = 26;
+	int btnW = 85;
+	int btnH = 25;
 	int contentH = h - FRAME_TITLE_HEIGHT - FRAME_TAB_HEIGHT;
-	int btnY = contentH - btnH - 12;
+	int btnY = contentH - btnH - 10;
+	int rightEdge = w - 16; // 16px padding from right frame edge
 
-	// ─── Bottom buttons — added BEFORE any tab so they're always visible ───
+	// Bottom buttons - right-aligned, added BEFORE any tab so always visible
+	// Order from right: Apply, Cancel, OK
+	btnApply.szName = "Apply";
+	btnApply.SetRect( rightEdge - btnW, btnY, btnW, btnH );
+	SET_EVENT_MULTI( btnApply.onReleased,
+	{
+		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
+		self->ApplySettings();
+	});
+	AddItem( btnApply );
+
+	btnCancel.szName = "Cancel";
+	btnCancel.SetRect( rightEdge - btnW*2 - 8, btnY, btnW, btnH );
+	SET_EVENT_MULTI( btnCancel.onReleased,
+	{
+		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
+		self->CancelSettings();
+	});
+	AddItem( btnCancel );
+
 	btnOK.szName = "OK";
-	btnOK.SetRect( 16, btnY, btnW, btnH );
+	btnOK.SetRect( rightEdge - btnW*3 - 16, btnY, btnW, btnH );
 	SET_EVENT_MULTI( btnOK.onReleased,
 	{
 		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
@@ -161,44 +192,62 @@ void CMenuWndOptions::_Init()
 	});
 	AddItem( btnOK );
 
-	btnCancel.szName = "Cancel";
-	btnCancel.SetRect( 16 + btnW + 8, btnY, btnW, btnH );
-	SET_EVENT_MULTI( btnCancel.onReleased,
-	{
-		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
-		self->CancelSettings();
-	});
-	AddItem( btnCancel );
-
-	btnApply.szName = "Apply";
-	btnApply.SetRect( 16 + (btnW + 8) * 2, btnY, btnW, btnH );
-	SET_EVENT_MULTI( btnApply.onReleased,
-	{
-		CMenuWndOptions *self = (CMenuWndOptions*)pSelf->GetParent( CMenuWndOptions );
-		self->ApplySettings();
-	});
-	AddItem( btnApply );
-
-	// ─────────────────────── TAB: Multiplayer ───────────────────────
+	// ---- TAB: Multiplayer ----
 	AddTab( "Multiplayer" );
 
+	// 2-column layout
+	int leftColW = (int)(cw * 0.4f);
+	int rightCol = 16 + leftColW + 16;
+	int rightColW = cw - leftColW - 16;
+
+	// Left column
+	avatarPreview.szName = "Model Preview";
+	avatarPreview.iFlags |= QMF_INACTIVE;
+	avatarPreview.SetRect( 16, 8, leftColW, 100 );
+	AddItem( avatarPreview );
+
+	btnUpload.szName = "Upload";
+	btnUpload.SetRect( 16, 116, 70, 22 );
+	AddItem( btnUpload );
+
+	modelSelect.szName = "";
+	modelSelect.AddItem( "arctic", "arctic" );
+	modelSelect.AddItem( "guerilla", "guerilla" );
+	modelSelect.AddItem( "leet", "leet" );
+	modelSelect.SetRect( 16, 146, leftColW, 24 );
+	AddItem( modelSelect );
+
+	logoPreview.szName = "Logo Preview";
+	logoPreview.iFlags |= QMF_INACTIVE;
+	logoPreview.SetRect( 16, 180, leftColW, 60 );
+	AddItem( logoPreview );
+
+	logoSelect.szName = "";
+	logoSelect.AddItem( "lambda", "lambda" );
+	logoSelect.AddItem( "skull", "skull" );
+	logoSelect.AddItem( "cross", "cross" );
+	logoSelect.SetRect( 16, 248, leftColW, 24 );
+	AddItem( logoSelect );
+
+	btnColor.szName = "Change Color";
+	btnColor.SetRect( 16, 280, 100, 22 );
+	AddItem( btnColor );
+
+	// Right column
 	playerName.szName = "Player Name";
 	playerName.iMaxLength = 32;
-	playerName.SetRect( 16, 8, cw, 28 );
+	playerName.SetRect( rightCol, 8, rightColW, 28 );
 	playerName.LinkCvar( "name" );
 	AddItem( playerName );
 
-	sprayCrosshair.szName = "Dynamic Crosshair";
-	sprayCrosshair.SetCoord( 16, 48 );
-	sprayCrosshair.LinkCvar( "cl_dynamiccrosshair" );
-	AddItem( sprayCrosshair );
+	adminPassword.szName = "VIP/Admin Password";
+	adminPassword.iMaxLength = 64;
+	adminPassword.bHideInput = true;
+	adminPassword.SetRect( rightCol, 52, rightColW, 28 );
+	adminPassword.LinkCvar( "password" );
+	AddItem( adminPassword );
 
-	autoHelp.szName = "Auto-Help";
-	autoHelp.SetCoord( 16, 82 );
-	autoHelp.LinkCvar( "cl_autohelp" );
-	AddItem( autoHelp );
-
-	// ─────────────────────── TAB: Keyboard ──────────────────────────
+	// ---- TAB: Keyboard ----
 	AddTab( "Keyboard" );
 
 	kbHint.szName = "Use console for key binds: bind <key> <command>";
@@ -211,28 +260,31 @@ void CMenuWndOptions::_Init()
 	developerConsole.LinkCvar( "con_enable" );
 	AddItem( developerConsole );
 
+	// ---- TAB: Mouse ----
+	AddTab( "Mouse" );
+
 	mouseSens.szName = "Mouse Sensitivity";
 	mouseSens.Setup( 0.5f, 20.0f, 0.5f );
-	mouseSens.SetRect( 16, 82, cw, 28 );
+	mouseSens.SetRect( 16, 8, cw, 28 );
 	mouseSens.LinkCvar( "sensitivity" );
 	AddItem( mouseSens );
 
 	rawInput.szName = "Raw Input";
-	rawInput.SetCoord( 16, 122 );
+	rawInput.SetCoord( 16, 48 );
 	rawInput.LinkCvar( "m_rawinput" );
 	AddItem( rawInput );
 
 	mouseFilter.szName = "Mouse Filter";
-	mouseFilter.SetCoord( 16, 156 );
+	mouseFilter.SetCoord( 16, 76 );
 	mouseFilter.LinkCvar( "m_filter" );
 	AddItem( mouseFilter );
 
-	invertMouse.szName = "Look Spring";
-	invertMouse.SetCoord( 16, 190 );
+	invertMouse.szName = "Invert Mouse";
+	invertMouse.SetCoord( 16, 104 );
 	invertMouse.LinkCvar( "lookspring" );
 	AddItem( invertMouse );
 
-	// ─────────────────────── TAB: Audio ─────────────────────────────
+	// ---- TAB: Audio ----
 	AddTab( "Audio" );
 
 	sndVolume.szName = "Sound Effects Volume";
@@ -243,27 +295,27 @@ void CMenuWndOptions::_Init()
 
 	musicVolume.szName = "MP3 Volume";
 	musicVolume.Setup( 0.0f, 1.0f, 0.05f );
-	musicVolume.SetRect( 16, 52, cw, 28 );
+	musicVolume.SetRect( 16, 48, cw, 28 );
 	musicVolume.LinkCvar( "MP3Volume" );
 	AddItem( musicVolume );
 
 	suitVolume.szName = "HEV Suit Volume";
 	suitVolume.Setup( 0.0f, 1.0f, 0.05f );
-	suitVolume.SetRect( 16, 96, cw, 28 );
+	suitVolume.SetRect( 16, 88, cw, 28 );
 	suitVolume.LinkCvar( "suitvolume" );
 	AddItem( suitVolume );
 
 	eax.szName = "Enable EAX (requires EAX-capable card)";
-	eax.SetCoord( 16, 144 );
+	eax.SetCoord( 16, 128 );
 	eax.LinkCvar( "s_eax" );
 	AddItem( eax );
 
 	a3d.szName = "Enable A3D";
-	a3d.SetCoord( 16, 178 );
+	a3d.SetCoord( 16, 156 );
 	a3d.LinkCvar( "s_a3d" );
 	AddItem( a3d );
 
-	// ─────────────────────── TAB: Video ─────────────────────────────
+	// ---- TAB: Video ----
 	AddTab( "Video" );
 
 	brightness.szName = "Brightness";
@@ -274,65 +326,79 @@ void CMenuWndOptions::_Init()
 
 	gamma.szName = "Gamma";
 	gamma.Setup( 0.5f, 3.0f, 0.1f );
-	gamma.SetRect( 16, 52, cw, 28 );
+	gamma.SetRect( 16, 48, cw, 28 );
 	gamma.LinkCvar( "gamma" );
 	AddItem( gamma );
 
 	dispMode.szName = "Display Mode";
 	dispMode.AddItem( "Fullscreen", 1 );
 	dispMode.AddItem( "Windowed", 0 );
-	dispMode.SetRect( 16, 96, 200, 28 );
+	dispMode.SetRect( 16, 88, 200, 28 );
 	dispMode.LinkCvar( "fullscreen", CMenuEditable::CVAR_VALUE );
 	AddItem( dispMode );
 
 	vsync.szName = "V-Sync";
-	vsync.SetCoord( 16, 140 );
+	vsync.SetCoord( 16, 128 );
 	vsync.LinkCvar( "gl_vsync" );
 	AddItem( vsync );
 
 	hdr.szName = "Overbright";
-	hdr.SetCoord( 16, 174 );
+	hdr.SetCoord( 16, 156 );
 	hdr.LinkCvar( "gl_overbright" );
 	AddItem( hdr );
 
 	fov.szName = "Field of View";
 	fov.Setup( 70.0f, 120.0f, 5.0f );
-	fov.SetRect( 16, 214, cw, 28 );
+	fov.SetRect( 16, 188, cw, 28 );
 	fov.LinkCvar( "default_fov" );
 	AddItem( fov );
 
-	// ─────────────────────── TAB: Voice ─────────────────────────────
-	AddTab( "Voice" );
+	// ---- TAB: HUD ----
+	AddTab( "HUD" );
 
-	voiceEnable.szName = "Enable Voice in this game";
-	voiceEnable.SetCoord( 16, 8 );
-	voiceEnable.LinkCvar( "voice_modenable" );
-	AddItem( voiceEnable );
+	showHud.szName = "Draw HUD";
+	showHud.SetCoord( 16, 8 );
+	showHud.LinkCvar( "hud_draw" );
+	AddItem( showHud );
 
-	voiceTx.szName = "Transmit Volume";
-	voiceTx.Setup( 0.0f, 1.0f, 0.05f );
-	voiceTx.SetRect( 16, 48, cw, 28 );
-	voiceTx.LinkCvar( "voice_scale" );
-	AddItem( voiceTx );
+	showWeapon.szName = "Show Weapon Model";
+	showWeapon.SetCoord( 16, 36 );
+	showWeapon.LinkCvar( "r_drawviewmodel" );
+	AddItem( showWeapon );
 
-	voiceRx.szName = "Receive Volume";
-	voiceRx.Setup( 0.0f, 1.0f, 0.05f );
-	voiceRx.SetRect( 16, 92, cw, 28 );
-	voiceRx.LinkCvar( "voice_overdrive" ); // receive ducking amount
-	AddItem( voiceRx );
+	showRadar.szName = "Show Radar/Overview";
+	showRadar.SetCoord( 16, 64 );
+	showRadar.LinkCvar( "overview_mode" );
+	AddItem( showRadar );
 
-	openMic.szName = "Open Microphone (Voice Activation)";
-	openMic.SetCoord( 16, 136 );
-	openMic.LinkCvar( "voice_vox" );
-	AddItem( openMic );
+	// ---- TAB: Account ----
+	AddTab( "Account" );
+
+	accountHint.szName = "Account settings are not available in this version.";
+	accountHint.iFlags |= QMF_INACTIVE;
+	accountHint.SetCoord( 16, 8 );
+	AddItem( accountHint );
+
+	// ---- TAB: System ----
+	AddTab( "System" );
+
+	systemHint.szName = "System information and diagnostics.";
+	systemHint.iFlags |= QMF_INACTIVE;
+	systemHint.SetCoord( 16, 8 );
+	AddItem( systemHint );
+
+	developerMode.szName = "Developer Mode";
+	developerMode.SetCoord( 16, 42 );
+	developerMode.LinkCvar( "developer" );
+	AddItem( developerMode );
 
 	SetActiveTab( 0 );
 }
 
 void CMenuWndOptions::_VidInit()
 {
-	int w = (int)(uiStatic.width * 0.62f);
-	int h = (int)(768 * 0.7f);
+	int w = (int)(uiStatic.width * 0.72f);
+	int h = (int)(768 * 0.70f);
 	int x = (uiStatic.width - w) / 2;
 	int y = (768 - h) / 2;
 	SetRect( x, y, w, h );
