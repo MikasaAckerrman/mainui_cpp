@@ -167,7 +167,8 @@ void CMenuFrameTabbed::DrawTabs()
 	}
 
 	// 1px horizontal separator line below the entire tab strip
-	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, 0xC8757B69 );
+	unsigned int sepColor = Scheme_GetColor( g_Scheme.borderBright, 0xC8757B69 );
+	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, sepColor );
 }
 
 void CMenuFrameTabbed::Draw()
