@@ -21,7 +21,7 @@ A non-fullscreen draggable window with:
 // PC CS 1.6 compact = 26px title bar
 #define FRAME_TITLE_HEIGHT 26  // logical pixels
 #define FRAME_BORDER_WIDTH 2
-#define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
+#define FRAME_RESIZE_GRIP  16  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width
 #define FRAME_MIN_H        200 // minimum logical height (accounts for bigger title bar)
 #define FRAME_TEXT_HEIGHT  11  // logical pixels - Tahoma 11px feel
