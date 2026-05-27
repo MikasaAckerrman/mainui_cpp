@@ -393,7 +393,19 @@ void CMenuFrame::ApplyResize()
 {
 	if( m_bResizePending )
 	{
-		// Safety: if MouseMove never transitioned us, activate now using current cursor
+		// Apply same deadzone check as MouseMove to prevent stale-cursor activation
+		int ddx = uiStatic.cursorX - m_actionStartCursor.x;
+		int ddy = uiStatic.cursorY - m_actionStartCursor.y;
+		int dist2 = ddx * ddx + ddy * ddy;
+		int threshold = (int)(20 * uiStatic.scaleX);
+		int maxDist2 = threshold * threshold;
+		if( dist2 > maxDist2 )
+		{
+			// Stale cursor - cancel rather than activate with wrong position
+			m_bResizePending = false;
+			m_iResizeEdge = RESIZE_NONE;
+			return;
+		}
 		m_bResizePending = false;
 		m_bResizing = true;
 		m_actionStartCursor.x = uiStatic.cursorX;
@@ -409,7 +421,18 @@ void CMenuFrame::ApplyDrag()
 {
 	if( m_bDragPending )
 	{
-		// Safety: if MouseMove never transitioned us, activate now using current cursor
+		// Apply same deadzone check as MouseMove to prevent stale-cursor activation
+		int ddx = uiStatic.cursorX - m_actionStartCursor.x;
+		int ddy = uiStatic.cursorY - m_actionStartCursor.y;
+		int dist2 = ddx * ddx + ddy * ddy;
+		int threshold = (int)(20 * uiStatic.scaleX);
+		int maxDist2 = threshold * threshold;
+		if( dist2 > maxDist2 )
+		{
+			// Stale cursor - cancel rather than activate with wrong position
+			m_bDragPending = false;
+			return;
+		}
 		m_bDragPending = false;
 		m_bDragging = true;
 		m_actionStartCursor.x = uiStatic.cursorX;
@@ -545,7 +568,7 @@ bool CMenuFrame::MouseMove( int x, int y )
 		int ddy = y - m_actionStartCursor.y;
 		int dist2 = ddx * ddx + ddy * ddy;
 		int threshold = (int)(20 * uiStatic.scaleX);
-		if( dist2 > threshold * threshold * 4 )
+		if( dist2 > threshold * threshold )
 		{
 			// Touch event is from a different gesture, cancel pending
 			m_bDragPending = false;
@@ -566,7 +589,7 @@ bool CMenuFrame::MouseMove( int x, int y )
 		int ddy = y - m_actionStartCursor.y;
 		int dist2 = ddx * ddx + ddy * ddy;
 		int threshold = (int)(20 * uiStatic.scaleX);
-		if( dist2 > threshold * threshold * 4 )
+		if( dist2 > threshold * threshold )
 		{
 			// Touch event is from a different gesture, cancel pending
 			m_bResizePending = false;
