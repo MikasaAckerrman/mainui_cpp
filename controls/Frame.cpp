@@ -541,22 +541,11 @@ bool CMenuFrame::KeyUp( int key )
 bool CMenuFrame::MouseMove( int x, int y )
 {
 	// Deferred drag activation: KeyDown set pending=true and captured cursor position.
-	// The first MouseMove carries the REAL touch position on Android, so we activate here.
-	// Sanity check: if MouseMove position is wildly different from KeyDown position,
-	// this is a different touch gesture - cancel pending to prevent window jump.
+	// The first MouseMove carries the REAL touch position on Android, so we activate
+	// here using its (x,y) as the anchor. No deadzone check needed - the deferred
+	// pattern already prevents jumps because the anchor is set from MouseMove's coords.
 	if( m_bDragPending )
 	{
-		int ddx = x - m_actionStartCursor.x;
-		int ddy = y - m_actionStartCursor.y;
-		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(8 * uiStatic.scaleX);
-		if( dist2 > threshold * threshold )
-		{
-			// Touch event is from a different gesture, cancel pending
-			m_bDragPending = false;
-			return false;
-		}
-
 		m_bDragPending = false;
 		m_bDragging = true;
 		m_actionStartCursor.x = x;
@@ -566,18 +555,6 @@ bool CMenuFrame::MouseMove( int x, int y )
 
 	if( m_bResizePending )
 	{
-		int ddx = x - m_actionStartCursor.x;
-		int ddy = y - m_actionStartCursor.y;
-		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(8 * uiStatic.scaleX);
-		if( dist2 > threshold * threshold )
-		{
-			// Touch event is from a different gesture, cancel pending
-			m_bResizePending = false;
-			m_iResizeEdge = RESIZE_NONE;
-			return false;
-		}
-
 		m_bResizePending = false;
 		m_bResizing = true;
 		m_actionStartCursor.x = x;
