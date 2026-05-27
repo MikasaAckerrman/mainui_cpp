@@ -14,8 +14,6 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_szTitle = title;
 	m_bDragging = false;
 	m_bResizing = false;
-	m_bDragPending = false;
-	m_bResizePending = false;
 	m_bUserMoved = false;
 	m_iResizeEdge = RESIZE_NONE;
 
@@ -53,10 +51,10 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 24x24 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(24 * uiStatic.scaleY);
+	// Close button: 30x30 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(30 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
-	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
+	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
 	int pad = 2;
 	return ( x >= btnX - pad && x <= btnX + btnSize + pad &&
@@ -114,14 +112,14 @@ void CMenuFrame::DrawTitleBar()
 	if( m_szTitle && m_szTitle[0] )
 	{
 		UI_DrawString( uiStatic.hSmallFont,
-			m_scPos.x + 6, m_scPos.y, m_scSize.w - m_iTitleH - 6, m_iTitleH,
+			m_scPos.x + 10, m_scPos.y, m_scSize.w - m_iTitleH - 10, m_iTitleH,
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 24x24 raised bevel box
-	int btnSize = (int)(24 * uiStatic.scaleY);
+	// Close button [X] - 30x30 raised bevel box
+	int btnSize = (int)(30 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
-	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
+	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
 
 	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
@@ -374,8 +372,13 @@ bool CMenuFrame::KeyDown( int key )
 		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
 		if( edge != RESIZE_NONE )
 		{
-			m_bResizePending = true;
+			m_bResizing = true;
+			m_bUserMoved = true;
 			m_iResizeEdge = edge;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -383,11 +386,23 @@ bool CMenuFrame::KeyDown( int key )
 		if( BaseClass::KeyDown( key ) )
 			return true;
 
-		// No child claimed it — start drag from anywhere inside the window.
+		// No child claimed it — start drag from the title bar only.
+		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
+		{
+			m_bDragging = true;
+			m_bUserMoved = true;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
+			m_actionStartPos = m_scPos;
+			m_actionStartSize = m_scSize;
+			return true;
+		}
+
+		// Click was inside the window body but not on anything interactive.
+		// Don't start a drag — just consume the event.
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
-			m_bDragPending = true;
 			return true;
 		}
 
@@ -407,23 +422,10 @@ bool CMenuFrame::KeyUp( int key )
 {
 	if( UI::Key::IsLeftMouse( key ) )
 	{
-		// Close button takes priority over pending drag/resize
+		// Close button takes priority over drag/resize
 		if( !m_bDragging && !m_bResizing && IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
-			m_bDragPending = false;
-			m_bResizePending = false;
 			Hide();
-			return true;
-		}
-
-		if( m_bDragPending )
-		{
-			m_bDragPending = false;
-			return true;
-		}
-		if( m_bResizePending )
-		{
-			m_bResizePending = false;
 			return true;
 		}
 
@@ -446,35 +448,8 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
-	// Pending-to-active transitions: use the REAL (x,y) from this MouseMove event
-	// as the drag/resize anchor. This avoids the Android stale-cursor bug where
-	// uiStatic.cursorX/Y may be (0,0) at KeyDown time.
-	if( m_bDragPending )
-	{
-		m_bDragPending = false;
-		m_bDragging = true;
-		m_bUserMoved = true;
-		m_actionStartCursor.x = x;
-		m_actionStartCursor.y = y;
-		m_actionStartPos = m_scPos;
-		m_actionStartSize = m_scSize;
-		return true;
-	}
-
-	if( m_bResizePending )
-	{
-		m_bResizePending = false;
-		m_bResizing = true;
-		m_bUserMoved = true;
-		m_actionStartCursor.x = x;
-		m_actionStartCursor.y = y;
-		m_actionStartPos = m_scPos;
-		m_actionStartSize = m_scSize;
-		return true;
-	}
-
-	// Drag/resize updates are driven HERE — synchronously with the cursor event,
-	// not deferred to Draw(). This is the key fix for touch-screen reliability.
+	// Drag/resize updates are driven HERE — synchronously with the cursor event.
+	// This gives real-time visual feedback as the user drags.
 	if( m_bResizing )
 	{
 		UpdateResize( x, y );
