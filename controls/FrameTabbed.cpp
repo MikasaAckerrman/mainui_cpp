@@ -84,9 +84,14 @@ int CMenuFrameTabbed::TabAtCursor()
 	if( uiStatic.cursorY < tabY || uiStatic.cursorY > tabY + tabH )
 		return -1;
 
-	int idx = ( uiStatic.cursorX - m_scPos.x ) / tabW;
-	if( idx < 0 || idx >= m_iNumTabs )
+	int relX = uiStatic.cursorX - m_scPos.x;
+	if( relX < 0 || relX >= m_scSize.w )
 		return -1;
+
+	// Last tab extends to the right edge to absorb remainder pixels
+	int idx = relX / tabW;
+	if( idx >= m_iNumTabs )
+		idx = m_iNumTabs - 1;
 
 	return idx;
 }
@@ -110,6 +115,7 @@ void CMenuFrameTabbed::DrawTabs()
 
 	int tabY = m_scPos.y + m_iTitleH;
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
+	int lastTabW = ( m_iNumTabs > 1 ) ? m_scSize.w - tabW * (m_iNumTabs - 1) : tabW;
 
 	// GoldSrc VGUI tab colors
 	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF6E754A );
@@ -124,6 +130,7 @@ void CMenuFrameTabbed::DrawTabs()
 	for( int i = 0; i < m_iNumTabs; i++ )
 	{
 		int x = m_scPos.x + i * tabW;
+		int tw = (i == m_iNumTabs - 1) ? lastTabW : tabW;
 		int ty = tabY;
 		int th = m_iTabH;
 		unsigned int bg, fg;
@@ -140,22 +147,22 @@ void CMenuFrameTabbed::DrawTabs()
 		}
 
 		// Tab background fill
-		UI_FillRect( x, ty, tabW, th, bg );
+		UI_FillRect( x, ty, tw, th, bg );
 
 		// Border system: top bright, left bright, right dark
-		UI_FillRect( x, ty, tabW, 1, bright );        // top edge
+		UI_FillRect( x, ty, tw, 1, bright );        // top edge
 		UI_FillRect( x, ty, 1, th, bright );           // left edge
-		UI_FillRect( x + tabW - 1, ty, 1, th, dark );  // right edge
+		UI_FillRect( x + tw - 1, ty, 1, th, dark );  // right edge
 
 		if( i != m_iActiveTab )
 		{
 			// Inactive tabs: bottom dark border
-			UI_FillRect( x, ty + th - 1, tabW, 1, dark );
+			UI_FillRect( x, ty + th - 1, tw, 1, dark );
 		}
 		// Active tab: NO bottom border (merges with content area below)
 
 		// Tab label text - centered, using hSmallFont (Tahoma)
-		UI_DrawString( uiStatic.hSmallFont, x, ty, tabW, th,
+		UI_DrawString( uiStatic.hSmallFont, x, ty, tw, th,
 			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
 	}
 }
