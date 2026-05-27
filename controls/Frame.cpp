@@ -14,6 +14,8 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_szTitle = title;
 	m_bDragging = false;
 	m_bResizing = false;
+	m_bDragPending = false;
+	m_bResizePending = false;
 	m_bUserMoved = false;
 	m_iResizeEdge = RESIZE_NONE;
 
@@ -372,13 +374,8 @@ bool CMenuFrame::KeyDown( int key )
 		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
 		if( edge != RESIZE_NONE )
 		{
-			m_bResizing = true;
-			m_bUserMoved = true;
+			m_bResizePending = true;
 			m_iResizeEdge = edge;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -390,12 +387,7 @@ bool CMenuFrame::KeyDown( int key )
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
-			m_bDragging = true;
-			m_bUserMoved = true;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
+			m_bDragPending = true;
 			return true;
 		}
 
@@ -415,6 +407,17 @@ bool CMenuFrame::KeyUp( int key )
 {
 	if( UI::Key::IsLeftMouse( key ) )
 	{
+		if( m_bDragPending )
+		{
+			m_bDragPending = false;
+			return true;
+		}
+		if( m_bResizePending )
+		{
+			m_bResizePending = false;
+			return true;
+		}
+
 		if( m_bResizing )
 		{
 			m_bResizing = false;
@@ -440,6 +443,33 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
+	// Pending-to-active transitions: use the REAL (x,y) from this MouseMove event
+	// as the drag/resize anchor. This avoids the Android stale-cursor bug where
+	// uiStatic.cursorX/Y may be (0,0) at KeyDown time.
+	if( m_bDragPending )
+	{
+		m_bDragPending = false;
+		m_bDragging = true;
+		m_bUserMoved = true;
+		m_actionStartCursor.x = x;
+		m_actionStartCursor.y = y;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
+		return true;
+	}
+
+	if( m_bResizePending )
+	{
+		m_bResizePending = false;
+		m_bResizing = true;
+		m_bUserMoved = true;
+		m_actionStartCursor.x = x;
+		m_actionStartCursor.y = y;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
+		return true;
+	}
+
 	// Drag/resize updates are driven HERE — synchronously with the cursor event,
 	// not deferred to Draw(). This is the key fix for touch-screen reliability.
 	if( m_bResizing )
