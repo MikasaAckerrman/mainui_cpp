@@ -110,7 +110,8 @@ void CMenuWndConsole::_Init()
 
 void CMenuWndConsole::_VidInit()
 {
-	// Recompute window position for current resolution
+	if( m_bUserMoved )
+		return;
 	int w = (int)(uiStatic.width * 0.7f);
 	int h = (int)(768 * 0.6f);
 	int x = (uiStatic.width - w) / 2;
@@ -316,9 +317,6 @@ void CMenuWndConsole::Draw()
 	m_iTitleH = (int)(FRAME_TITLE_HEIGHT * uiStatic.scaleY);
 	m_iBorderW = (int)(FRAME_BORDER_WIDTH * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
-
-	ApplyResize();
-	ApplyDrag();
 
 	// --- Dynamic input field positioning ---
 	// Because inputField has QMF_DISABLESCAILING, CalcPosition sets m_scPos = pos directly.
