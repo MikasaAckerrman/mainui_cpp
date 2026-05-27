@@ -78,13 +78,11 @@ void CMenuFrameButton::Draw()
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
 	// Double-layer border: outer dark outline + inner raised/sunken bevel
-	unsigned int outerDark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
-
-	// Outer dark outline (1px all around)
-	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, outerDark );
-	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, outerDark );
-	UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, outerDark );
-	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, outerDark );
+	// Outer dark outline (1px all around) - reuses 'dark' from above
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, dark );
+	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, dark );
+	UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, dark );
+	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, dark );
 
 	// Inner bevel (1px, inside the outer dark outline)
 	unsigned int topLeft = pressed ? dark : bright;

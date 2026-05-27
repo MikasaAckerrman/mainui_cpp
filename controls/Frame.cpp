@@ -250,8 +250,8 @@ void CMenuFrame::DrawResizeGrip()
 	if( !bAllowResize )
 		return;
 
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF30342B );
 
 	// Draw 3 diagonal groove lines at bottom-right corner.
 	// Each line is a pair of bright+dark 1px diagonal strokes for a grooved look.
@@ -391,55 +391,12 @@ void CMenuFrame::UpdateResize( int x, int y )
 
 void CMenuFrame::ApplyResize()
 {
-	if( m_bResizePending )
-	{
-		// Apply same deadzone check as MouseMove to prevent stale-cursor activation
-		int ddx = uiStatic.cursorX - m_actionStartCursor.x;
-		int ddy = uiStatic.cursorY - m_actionStartCursor.y;
-		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(20 * uiStatic.scaleX);
-		int maxDist2 = threshold * threshold;
-		if( dist2 > maxDist2 )
-		{
-			// Stale cursor - cancel rather than activate with wrong position
-			m_bResizePending = false;
-			m_iResizeEdge = RESIZE_NONE;
-			return;
-		}
-		m_bResizePending = false;
-		m_bResizing = true;
-		m_actionStartCursor.x = uiStatic.cursorX;
-		m_actionStartCursor.y = uiStatic.cursorY;
-		m_actionStartPos = m_scPos;
-		m_actionStartSize = m_scSize;
-	}
 	if( m_bResizing )
 		UpdateResize( uiStatic.cursorX, uiStatic.cursorY );
 }
 
 void CMenuFrame::ApplyDrag()
 {
-	if( m_bDragPending )
-	{
-		// Apply same deadzone check as MouseMove to prevent stale-cursor activation
-		int ddx = uiStatic.cursorX - m_actionStartCursor.x;
-		int ddy = uiStatic.cursorY - m_actionStartCursor.y;
-		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(20 * uiStatic.scaleX);
-		int maxDist2 = threshold * threshold;
-		if( dist2 > maxDist2 )
-		{
-			// Stale cursor - cancel rather than activate with wrong position
-			m_bDragPending = false;
-			return;
-		}
-		m_bDragPending = false;
-		m_bDragging = true;
-		m_actionStartCursor.x = uiStatic.cursorX;
-		m_actionStartCursor.y = uiStatic.cursorY;
-		m_actionStartPos = m_scPos;
-		m_actionStartSize = m_scSize;
-	}
 	if( m_bDragging )
 		UpdateDrag( uiStatic.cursorX, uiStatic.cursorY );
 }
@@ -580,7 +537,6 @@ bool CMenuFrame::MouseMove( int x, int y )
 		m_actionStartCursor.x = x;
 		m_actionStartCursor.y = y;
 		m_actionStartPos = m_scPos;
-		m_actionStartSize = m_scSize;
 	}
 
 	if( m_bResizePending )
