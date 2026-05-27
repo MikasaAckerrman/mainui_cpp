@@ -284,7 +284,7 @@ void CMenuWndOptions::_Init()
 	AddItem( btnAdvanced );
 
 	// Right column
-	int ry = 70;
+	int ry = pad;
 
 	playerNameLabel.szName = (const char*)u8"\u0418\u043C\u044F \u0438\u0433\u0440\u043E\u043A\u0430";
 	playerNameLabel.iFlags |= QMF_INACTIVE;
