@@ -14,6 +14,8 @@ CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 	m_szTitle = title;
 	m_bDragging = false;
 	m_bResizing = false;
+	m_bDragPending = false;
+	m_bResizePending = false;
 	m_bUserMoved = false;
 	m_iResizeEdge = RESIZE_NONE;
 
@@ -371,13 +373,9 @@ bool CMenuFrame::KeyDown( int key )
 		int edge = HitTestResize( uiStatic.cursorX, uiStatic.cursorY );
 		if( edge != RESIZE_NONE )
 		{
-			m_bResizing = true;
+			m_bResizePending = true;
 			m_bUserMoved = true;
 			m_iResizeEdge = edge;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -388,12 +386,8 @@ bool CMenuFrame::KeyDown( int key )
 		// No child claimed it — start drag from the title bar...
 		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
-			m_bDragging = true;
+			m_bDragPending = true;
 			m_bUserMoved = true;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -401,12 +395,8 @@ bool CMenuFrame::KeyDown( int key )
 		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
-			m_bDragging = true;
+			m_bDragPending = true;
 			m_bUserMoved = true;
-			m_actionStartCursor.x = uiStatic.cursorX;
-			m_actionStartCursor.y = uiStatic.cursorY;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
 			return true;
 		}
 
@@ -427,9 +417,17 @@ bool CMenuFrame::KeyUp( int key )
 	if( UI::Key::IsLeftMouse( key ) )
 	{
 		// Close button takes priority over drag/resize
-		if( !m_bDragging && !m_bResizing && IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
+		if( !m_bDragging && !m_bResizing && !m_bDragPending && !m_bResizePending &&
+		    IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
 			Hide();
+			return true;
+		}
+
+		if( m_bResizePending )
+		{
+			m_bResizePending = false;
+			m_iResizeEdge = RESIZE_NONE;
 			return true;
 		}
 
@@ -437,6 +435,12 @@ bool CMenuFrame::KeyUp( int key )
 		{
 			m_bResizing = false;
 			m_iResizeEdge = RESIZE_NONE;
+			return true;
+		}
+
+		if( m_bDragPending )
+		{
+			m_bDragPending = false;
 			return true;
 		}
 
@@ -452,22 +456,26 @@ bool CMenuFrame::KeyUp( int key )
 
 bool CMenuFrame::MouseMove( int x, int y )
 {
-	// On Android, the first MouseMove after KeyDown carries the REAL touch position.
-	// If it differs significantly from captured startCursor, re-anchor to prevent jump.
-	if( m_bDragging || m_bResizing )
+	// Deferred drag activation: KeyDown set pending=true without capturing coordinates.
+	// The first MouseMove carries the REAL touch position, so we activate here.
+	if( m_bDragPending )
 	{
-		int dx = x - m_actionStartCursor.x;
-		int dy = y - m_actionStartCursor.y;
+		m_bDragPending = false;
+		m_bDragging = true;
+		m_actionStartCursor.x = x;
+		m_actionStartCursor.y = y;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
+	}
 
-		// If first movement is a huge jump (>50px distance), the KeyDown cursor was stale.
-		// Re-anchor so the window doesn't teleport.
-		if( (dx * dx + dy * dy) > 2500 ) // 50*50 = 2500
-		{
-			m_actionStartCursor.x = x;
-			m_actionStartCursor.y = y;
-			m_actionStartPos = m_scPos;
-			m_actionStartSize = m_scSize;
-		}
+	if( m_bResizePending )
+	{
+		m_bResizePending = false;
+		m_bResizing = true;
+		m_actionStartCursor.x = x;
+		m_actionStartCursor.y = y;
+		m_actionStartPos = m_scPos;
+		m_actionStartSize = m_scSize;
 	}
 
 	// Drag/resize updates are driven HERE — synchronously with the cursor event.

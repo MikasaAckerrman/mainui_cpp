@@ -91,6 +91,8 @@ protected:
 	// State
 	bool m_bDragging;
 	bool m_bResizing;
+	bool m_bDragPending;
+	bool m_bResizePending;
 	int  m_iResizeEdge;
 
 	// Set true once user drags/resizes; prevents VidInit from snapping back
