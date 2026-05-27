@@ -117,12 +117,12 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 	int lastTabW = ( m_iNumTabs > 1 ) ? m_scSize.w - tabW * (m_iNumTabs - 1) : tabW;
 
-	// GoldSrc VGUI tab colors
-	unsigned int activeBg   = Scheme_GetColor( g_Scheme.tabActiveBgColor, 0xFF5E6542 );
-	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xFF58604F );
-	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
-	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
-	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFF9C9C9C );
+	// GoldSrc VGUI tab colors - active tab uses frame body color to blend seamlessly
+	unsigned int frameBg    = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
+	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xE64E5643 );
+	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
+	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
+	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFFDCDCDC );
 	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFBFB85E );
 
 	int hovered = TabAtCursor();
@@ -137,7 +137,7 @@ void CMenuFrameTabbed::DrawTabs()
 
 		if( i == m_iActiveTab )
 		{
-			bg = activeBg;
+			bg = frameBg;
 			fg = tabSelText;
 		}
 		else

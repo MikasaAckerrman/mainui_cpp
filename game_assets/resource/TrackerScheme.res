@@ -10,9 +10,9 @@
 		"MedOlive"			"75 80 50 255"
 		"DarkOlive"			"55 58 35 255"
 		"DarkerOlive"		"35 38 22 255"
-		"TitleOlive"		"94 96 88 255"
-		"TitleTopEdge"		"122 125 115 255"
-		"TitleBottomEdge"	"54 57 48 255"
+		"TitleOlive"		"95 104 79 230"
+		"TitleTopEdge"		"105 114 89 255"
+		"TitleBottomEdge"	"75 84 59 255"
 		"Black"				"0 0 0 255"
 		"TransBlack"		"0 0 0 128"
 		"ListBG"			"45 50 35 230"
@@ -21,8 +21,8 @@
 		"MainBG"			"95 104 79 255"
 		"SelectionBG"		"90 90 50 255"
 		"Highlight"			"80 85 50 64"
-		"ActiveTabGreen"	"112 120 75 255"
-		"TabInactive"		"88 96 79 255"
+		"ActiveTabGreen"	"93 102 77 230"
+		"TabInactive"		"78 86 67 230"
 		"TabActiveText"		"209 196 105 255"
 		"Blank"				"0 0 0 0"
 	}
@@ -40,8 +40,8 @@
 		"FrameTitleBar.DisabledBgColor"	"DarkerOlive"
 
 		// ===== Borders =====
-		"Border.Bright"					"118 125 106 255"
-		"Border.Dark"					"48 52 43 255"
+		"Border.Bright"					"95 101 88 200"
+		"Border.Dark"					"40 44 36 200"
 		"Border.Selection"				"Black"
 
 		// ===== Buttons =====
@@ -90,7 +90,7 @@
 		"TextEntry.DisabledBgColor"		"DarkerOlive"
 
 		// ===== Tabs / PropertySheet =====
-		"PropertySheet.TextColor"		"DullWhite"
+		"PropertySheet.TextColor"		"OffWhite"
 		"PropertySheet.SelectedTextColor" "White"
 		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
 		"PropertySheet.InactiveTabBgColor" "TabInactive"
@@ -133,7 +133,7 @@
 			{
 				"name"		"Tahoma"
 				"tall"		"12"
-				"weight"	"500"
+				"weight"	"400"
 			}
 		}
 		"DefaultBold"
