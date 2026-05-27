@@ -447,10 +447,12 @@ bool CMenuFrame::KeyDown( int key )
 		if( BaseClass::KeyDown( key ) )
 			return true;
 
-		// No child claimed it — start drag ONLY from title bar (GoldSrc behavior).
+		// No child claimed it -- start drag from title bar OR tab bar area.
+		// The expanded zone (title + tabs) provides a larger touch target on Android.
 		// Do NOT allow drag from window body - on Android, stale cursorX/Y in
 		// KeyDown causes false positive drag activation on any body touch.
-		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) )
+		if( IsInTitleBar( uiStatic.cursorX, uiStatic.cursorY ) ||
+		    IsInTabBar( uiStatic.cursorX, uiStatic.cursorY ) )
 		{
 			m_bDragPending = true;
 			m_bUserMoved = true;
