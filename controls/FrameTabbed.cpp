@@ -192,12 +192,24 @@ bool CMenuFrameTabbed::KeyUp( int key )
 	if( UI::Key::IsLeftMouse( key ) )
 	{
 		int tab = TabAtCursor();
-		if( tab >= 0 && tab != m_iActiveTab )
+		if( tab >= 0 )
 		{
-			m_bDragPending = false; // Clear pending drag set by Frame::KeyDown
-			SetActiveTab( tab );
-			PlayLocalSound( uiStatic.sounds[SND_LAUNCH] );
-			return true;
+			if( tab != m_iActiveTab )
+			{
+				m_bDragPending = false;
+				SetActiveTab( tab );
+				PlayLocalSound( uiStatic.sounds[SND_LAUNCH] );
+				return true;
+			}
+			else
+			{
+				// Tapped the already-active tab without dragging - just cancel pending
+				if( m_bDragPending )
+				{
+					m_bDragPending = false;
+					return true;
+				}
+			}
 		}
 	}
 
