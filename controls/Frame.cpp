@@ -53,8 +53,8 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 18x18 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(18 * uiStatic.scaleY);
+	// Close button: 24x24 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(24 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -98,15 +98,15 @@ void CMenuFrame::DrawTitleBar()
 {
 	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4B4B4B );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
-	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF707864 );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF3A4035 );
 
 	// Title bar background - full width inside border
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
 
-	// Sunken groove separator at bottom of title bar (dark + bright = sunken)
-	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 2, m_scSize.w, 1, dark );
-	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, bright );
+	// 3D title bar border: top edge bright, bottom edge dark
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, bright );
+	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, dark );
 
 	// Title text - small font (Tahoma 11px feel), vertically centered.
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
@@ -118,8 +118,8 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 18x18 raised bevel box (Source Engine standard)
-	int btnSize = (int)(18 * uiStatic.scaleY);
+	// Close button [X] - 24x24 raised bevel box
+	int btnSize = (int)(24 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -162,8 +162,8 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF6B745E );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF2F342C );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;

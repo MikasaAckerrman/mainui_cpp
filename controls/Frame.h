@@ -18,13 +18,13 @@ A non-fullscreen draggable window with:
 #include "BaseWindow.h"
 #include "TrackerScheme.h"
 
-// PC CS 1.6 original = 28px title bar (confirmed from source-engine PaintBackground)
-#define FRAME_TITLE_HEIGHT 28  // logical pixels
+// PC CS 1.6 original = 32px title bar (confirmed from source-engine PaintBackground)
+#define FRAME_TITLE_HEIGHT 32  // logical pixels
 #define FRAME_BORDER_WIDTH 2
 #define FRAME_RESIZE_GRIP  10  // logical pixels - corner grab zone size
 #define FRAME_MIN_W        220 // minimum logical width
 #define FRAME_MIN_H        160 // minimum logical height (accounts for bigger title bar)
-#define FRAME_TEXT_HEIGHT  12  // logical pixels - Tahoma 11px feel
+#define FRAME_TEXT_HEIGHT  11  // logical pixels - Tahoma 11px feel
 
 enum EResizeEdge
 {
