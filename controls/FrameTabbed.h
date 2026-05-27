@@ -38,6 +38,9 @@ protected:
 	void DrawTabs();
 	int TabAtCursor();
 
+	// Override: prevents drag activation when clicking tab area
+	bool IsInTabBar( int x, int y ) override;
+
 	struct Tab
 	{
 		const char *name;

@@ -106,6 +106,14 @@ void CMenuFrame::DrawBackground()
 	int endY = m_scPos.y + m_iTitleH + areaH;
 	int step = 6; // every 6th pixel - sparser for performance
 
+	// Cap grid points at ~4000 to avoid excessive draw calls on large screens
+	int gridPoints = (areaW / step) * (areaH / step);
+	while( gridPoints > 4000 && step < 20 )
+	{
+		step += 2;
+		gridPoints = (areaW / step) * (areaH / step);
+	}
+
 	unsigned int r = (bgColor >> 16) & 0xFF;
 	unsigned int g = (bgColor >> 8) & 0xFF;
 	unsigned int b = bgColor & 0xFF;
@@ -440,8 +448,9 @@ bool CMenuFrame::KeyDown( int key )
 			return true;
 		}
 
-		// ...or from anywhere unclaimed in the window body
-		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
+		// ...or from anywhere unclaimed in the window body (but not the tab bar)
+		if( !IsInTabBar( uiStatic.cursorX, uiStatic.cursorY ) &&
+		    uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
 		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
 		{
 			m_bDragPending = true;
