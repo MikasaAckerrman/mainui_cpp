@@ -76,7 +76,7 @@ void CMenuFrameButton::Draw()
 		bg = bgHover;
 
 	if( iFlags & QMF_GRAYED )
-		bg = 0xFF454545;
+		bg = 0xFF4A5040;
 
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
@@ -99,10 +99,11 @@ void CMenuFrameButton::Draw()
 	// Text — small font (Tahoma 11px feel) for PC parity.
 	unsigned int textColor = focused ? textFocus : textNorm;
 	if( iFlags & QMF_GRAYED )
-		textColor = Scheme_GetColor( g_Scheme.labelDisabledFg1, 0xFF404040 );
+		textColor = 0xFF3A3D35;
 
-	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
+	int textH = (int)(m_scSize.h * 0.38f);
 	if( textH < 8 ) textH = 8;
+	if( textH > m_scSize.h - 4 ) textH = m_scSize.h - 4;
 
 	// When pressed, offset text 1px right and 1px down for "pushed" feel
 	int textX = m_scPos.x + ( pressed ? 1 : 0 );
