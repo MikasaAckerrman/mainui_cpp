@@ -88,8 +88,8 @@ inline unsigned int Scheme_GetColor( unsigned int schemeColor, unsigned int fall
 // GoldSrc-style inset border (sunken look: dark top+left, bright bottom+right)
 inline void DrawGoldSrcInset( int x, int y, int w, int h )
 {
-	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF5F6558 );
+	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
 	UI_FillRect( x, y, w, 1, dark );            // top
 	UI_FillRect( x, y, 1, h, dark );            // left
 	UI_FillRect( x, y + h - 1, w, 1, bright );  // bottom
@@ -99,8 +99,8 @@ inline void DrawGoldSrcInset( int x, int y, int w, int h )
 // GoldSrc-style raised border (raised look: bright top+left, dark bottom+right)
 inline void DrawGoldSrcRaised( int x, int y, int w, int h )
 {
-	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF30342B );
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF5F6558 );
+	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
 	UI_FillRect( x, y, w, 1, bright );          // top
 	UI_FillRect( x, y, 1, h, bright );          // left
 	UI_FillRect( x, y + h - 1, w, 1, dark );    // bottom

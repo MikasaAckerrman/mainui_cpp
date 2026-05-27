@@ -242,8 +242,8 @@ void CMenuFrame::DrawResizeGrip()
 	if( !bAllowResize )
 		return;
 
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF767D6A );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF30342B );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xC8282C24 );
 
 	// Draw 3 diagonal groove lines at bottom-right corner.
 	// Each line is a pair of bright+dark 1px diagonal strokes for a grooved look.

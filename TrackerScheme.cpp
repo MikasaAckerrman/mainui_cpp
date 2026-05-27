@@ -278,7 +278,7 @@ void UI_LoadTrackerScheme( void )
 
 		// Apply CS 1.6 GoldSrc VGUI palette (pixel-perfect reference)
 		g_Scheme.frameBgColor        = 0xE65F684E; // 95,104,78, alpha 230
-		g_Scheme.frameTitleBarBg     = 0xE65F684F; // matches frameBgColor - title blends with body
+		g_Scheme.frameTitleBarBg     = 0xE65F684F; // NOTE: not used by DrawTitleBar, kept for API compatibility
 		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
 		g_Scheme.frameBorderColor    = 0xC8282C24; // dark border, semi-transparent
 		g_Scheme.frameTitleBarTop    = 0xFF697259; // subtle top edge
@@ -313,7 +313,7 @@ void UI_LoadTrackerScheme( void )
 
 		g_Scheme.tabTextColor        = 0xFFDCDCDC; // OffWhite for inactive tabs
 		g_Scheme.tabSelectedTextColor= 0xFFBFB85E; // 191,184,94
-		g_Scheme.tabActiveBgColor    = 0xE65D664D; // nearly same as frameBg
+		g_Scheme.tabActiveBgColor    = 0xE65D664D; // NOTE: not used by DrawTabs (reads frameBgColor), kept for API compatibility
 		g_Scheme.tabInactiveBgColor  = 0xE64E5643; // slightly darker than frame
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
