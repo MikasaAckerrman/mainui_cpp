@@ -77,18 +77,23 @@ void CMenuFrameButton::Draw()
 
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
-	// Bevel border (swap bright/dark when pressed for "pushed" effect)
+	// Double-layer border: outer dark outline + inner raised/sunken bevel
+	unsigned int outerDark = Scheme_GetColor( g_Scheme.borderDark, 0xFF222222 );
+
+	// Outer dark outline (1px all around)
+	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, outerDark );
+	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, outerDark );
+	UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, outerDark );
+	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, outerDark );
+
+	// Inner bevel (1px, inside the outer dark outline)
 	unsigned int topLeft = pressed ? dark : bright;
 	unsigned int bottomRight = pressed ? bright : dark;
 
-	// Top edge
-	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, topLeft );
-	// Left edge
-	UI_FillRect( m_scPos.x, m_scPos.y, 1, m_scSize.h, topLeft );
-	// Bottom edge
-	UI_FillRect( m_scPos.x, m_scPos.y + m_scSize.h - 1, m_scSize.w, 1, bottomRight );
-	// Right edge
-	UI_FillRect( m_scPos.x + m_scSize.w - 1, m_scPos.y, 1, m_scSize.h, bottomRight );
+	UI_FillRect( m_scPos.x + 1, m_scPos.y + 1, m_scSize.w - 2, 1, topLeft );     // top
+	UI_FillRect( m_scPos.x + 1, m_scPos.y + 1, 1, m_scSize.h - 2, topLeft );     // left
+	UI_FillRect( m_scPos.x + 1, m_scPos.y + m_scSize.h - 2, m_scSize.w - 2, 1, bottomRight ); // bottom
+	UI_FillRect( m_scPos.x + m_scSize.w - 2, m_scPos.y + 1, 1, m_scSize.h - 2, bottomRight ); // right
 
 	// Text — small font (Tahoma 11px feel) for PC parity.
 	unsigned int textColor = focused ? textFocus : textNorm;

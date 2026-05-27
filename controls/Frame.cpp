@@ -50,10 +50,11 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button glyph rect (matches DrawTitleBar layout); +2px padding for touch.
-	int btnSize = m_iTitleH - 6;
-	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
-	int btnY = m_scPos.y + 3;
+	// Close button: 18x18 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(18 * uiStatic.scaleY);
+	if( btnSize < 12 ) btnSize = 12;
+	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
+	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
 	int pad = 2;
 	return ( x >= btnX - pad && x <= btnX + btnSize + pad &&
 	         y >= btnY - pad && y <= btnY + btnSize + pad );
@@ -94,15 +95,17 @@ void CMenuFrame::DrawTitleBar()
 {
 	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4B4B4B );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int sepColor = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF282828 );
 
-	// Title bar background
+	// Title bar background - full width inside border
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
 
-	// 1px separator line at bottom of title bar
-	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, sepColor );
+	// Sunken groove separator at bottom of title bar (dark + bright = sunken)
+	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 2, m_scSize.w, 1, dark );
+	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, bright );
 
-	// Title text — small font (Tahoma 11px feel), vertically centered.
+	// Title text - small font (Tahoma 11px feel), vertically centered.
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
 	if( textH < 8 ) textH = 8;
 	if( m_szTitle && m_szTitle[0] )
@@ -112,47 +115,45 @@ void CMenuFrame::DrawTitleBar()
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] — bevel box with grey fill, grey hover highlight (not red)
-	int btnSize = m_iTitleH - 6;
-	int btnX = m_scPos.x + m_scSize.w - btnSize - 4;
-	int btnY = m_scPos.y + 3;
+	// Close button [X] - 18x18 raised bevel box (Source Engine standard)
+	int btnSize = (int)(18 * uiStatic.scaleY);
+	if( btnSize < 12 ) btnSize = 12;
+	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(5 * uiStatic.scaleX);
+	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
 
 	bool hovered = IsOnCloseButton( uiStatic.cursorX, uiStatic.cursorY );
 
-	// Bevel box background
-	unsigned int btnBg = hovered ? 0xFF606060 : 0xFF4A4A4A;
+	// Button background
+	unsigned int btnBg = hovered ? 0xFF5A5A5A : 0xFF4A4A4A;
 	UI_FillRect( btnX, btnY, btnSize, btnSize, btnBg );
 
-	// Bevel box border (raised: bright top+left, dark bottom+right)
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
-	// Top edge (bright)
-	UI_FillRect( btnX, btnY, btnSize, 1, bright );
-	// Left edge (bright)
-	UI_FillRect( btnX, btnY, 1, btnSize, bright );
-	// Bottom edge (dark)
-	UI_FillRect( btnX, btnY + btnSize - 1, btnSize, 1, dark );
-	// Right edge (dark)
-	UI_FillRect( btnX + btnSize - 1, btnY, 1, btnSize, dark );
+	// Raised bevel border (bright top+left, dark bottom+right)
+	UI_FillRect( btnX, btnY, btnSize, 1, bright );              // top
+	UI_FillRect( btnX, btnY, 1, btnSize, bright );              // left
+	UI_FillRect( btnX, btnY + btnSize - 1, btnSize, 1, dark );  // bottom
+	UI_FillRect( btnX + btnSize - 1, btnY, 1, btnSize, dark );  // right
 
-	// X glyph — white diagonal lines inside the bevel box
-	unsigned int glyphColor = 0xFFFFFFFF;
-	int pad = 3;
+	// X glyph - 2px wide diagonal strokes for visibility
+	unsigned int glyphColor = titleFg;
+	int pad = (int)(4 * uiStatic.scaleY);
+	if( pad < 3 ) pad = 3;
 	int x0 = btnX + pad;
 	int y0 = btnY + pad;
-	int x1 = btnX + btnSize - pad;
-	int y1 = btnY + btnSize - pad;
+	int x1 = btnX + btnSize - pad - 1;
+	int y1 = btnY + btnSize - pad - 1;
 	int span = x1 - x0;
 	if( span < 4 ) span = 4;
 
-	// Two thin diagonals (1px squares stepped along longer axis)
 	for( int i = 0; i <= span; i++ )
 	{
 		int px = x0 + i;
-		int py1 = y0 + i;            // top-left -> bottom-right
-		int py2 = y1 - i;            // bottom-left -> top-right
+		int py1 = y0 + (i * (y1 - y0)) / span;
+		int py2 = y1 - (i * (y1 - y0)) / span;
+		// 2px wide strokes
 		UI_FillRect( px, py1, 1, 1, glyphColor );
+		UI_FillRect( px, py1 + 1, 1, 1, glyphColor );
 		UI_FillRect( px, py2, 1, 1, glyphColor );
+		UI_FillRect( px, py2 - 1, 1, 1, glyphColor );
 	}
 }
 
@@ -161,20 +162,22 @@ void CMenuFrame::DrawBorder()
 	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFFC8C8C8 );
 	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282828 );
 
-	// Raised bevel: bright on top+left, dark on bottom+right (single pixel each side)
 	int x = m_scPos.x;
 	int y = m_scPos.y;
 	int w = m_scSize.w;
 	int h = m_scSize.h;
 
-	// Top edge (bright)
-	UI_FillRect( x - 1, y - 1, w + 1, 1, bright );
-	// Left edge (bright)
-	UI_FillRect( x - 1, y - 1, 1, h + 1, bright );
-	// Bottom edge (dark)
-	UI_FillRect( x - 1, y + h, w + 1, 1, dark );
-	// Right edge (dark)
-	UI_FillRect( x + w, y - 1, 1, h + 1, dark );
+	// Layer 1: outer dark outline (1px, all around)
+	UI_FillRect( x - 2, y - 2, w + 4, 1, dark );     // top
+	UI_FillRect( x - 2, y + h + 1, w + 4, 1, dark );  // bottom
+	UI_FillRect( x - 2, y - 2, 1, h + 4, dark );      // left
+	UI_FillRect( x + w + 1, y - 2, 1, h + 4, dark );  // right
+
+	// Layer 2: inner raised bevel (1px, bright top+left, dark bottom+right)
+	UI_FillRect( x - 1, y - 1, w + 2, 1, bright );    // top (bright)
+	UI_FillRect( x - 1, y - 1, 1, h + 2, bright );    // left (bright)
+	UI_FillRect( x - 1, y + h, w + 2, 1, dark );      // bottom (dark)
+	UI_FillRect( x + w, y - 1, 1, h + 2, dark );      // right (dark)
 }
 
 void CMenuFrame::DrawResizeGrip()
