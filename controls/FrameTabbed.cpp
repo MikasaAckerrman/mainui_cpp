@@ -179,9 +179,6 @@ void CMenuFrameTabbed::Draw()
 	m_iTabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
 	if( m_iBorderW < 1 ) m_iBorderW = 1;
 
-	ApplyResize();
-	ApplyDrag();
-
 	DrawBackground();
 	DrawTitleBar();
 	DrawTabs();
