@@ -472,6 +472,18 @@ bool CMenuFrame::KeyDown( int key )
 			return true;
 		}
 
+		// Fallback: allow drag from anywhere in the window body (empty areas)
+		// This only fires when no child item claimed the click above.
+		if( uiStatic.cursorX >= m_scPos.x && uiStatic.cursorX <= m_scPos.x + m_scSize.w &&
+		    uiStatic.cursorY >= m_scPos.y && uiStatic.cursorY <= m_scPos.y + m_scSize.h )
+		{
+			m_bDragPending = true;
+			m_bUserMoved = true;
+			m_actionStartCursor.x = uiStatic.cursorX;
+			m_actionStartCursor.y = uiStatic.cursorY;
+			return true;
+		}
+
 		return false;
 	}
 
@@ -537,7 +549,7 @@ bool CMenuFrame::MouseMove( int x, int y )
 		int ddx = x - m_actionStartCursor.x;
 		int ddy = y - m_actionStartCursor.y;
 		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(20 * uiStatic.scaleX);
+		int threshold = (int)(8 * uiStatic.scaleX);
 		if( dist2 > threshold * threshold )
 		{
 			// Touch event is from a different gesture, cancel pending
@@ -557,7 +569,7 @@ bool CMenuFrame::MouseMove( int x, int y )
 		int ddx = x - m_actionStartCursor.x;
 		int ddy = y - m_actionStartCursor.y;
 		int dist2 = ddx * ddx + ddy * ddy;
-		int threshold = (int)(20 * uiStatic.scaleX);
+		int threshold = (int)(8 * uiStatic.scaleX);
 		if( dist2 > threshold * threshold )
 		{
 			// Touch event is from a different gesture, cancel pending

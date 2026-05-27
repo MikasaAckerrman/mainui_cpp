@@ -63,7 +63,7 @@ void CMenuFrameButton::Draw()
 	unsigned int bgNormal  = schemeBg ? schemeBg : 0xFF5B6350;
 	unsigned int bgHover   = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF6B7360;
 	unsigned int bgPressed = 0xFF353535;
-	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	unsigned int bright    = Scheme_GetColor( g_Scheme.borderBright, 0xFF5F6558 );
 	unsigned int dark      = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 	unsigned int textNorm  = Scheme_GetColor( g_Scheme.buttonTextColor, 0xFFFFFFFF );
 	unsigned int textFocus = Scheme_GetColor( g_Scheme.buttonArmedTextColor, 0xFFFFFFFF );
@@ -74,6 +74,9 @@ void CMenuFrameButton::Draw()
 		bg = bgPressed;
 	else if( focused )
 		bg = bgHover;
+
+	if( iFlags & QMF_GRAYED )
+		bg = 0xFF454545;
 
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h, bg );
 
@@ -96,7 +99,7 @@ void CMenuFrameButton::Draw()
 	// Text — small font (Tahoma 11px feel) for PC parity.
 	unsigned int textColor = focused ? textFocus : textNorm;
 	if( iFlags & QMF_GRAYED )
-		textColor = Scheme_GetColor( g_Scheme.labelDisabledFg1, 0xFF505050 );
+		textColor = Scheme_GetColor( g_Scheme.labelDisabledFg1, 0xFF404040 );
 
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
 	if( textH < 8 ) textH = 8;

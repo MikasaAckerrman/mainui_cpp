@@ -284,7 +284,7 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.frameTitleBarTop    = 0xFF7A7D73; // title bar top edge
 		g_Scheme.frameTitleBarBottom = 0xFF363930; // title bar bottom edge
 
-		g_Scheme.borderBright        = 0xFF6B7260; // 107,114,96
+		g_Scheme.borderBright        = 0xFF5F6558; // 95,101,88
 		g_Scheme.borderDark          = 0xFF30342B; // 48,52,43
 		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
 
@@ -312,8 +312,8 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 
 		g_Scheme.tabTextColor        = 0xFF9C9C9C;
-		g_Scheme.tabSelectedTextColor= 0xFFD1C469; // 209,196,105
-		g_Scheme.tabActiveBgColor    = 0xFF70784B; // 112,120,75
+		g_Scheme.tabSelectedTextColor= 0xFFBFB85E; // 191,184,94
+		g_Scheme.tabActiveBgColor    = 0xFF5E6542; // 94,101,66
 		g_Scheme.tabInactiveBgColor  = 0xFF58604F; // 88,96,79
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
