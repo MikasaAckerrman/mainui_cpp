@@ -9,6 +9,28 @@ Copyright (C) 2024 DragonSlayer Team
 #include "Utils.h"
 #include "keydefs.h"
 
+// Draw GoldSrc-style inset border (sunken look: dark top+left, bright bottom+right)
+static void DrawGoldSrcInset(int x, int y, int w, int h)
+{
+	unsigned int dark = Scheme_GetColor(g_Scheme.borderDark, 0xFF2F342B);
+	unsigned int bright = Scheme_GetColor(g_Scheme.borderBright, 0xFF757D69);
+	UI_FillRect(x, y, w, 1, dark);            // top
+	UI_FillRect(x, y, 1, h, dark);            // left
+	UI_FillRect(x, y + h - 1, w, 1, bright);  // bottom
+	UI_FillRect(x + w - 1, y, 1, h, bright);  // right
+}
+
+// Draw GoldSrc-style raised border (raised look: bright top+left, dark bottom+right)
+static void DrawGoldSrcRaised(int x, int y, int w, int h)
+{
+	unsigned int dark = Scheme_GetColor(g_Scheme.borderDark, 0xFF2F342B);
+	unsigned int bright = Scheme_GetColor(g_Scheme.borderBright, 0xFF757D69);
+	UI_FillRect(x, y, w, 1, bright);          // top
+	UI_FillRect(x, y, 1, h, bright);          // left
+	UI_FillRect(x, y + h - 1, w, 1, dark);    // bottom
+	UI_FillRect(x + w - 1, y, 1, h, dark);    // right
+}
+
 CMenuFrame::CMenuFrame( const char *title ) : BaseClass( title )
 {
 	m_szTitle = title;
@@ -53,8 +75,8 @@ bool CMenuFrame::IsInTitleBar( int x, int y )
 
 bool CMenuFrame::IsOnCloseButton( int x, int y )
 {
-	// Close button: 30x30 logical px, scaled, positioned at right of title bar
-	int btnSize = (int)(30 * uiStatic.scaleY);
+	// Close button: 28x28 logical px, scaled, positioned at right of title bar
+	int btnSize = (int)(28 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -90,16 +112,52 @@ int CMenuFrame::HitTestResize( int x, int y )
 
 void CMenuFrame::DrawBackground()
 {
-	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, uiPromptBgColor );
+	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684F );
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH, m_scSize.w, m_scSize.h - m_iTitleH, bgColor );
+
+	// GoldSrc subtle noise/grain effect - sparse grid, position-based hash
+	int startX = m_scPos.x;
+	int startY = m_scPos.y + m_iTitleH;
+	int endX = m_scPos.x + m_scSize.w;
+	int endY = m_scPos.y + m_scSize.h;
+	int step = 3; // every 3rd pixel
+
+	unsigned int r = (bgColor >> 16) & 0xFF;
+	unsigned int g = (bgColor >> 8) & 0xFF;
+	unsigned int b = bgColor & 0xFF;
+	unsigned int a = (bgColor >> 24) & 0xFF;
+
+	for( int py = startY; py < endY; py += step )
+	{
+		for( int px = startX; px < endX; px += step )
+		{
+			unsigned int hash = ((unsigned int)px * 2654435761u) ^ ((unsigned int)py * 340573321u);
+			if( (hash & 0xF) < 2 )
+			{
+				// Slightly brighter
+				unsigned int nr = (r + 8 > 255) ? 255 : r + 8;
+				unsigned int ng = (g + 8 > 255) ? 255 : g + 8;
+				unsigned int nb = (b + 8 > 255) ? 255 : b + 8;
+				UI_FillRect( px, py, 1, 1, (a << 24) | (nr << 16) | (ng << 8) | nb );
+			}
+			else if( (hash & 0xF) == 15 )
+			{
+				// Slightly darker
+				unsigned int nr = (r > 8) ? r - 8 : 0;
+				unsigned int ng = (g > 8) ? g - 8 : 0;
+				unsigned int nb = (b > 8) ? b - 8 : 0;
+				UI_FillRect( px, py, 1, 1, (a << 24) | (nr << 16) | (ng << 8) | nb );
+			}
+		}
+	}
 }
 
 void CMenuFrame::DrawTitleBar()
 {
-	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF4B4B4B );
+	unsigned int titleBg = Scheme_GetColor( g_Scheme.frameTitleBarBg, 0xFF5B5D56 );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF707864 );
-	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF3A4035 );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 
 	// Title bar background - full width inside border
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_iTitleH, titleBg );
@@ -108,18 +166,19 @@ void CMenuFrame::DrawTitleBar()
 	UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, 1, bright );
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH - 1, m_scSize.w, 1, dark );
 
-	// Title text - small font (Tahoma 11px feel), vertically centered.
+	// Title text - Tahoma 11px, padding-left 8px, vertically centered.
 	int textH = (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY);
 	if( textH < 8 ) textH = 8;
+	int textPadLeft = (int)(8 * uiStatic.scaleX);
 	if( m_szTitle && m_szTitle[0] )
 	{
 		UI_DrawString( uiStatic.hSmallFont,
-			m_scPos.x + 10, m_scPos.y, m_scSize.w - m_iTitleH - 10, m_iTitleH,
+			m_scPos.x + textPadLeft, m_scPos.y, m_scSize.w - m_iTitleH - textPadLeft, m_iTitleH,
 			m_szTitle, titleFg, textH, QM_LEFT, ETF_FORCECOL );
 	}
 
-	// Close button [X] - 30x30 raised bevel box
-	int btnSize = (int)(30 * uiStatic.scaleY);
+	// Close button [X] - 28x28 logical px with GoldSrc double border
+	int btnSize = (int)(28 * uiStatic.scaleY);
 	if( btnSize < 12 ) btnSize = 12;
 	int btnX = m_scPos.x + m_scSize.w - btnSize - (int)(6 * uiStatic.scaleX);
 	int btnY = m_scPos.y + (m_iTitleH - btnSize) / 2;
@@ -130,15 +189,21 @@ void CMenuFrame::DrawTitleBar()
 	unsigned int btnBg = hovered ? 0xFF5A5A5A : 0xFF4A4A4A;
 	UI_FillRect( btnX, btnY, btnSize, btnSize, btnBg );
 
-	// Raised bevel border (bright top+left, dark bottom+right)
-	UI_FillRect( btnX, btnY, btnSize, 1, bright );              // top
-	UI_FillRect( btnX, btnY, 1, btnSize, bright );              // left
-	UI_FillRect( btnX, btnY + btnSize - 1, btnSize, 1, dark );  // bottom
-	UI_FillRect( btnX + btnSize - 1, btnY, 1, btnSize, dark );  // right
+	// Outer dark border (1px all around)
+	UI_FillRect( btnX, btnY, btnSize, 1, dark );                 // top
+	UI_FillRect( btnX, btnY + btnSize - 1, btnSize, 1, dark );   // bottom
+	UI_FillRect( btnX, btnY, 1, btnSize, dark );                 // left
+	UI_FillRect( btnX + btnSize - 1, btnY, 1, btnSize, dark );   // right
+
+	// Inner raised bevel (bright top+left, dark bottom+right)
+	UI_FillRect( btnX + 1, btnY + 1, btnSize - 2, 1, bright );              // top
+	UI_FillRect( btnX + 1, btnY + 1, 1, btnSize - 2, bright );              // left
+	UI_FillRect( btnX + 1, btnY + btnSize - 2, btnSize - 2, 1, dark );      // bottom
+	UI_FillRect( btnX + btnSize - 2, btnY + 1, 1, btnSize - 2, dark );      // right
 
 	// X glyph - 2px wide diagonal strokes for visibility
 	unsigned int glyphColor = titleFg;
-	int pad = (int)(4 * uiStatic.scaleY);
+	int pad = (int)(5 * uiStatic.scaleY);
 	if( pad < 3 ) pad = 3;
 	int x0 = btnX + pad;
 	int y0 = btnY + pad;
@@ -162,8 +227,8 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF6B745E );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF2F342C );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF2F342B );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;

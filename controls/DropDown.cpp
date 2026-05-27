@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "BaseMenu.h"
 #include "DropDown.h"
+#include "TrackerScheme.h"
 
 CMenuDropDown::CMenuDropDown() : BaseClass()
 {
@@ -155,7 +156,9 @@ void CMenuDropDown::SetMenuOpen( bool isOpen )
 void CMenuDropDown::Draw()
 {
 	uint textflags = ETF_NO_WRAP;
-	uint borderColor = uiInputFgColor;
+	unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
+	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF757D69 );
 
 	if( iFlags & QMF_DROPSHADOW )
 		textflags |= ETF_SHADOW;
@@ -167,8 +170,8 @@ void CMenuDropDown::Draw()
 		if( !bDropUp )
 			pt.y += m_scItemSize.h;
 
-		// all other items
-		UI_FillRect( pt.x, pt.y, m_scItemSize.w, m_scSize.h - m_scItemSize.h, 0xff000000 );
+		// Dropdown list background
+		UI_FillRect( pt.x, pt.y, m_scItemSize.w, m_scSize.h - m_scItemSize.h, fieldBg );
 		for( int i = 0; i < m_szNames.Count(); i++ )
 		{
 			uint textColor = iBgTextColor;
@@ -185,34 +188,49 @@ void CMenuDropDown::Draw()
 		}
 	}
 
-	// selected item
-
+	// Selected item area - GoldSrc style
 	Point selectedPos = m_scPos;
-	Size selectedSize = Size(m_scItemSize.w - m_ArrowSize.w + uiStatic.outlineWidth, m_scItemSize.h);
+	int arrowW = (int)(20 * uiStatic.scaleX);
+	if( arrowW < 14 ) arrowW = 14;
+	Size selectedSize = Size(m_scItemSize.w - arrowW, m_scItemSize.h);
 	uint selectedTextColor = iBgTextColor;
-	uint selectedBgColor = iBackgroundColor;
-	if( m_isOpen )
-	{
-		selectedTextColor = iFgTextColor;
-		selectedBgColor = borderColor;
-	}
+
 	if( bDropUp )
 	{
 		selectedPos.y += m_scSize.h - m_scItemSize.h;
 	}
-	UI_FillRect( selectedPos, selectedSize, selectedBgColor );
+
+	// Background fill
+	UI_FillRect( selectedPos.x, selectedPos.y, m_scItemSize.w, m_scItemSize.h, fieldBg );
+
+	// Text in selected area
 	UI_DrawString( font, selectedPos, selectedSize, m_szNames[m_iState], selectedTextColor, m_scChSize, eTextAlignment, textflags );
 
-	// border
-	UI_DrawRectangle( m_scPos, m_scSize, borderColor );
+	// GoldSrc inset border (dark top+left, bright bottom+right)
+	UI_FillRect( selectedPos.x, selectedPos.y, m_scItemSize.w, 1, dark );                           // top
+	UI_FillRect( selectedPos.x, selectedPos.y, 1, m_scItemSize.h, dark );                           // left
+	UI_FillRect( selectedPos.x, selectedPos.y + m_scItemSize.h - 1, m_scItemSize.w, 1, bright );    // bottom
+	UI_FillRect( selectedPos.x + m_scItemSize.w - 1, selectedPos.y, 1, m_scItemSize.h, bright );    // right
 
-	// arrow background
-	uint arrowX = selectedPos.x + selectedSize.w;
-	UI_FillRect( arrowX, selectedPos.y, m_ArrowSize.w, selectedSize.h, uiInputFgColor );
-	// arrow
-	CImage &arrow = m_isOpen ? m_ArrowOpened : m_ArrowClosed;
-	Point arrowPoint( arrowX, selectedPos.y + (selectedSize.h - m_ArrowSize.h)/2 );
-	UI_DrawPic( arrowPoint, m_ArrowSize, -1, arrow );
+	// Arrow compartment separator (1px dark vertical line)
+	int arrowX = selectedPos.x + selectedSize.w;
+	UI_FillRect( arrowX, selectedPos.y + 2, 1, m_scItemSize.h - 4, dark );
+
+	// Draw triangle arrow pointing down
+	int triW = (int)(8 * uiStatic.scaleX);
+	if( triW < 5 ) triW = 5;
+	int triH = (int)(4 * uiStatic.scaleY);
+	if( triH < 3 ) triH = 3;
+	int triX = arrowX + (arrowW - triW) / 2;
+	int triY = selectedPos.y + (m_scItemSize.h - triH) / 2;
+	unsigned int arrowColor = 0xFFFFFFFF;
+
+	for( int row = 0; row < triH; row++ )
+	{
+		int lineW = triW - (row * triW) / triH;
+		int lineX = triX + (triW - lineW) / 2;
+		UI_FillRect( lineX, triY + row, lineW, 1, arrowColor );
+	}
 }
 
 void CMenuDropDownStr::UpdateEditable()
