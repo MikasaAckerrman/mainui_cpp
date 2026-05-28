@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_CheckButton.h>
 #include <VGUI_ActionSignal.h>
 
@@ -19,43 +24,63 @@ void CheckButton::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Draw panel background
-	drawSetColor(192, 192, 192, 0);
-	drawFilledRect(0, 0, wide, tall);
+	unsigned int fieldBg = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE655604B;
+	unsigned int bright  = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+	unsigned int dark    = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int markCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
 
-	// Draw checkbox square (13x13 sunken box)
+	// Checkbox sits transparently on the parent panel background -- do NOT
+	// fill the whole rect, otherwise we paint over the form's olive panel.
+
+	// 13x13 sunken box, vertically centered, 2px from left edge
 	int boxSize = 13;
 	int boxY = (tall - boxSize) / 2;
 	int boxX = 2;
 
-	// Sunken border for checkbox
-	drawSetColor(128, 128, 128, 0);
+	// Field background inside the box
+	schemeBgColor(this, fieldBg);
+	drawFilledRect(boxX + 1, boxY + 1, boxX + boxSize - 1, boxY + boxSize - 1);
+
+	// Sunken bevel: dark top + left, bright bottom + right
+	schemeBgColor(this, dark);
 	drawFilledRect(boxX, boxY, boxX + boxSize, boxY + 1);
 	drawFilledRect(boxX, boxY, boxX + 1, boxY + boxSize);
-	drawSetColor(255, 255, 255, 0);
+
+	schemeBgColor(this, bright);
 	drawFilledRect(boxX, boxY + boxSize - 1, boxX + boxSize, boxY + boxSize);
 	drawFilledRect(boxX + boxSize - 1, boxY, boxX + boxSize, boxY + boxSize);
 
-	// White fill
-	drawSetColor(255, 255, 255, 0);
-	drawFilledRect(boxX + 1, boxY + 1, boxX + boxSize - 1, boxY + boxSize - 1);
-
-	// Draw checkmark if selected
+	// Check mark when selected
 	if (isSelected())
 	{
-		drawSetColor(0, 0, 0, 0);
-		// Simple checkmark pattern
+		schemeBgColor(this, markCol);
 		int cx = boxX + 3;
 		int cy = boxY + 5;
+		// Diagonal down-right then up-right (simple checkmark)
 		for (int i = 0; i < 3; i++)
-		{
 			drawFilledRect(cx + i, cy + i, cx + i + 2, cy + i + 2);
-		}
 		for (int i = 0; i < 4; i++)
-		{
 			drawFilledRect(cx + 3 + i, cy + 2 - i, cx + 3 + i + 2, cy + 2 - i + 2);
-		}
 	}
+}
+
+void CheckButton::paint()
+{
+	// Draw label text to the right of the 13x13 checkbox so it doesn't overlap
+	int wide, tall;
+	getSize(wide, tall);
+
+	char buf[256];
+	getText(buf, sizeof(buf));
+	int textLen = (int)strlen(buf);
+	if (textLen == 0)
+		return;
+
+	schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFC8C8C8);
+	drawSetTextFont(Scheme::sf_primary1);
+	int textX = 2 + 13 + 6; // box (2px from left, 13 wide) + 6px spacing
+	int textY = (tall - 12) / 2;
+	drawPrintText(textX, textY, buf, textLen);
 }
 
 void CheckButton::internalMousePressed(MouseCode code)

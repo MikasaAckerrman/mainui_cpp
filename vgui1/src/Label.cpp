@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_Label.h>
 #include <VGUI_Panel.h>
 #include <VGUI_Image.h>
@@ -194,9 +199,19 @@ void Label::paint()
 	// Draw text
 	if (textLen > 0)
 	{
+		// If user explicitly set fgColor (alpha != 0 in VGUI inverted = not opaque),
+		// honor it. Otherwise pick label color from g_Scheme.
 		int r, g, b, a;
 		getFgColor(r, g, b, a);
-		drawSetTextColor(r, g, b, a);
+		if (r == 0 && g == 0 && b == 0 && a == 0)
+		{
+			// Default: use scheme labelTextColor
+			schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFC8C8C8);
+		}
+		else
+		{
+			drawSetTextColor(r, g, b, a);
+		}
 
 		if (_font)
 			drawSetTextFont(_font);

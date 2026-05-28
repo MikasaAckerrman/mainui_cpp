@@ -1,39 +1,37 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_LoweredBorder.h>
 #include <VGUI_Panel.h>
 
 namespace vgui
 {
 
-LoweredBorder::LoweredBorder() : Border(2, 2, 2, 2)
+LoweredBorder::LoweredBorder() : Border(1, 1, 1, 1)
 {
 }
 
 void LoweredBorder::paint(Panel* panel)
 {
+	if (!panel)
+		return;
+
 	int wide, tall;
 	panel->getSize(wide, tall);
 
-	// GoldSrc lowered/sunken border (text field, inset look):
-	// Top-left = dark shadow, bottom-right = white highlight
-	// Outer shadow (top-left)
-	drawSetColor(128, 128, 128, 0);
-	drawFilledRect(0, 0, wide, 1);     // top
-	drawFilledRect(0, 0, 1, tall);     // left
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Inner shadow
-	drawSetColor(64, 64, 64, 0);
-	drawFilledRect(1, 1, wide - 1, 2); // top inner
-	drawFilledRect(1, 1, 2, tall - 1); // left inner
+	// Sunken: dark on top + left, bright on bottom + right
+	schemeBgColor(panel, dark);
+	drawFilledRect(0, 0, wide, 1);
+	drawFilledRect(0, 0, 1, tall);
 
-	// Inner highlight (bottom-right)
-	drawSetColor(216, 216, 216, 0);
-	drawFilledRect(1, tall - 2, wide - 1, tall - 1); // bottom inner
-	drawFilledRect(wide - 2, 1, wide - 1, tall - 1); // right inner
-
-	// Outer highlight
-	drawSetColor(255, 255, 255, 0);
-	drawFilledRect(0, tall - 1, wide, tall);   // bottom
-	drawFilledRect(wide - 1, 0, wide, tall);   // right
+	schemeBgColor(panel, bright);
+	drawFilledRect(0, tall - 1, wide, tall);
+	drawFilledRect(wide - 1, 0, wide, tall);
 }
 
 }

@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_TextEntry.h>
 #include <VGUI_App.h>
 #include <VGUI_ActionSignal.h>
@@ -25,8 +30,7 @@ TextEntry::TextEntry(const char* text, int x, int y, int wide, int tall) : Panel
 	_font = null;
 	_schemeFont = Scheme::sf_primary1;
 
-	setBgColor(255, 255, 255, 0);
-	setFgColor(0, 0, 0, 0);
+	// Visual colors driven by g_Scheme at draw time
 }
 
 void TextEntry::setText(const char* text, int textLen)
@@ -121,17 +125,20 @@ void TextEntry::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// White field background
-	int r, g, b, a;
-	getBgColor(r, g, b, a);
-	drawSetColor(r, g, b, a);
+	unsigned int bg     = g_Scheme.fieldBgColor   ? g_Scheme.fieldBgColor   : 0xE655604B;
+	unsigned int bright = g_Scheme.borderBright   ? g_Scheme.borderBright   : 0xC85F6558;
+	unsigned int dark   = g_Scheme.borderDark     ? g_Scheme.borderDark     : 0xC8282C24;
+
+	// Field background
+	schemeBgColor(this, bg);
 	drawFilledRect(0, 0, wide, tall);
 
-	// Sunken border (GoldSrc text field)
-	drawSetColor(128, 128, 128, 0);
+	// Sunken bevel: dark top + left, bright bottom + right
+	schemeBgColor(this, dark);
 	drawFilledRect(0, 0, wide, 1);
 	drawFilledRect(0, 0, 1, tall);
-	drawSetColor(255, 255, 255, 0);
+
+	schemeBgColor(this, bright);
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
 }
@@ -144,18 +151,16 @@ void TextEntry::paint()
 	if (_textLen == 0 && !hasFocus())
 		return;
 
-	int r, g, b, a;
-	getFgColor(r, g, b, a);
-	drawSetTextColor(r, g, b, a);
+	unsigned int textCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
+	schemeFgColor(this, textCol);
 
 	if (_font)
 		drawSetTextFont(_font);
 	else
 		drawSetTextFont(_schemeFont);
 
-	// Draw text with basic offset
-	int textX = 3 - _scrollOffset;
-	int textY = 2;
+	int textX = 4 - _scrollOffset;
+	int textY = 3;
 	drawPrintText(textX, textY, _text, _textLen);
 
 	// Draw cursor if focused
@@ -176,7 +181,8 @@ void TextEntry::paint()
 		{
 			cursorX += _cursorPos * 8;
 		}
-		drawSetColor(0, 0, 0, 0);
+		// Cursor uses field text color
+		schemeBgColor(this, g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF);
 		drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
 	}
 }

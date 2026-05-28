@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_Slider.h>
 #include <VGUI_App.h>
 #include <VGUI_IntChangeSignal.h>
@@ -23,8 +28,7 @@ Slider::Slider(int x, int y, int wide, int tall, bool vertical) : Panel(x, y, wi
 	_dragging = false;
 	_buttonOffset = 0;
 
-	setBgColor(192, 192, 192, 0);
-	setFgColor(0, 0, 0, 0);
+	// Visual colors driven by g_Scheme at draw time
 }
 
 void Slider::setValue(int value)
@@ -154,26 +158,31 @@ void Slider::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Background
-	drawSetColor(192, 192, 192, 0);
-	drawFilledRect(0, 0, wide, tall);
+	unsigned int trackCol = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE655604B;
+	unsigned int bright   = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+	unsigned int dark     = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Track groove (sunken line)
+	// Slider sits transparently on the parent panel; only draw the track groove.
 	if (_vertical)
 	{
 		int cx = wide / 2;
-		drawSetColor(128, 128, 128, 0);
+		// 3px wide sunken groove
+		schemeBgColor(this, trackCol);
+		drawFilledRect(cx - 1, _buttonOffset, cx + 2, tall - _buttonOffset);
+		schemeBgColor(this, dark);
 		drawFilledRect(cx - 1, _buttonOffset, cx, tall - _buttonOffset);
-		drawSetColor(255, 255, 255, 0);
-		drawFilledRect(cx, _buttonOffset, cx + 1, tall - _buttonOffset);
+		schemeBgColor(this, bright);
+		drawFilledRect(cx + 1, _buttonOffset, cx + 2, tall - _buttonOffset);
 	}
 	else
 	{
 		int cy = tall / 2;
-		drawSetColor(128, 128, 128, 0);
+		schemeBgColor(this, trackCol);
+		drawFilledRect(_buttonOffset, cy - 1, wide - _buttonOffset, cy + 2);
+		schemeBgColor(this, dark);
 		drawFilledRect(_buttonOffset, cy - 1, wide - _buttonOffset, cy);
-		drawSetColor(255, 255, 255, 0);
-		drawFilledRect(_buttonOffset, cy, wide - _buttonOffset, cy + 1);
+		schemeBgColor(this, bright);
+		drawFilledRect(_buttonOffset, cy + 1, wide - _buttonOffset, cy + 2);
 	}
 }
 
@@ -182,7 +191,10 @@ void Slider::paint()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Draw the nob (raised look)
+	unsigned int nobBg  = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5B6350;
+	unsigned int bright = g_Scheme.borderBright  ? g_Scheme.borderBright  : 0xC85F6558;
+	unsigned int dark   = g_Scheme.borderDark    ? g_Scheme.borderDark    : 0xC8282C24;
+
 	int nx, ny, nw, nh;
 	if (_vertical)
 	{
@@ -199,13 +211,15 @@ void Slider::paint()
 		nh = tall;
 	}
 
-	// Raised nob
-	drawSetColor(192, 192, 192, 0);
-	drawFilledRect(nx, ny, nx + nw, ny + nh);
-	drawSetColor(255, 255, 255, 0);
+	// Raised olive nob
+	schemeBgColor(this, nobBg);
+	drawFilledRect(nx + 1, ny + 1, nx + nw - 1, ny + nh - 1);
+
+	schemeBgColor(this, bright);
 	drawFilledRect(nx, ny, nx + nw, ny + 1);
 	drawFilledRect(nx, ny, nx + 1, ny + nh);
-	drawSetColor(64, 64, 64, 0);
+
+	schemeBgColor(this, dark);
 	drawFilledRect(nx, ny + nh - 1, nx + nw, ny + nh);
 	drawFilledRect(nx + nw - 1, ny, nx + nw, ny + nh);
 }

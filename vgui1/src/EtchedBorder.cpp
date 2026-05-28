@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_EtchedBorder.h>
 #include <VGUI_Panel.h>
 
@@ -10,24 +15,28 @@ EtchedBorder::EtchedBorder() : Border(2, 2, 2, 2)
 
 void EtchedBorder::paint(Panel* panel)
 {
+	if (!panel)
+		return;
+
 	int wide, tall;
 	panel->getSize(wide, tall);
 
-	// GoldSrc etched border: dark line then light line offset by 1px
-	// Creates an inset/groove appearance
-	// Outer dark shadow
-	drawSetColor(128, 128, 128, 0);
-	drawFilledRect(0, 0, wide - 1, 1);           // top
-	drawFilledRect(0, 0, 1, tall - 1);            // left
-	drawFilledRect(1, tall - 2, wide, tall - 1);  // inner bottom
-	drawFilledRect(wide - 2, 1, wide - 1, tall);  // inner right
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Inner highlight
-	drawSetColor(255, 255, 255, 0);
-	drawFilledRect(1, 1, wide - 2, 2);            // top highlight
-	drawFilledRect(1, 1, 2, tall - 2);            // left highlight
-	drawFilledRect(0, tall - 1, wide, tall);      // bottom
-	drawFilledRect(wide - 1, 0, wide, tall);      // right
+	// Etched look = a 2-line groove. Outer dark line at top+left and bottom+right
+	// inner edges, inner bright line offset by 1 pixel forms the recessed groove.
+	schemeBgColor(panel, dark);
+	drawFilledRect(0, 0, wide - 1, 1);            // outer top
+	drawFilledRect(0, 0, 1, tall - 1);            // outer left
+	drawFilledRect(1, tall - 2, wide, tall - 1);  // inner bottom shadow
+	drawFilledRect(wide - 2, 1, wide - 1, tall);  // inner right shadow
+
+	schemeBgColor(panel, bright);
+	drawFilledRect(1, 1, wide - 2, 2);            // inner top highlight
+	drawFilledRect(1, 1, 2, tall - 2);            // inner left highlight
+	drawFilledRect(0, tall - 1, wide, tall);      // outer bottom
+	drawFilledRect(wide - 1, 0, wide, tall);      // outer right
 }
 
 }

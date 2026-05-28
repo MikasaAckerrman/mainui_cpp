@@ -1,8 +1,12 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_Frame.h>
 #include <VGUI_App.h>
 #include <VGUI_Button.h>
 #include <VGUI_ActionSignal.h>
-#include <VGUI_RaisedBorder.h>
 #include <string.h>
 
 namespace vgui
@@ -73,9 +77,8 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
 
-	// Set raised border for the frame
-	setBorder(new RaisedBorder());
-	setBgColor(192, 192, 192, 0);
+	// CS 1.6 frame has a flat panel + thin scheme-driven border drawn in
+	// paintBackground; no chunky RaisedBorder around the frame itself.
 }
 
 void Frame::setTitle(const char* title)
@@ -166,11 +169,18 @@ void Frame::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Fill frame background (GoldSrc gray)
-	drawSetColor(192, 192, 192, 0);
+	// Frame body - olive panel from CS 1.6 scheme
+	schemeBgColor(this, g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xE65F684E);
 	drawFilledRect(0, 0, wide, tall);
 
-	// Draw title bar
+	// Subtle dark border around the frame (1px on right + bottom = drop shadow look)
+	unsigned int borderDark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282C24;
+	schemeBgColor(this, borderDark);
+	drawFilledRect(0, 0, wide, 1);          // top
+	drawFilledRect(0, 0, 1, tall);          // left
+	drawFilledRect(0, tall - 1, wide, tall); // bottom
+	drawFilledRect(wide - 1, 0, wide, tall); // right
+
 	drawTitleBar(wide);
 }
 
@@ -183,16 +193,35 @@ void Frame::drawTitleBar(int wide)
 	int captionH = _smallCaption ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
 	int border = FRAME_BORDER;
 
-	// Title bar background - GoldSrc dark blue when active
-	drawSetColor(0, 0, 128, 0);
-	drawFilledRect(border, border, wide - border, border + captionH);
+	int barX = border;
+	int barY = border;
+	int barW = wide - border * 2;
+	int barH = captionH;
 
-	// Title text - white on blue
+	// Title bar background - dark olive/gray from scheme
+	schemeBgColor(this, g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE65F684F);
+	drawFilledRect(barX, barY, barX + barW, barY + barH);
+
+	// Top highlight edge (subtle 1px lighter line at the very top of title bar)
+	if (g_Scheme.frameTitleBarTop)
+	{
+		schemeBgColor(this, g_Scheme.frameTitleBarTop);
+		drawFilledRect(barX, barY, barX + barW, barY + 1);
+	}
+
+	// Bottom separator edge between title bar and panel body
+	if (g_Scheme.frameTitleBarBottom)
+	{
+		schemeBgColor(this, g_Scheme.frameTitleBarBottom);
+		drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
+	}
+
+	// Title text
 	if (_title[0])
 	{
-		drawSetTextColor(255, 255, 255, 0);
+		schemeFgColor(this, g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF);
 		drawSetTextFont(Scheme::sf_primary1);
-		drawPrintText(border + 4, border + 2, _title, (int)strlen(_title));
+		drawPrintText(border + 6, border + 4, _title, (int)strlen(_title));
 	}
 }
 
