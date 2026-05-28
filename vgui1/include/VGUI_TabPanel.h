@@ -18,6 +18,7 @@ public:
 	virtual int getSelectedTab();
 	virtual Panel* getSelectedPanel();
 	virtual int getTabCount();
+	virtual void setSize(int wide, int tall); // override - relayout pages
 protected:
 	virtual void paint();
 	virtual void paintBackground();

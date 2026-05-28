@@ -53,8 +53,10 @@ private:
 	bool _internal;
 	bool _smallCaption;
 	bool _dragging;
+	bool _resizing;
 	int _dragOrgPos[2];
 	int _dragOrgCursor[2];
+	int _dragOrgSize[2];
 };
 
 }

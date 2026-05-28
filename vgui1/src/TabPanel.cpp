@@ -77,6 +77,12 @@ void TabPanel::setSelectedTab(int index)
 int TabPanel::getSelectedTab()  { return _selectedTab; }
 int TabPanel::getTabCount()     { return _tabDar.getCount(); }
 
+void TabPanel::setSize(int wide, int tall)
+{
+	Panel::setSize(wide, tall);
+	performLayout();
+}
+
 Panel* TabPanel::getSelectedPanel()
 {
 	if (_selectedTab >= 0 && _selectedTab < _tabDar.getCount())

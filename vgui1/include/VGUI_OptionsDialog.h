@@ -23,6 +23,7 @@ public:
 	void applyAll();
 	void resetAll();
 	void setDirty(bool dirty);
+	virtual void setSize(int wide, int tall); // override - reposition buttons & tabs
 private:
 	void buildMultiplayerTab(Panel* page);
 	void buildKeyboardTab(Panel* page);
@@ -35,6 +36,8 @@ private:
 private:
 	TabPanel* _tabPanel;
 	Button*   _applyBtn;
+	Button*   _okBtn;
+	Button*   _cancelBtn;
 	bool      _dirty;
 	Dar<CvarCheckButton*> _checkButtons;
 	Dar<CvarSlider*> _sliders;

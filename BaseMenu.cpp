@@ -38,6 +38,8 @@ extern "C" int VGUI_IsVisible(void);
 extern "C" void VGUI_ForwardKey(int action, int code);
 extern "C" void VGUI_ForwardMouse(int action, int code);
 extern "C" void VGUI_ForwardMouseMove(int x, int y);
+// Hide the Options dialog (defined in vgui1/src/VguiOptionsDialog.cpp)
+extern "C" void VGUI_HideOptions(void);
 
 cvar_t		*ui_showmodels;
 cvar_t		*ui_show_window_stack;
@@ -711,6 +713,14 @@ void UI_KeyEvent( int key, int down )
 	if( key == K_MOUSE1 )
 	{
 		g_bCursorDown = !!down;
+	}
+
+	// ESC (or Android Back) closes the VGUI1 Options dialog before mainui
+	// sees it, so the underlying main menu / quit dialog isn't disturbed.
+	if( down && (key == K_ESCAPE || key == K_BACK_BUTTON) && VGUI_IsVisible() )
+	{
+		VGUI_HideOptions();
+		return;
 	}
 
 	clientActive = uiStatic.client.IsActive();
