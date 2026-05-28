@@ -311,10 +311,10 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
 		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
 
-		g_Scheme.tabTextColor        = 0xFFDCDCDC; // OffWhite for inactive tabs
-		g_Scheme.tabSelectedTextColor= 0xFFBFB85E; // 191,184,94
+		g_Scheme.tabTextColor        = 0xFFA0A0A0; // DullWhite (160,160,160) - dim inactive tab fg
+		g_Scheme.tabSelectedTextColor= 0xFFFFFFFF; // White - active tab fg matches PC CS 1.6
 		g_Scheme.tabActiveBgColor    = 0xE65D664D; // NOTE: not used by DrawTabs (reads frameBgColor), kept for API compatibility
-		g_Scheme.tabInactiveBgColor  = 0xE64E5643; // slightly darker than frame
+		g_Scheme.tabInactiveBgColor  = 0xE6373E2B; // (55,62,43) - clearly darker than frame
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
 		g_Scheme.menuBgColor         = 0xE65F684F; // 95,104,79,230

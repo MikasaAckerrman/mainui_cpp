@@ -22,8 +22,8 @@
 		"SelectionBG"		"90 90 50 255"
 		"Highlight"			"80 85 50 64"
 		"ActiveTabGreen"	"93 102 77 230"
-		"TabInactive"		"78 86 67 230"
-		"TabActiveText"		"209 196 105 255"
+		"TabInactive"		"55 62 43 230"
+		"TabActiveText"		"255 255 255 255"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -90,7 +90,7 @@
 		"TextEntry.DisabledBgColor"		"DarkerOlive"
 
 		// ===== Tabs / PropertySheet =====
-		"PropertySheet.TextColor"		"OffWhite"
+		"PropertySheet.TextColor"		"DullWhite"
 		"PropertySheet.SelectedTextColor" "TabActiveText"
 		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
 		"PropertySheet.InactiveTabBgColor" "TabInactive"
