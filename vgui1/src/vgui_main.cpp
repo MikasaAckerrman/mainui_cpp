@@ -145,14 +145,12 @@ static void VGUI_Startup(int width, int height)
 		s_rootPanel->setSize(width, height);
 	}
 
-	if (g_api && g_api->DrawInit)
-		g_api->DrawInit();
+	// DrawInit no longer needed - we use EngFuncs directly
 }
 
 static void VGUI_Shutdown(void)
 {
-	if (g_api && g_api->DrawShutdown)
-		g_api->DrawShutdown();
+	// DrawShutdown no longer needed - we use EngFuncs directly
 
 	// Null out the options dialog pointer before destroying the panel tree
 	VGUI_OptionsShutdown();
@@ -197,7 +195,7 @@ static void VGUI_Paint(void)
 	s_rootPanel->paintTraverse();
 }
 
-static void VGUI_Mouse(enum VGUI_MouseAction action, int code)
+void VGUI_Mouse(enum VGUI_MouseAction action, int code)
 {
 	if (!s_app || !s_rootPanel)
 		return;
@@ -222,7 +220,7 @@ static void VGUI_Mouse(enum VGUI_MouseAction action, int code)
 	}
 }
 
-static void VGUI_Key(enum VGUI_KeyAction action, int code)
+void VGUI_Key(enum VGUI_KeyAction action, int code)
 {
 	if (!s_app || !s_rootPanel)
 		return;
@@ -244,7 +242,7 @@ static void VGUI_Key(enum VGUI_KeyAction action, int code)
 	}
 }
 
-static void VGUI_MouseMove(int x, int y)
+void VGUI_MouseMove(int x, int y)
 {
 	if (!s_app || !s_rootPanel)
 		return;
@@ -379,15 +377,58 @@ extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
 }
 
 // ====================================================================
+// Export: called by mainui to paint VGUI1 panels each frame
+// ====================================================================
+extern "C"
+{
+
+#ifndef EXPORT
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+#endif
+
+EXPORT void VGUI_PaintAll(void)
+{
+	if (!s_rootPanel || !s_app)
+		return;
+
+	s_app->externalTick();
+	s_rootPanel->solveTraverse();
+	s_rootPanel->paintTraverse();
+}
+
+EXPORT void VGUI_ForwardMouse(int action, int code)
+{
+	VGUI_Mouse((enum VGUI_MouseAction)action, code);
+}
+
+EXPORT void VGUI_ForwardKey(int action, int code)
+{
+	VGUI_Key((enum VGUI_KeyAction)action, code);
+}
+
+EXPORT void VGUI_ForwardMouseMove(int x, int y)
+{
+	VGUI_MouseMove(x, y);
+}
+
+} // extern "C"
+
+// ====================================================================
 // Export: called by engine to initialize vgui_support
 // ====================================================================
 extern "C"
 {
 
+#ifndef EXPORT
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
 #else
 #define EXPORT __attribute__((visibility("default")))
+#endif
 #endif
 
 EXPORT void VGUI_SetCvarFuncs(
