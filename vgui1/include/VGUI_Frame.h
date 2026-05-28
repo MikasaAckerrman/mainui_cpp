@@ -24,7 +24,7 @@ public:
 	virtual Panel* getClient();
 	virtual void setInternal(bool state);
 	virtual void setSmallCaption(bool state);
-	virtual void setSize(int wide, int tall); // override - relayout child panels
+	virtual void setSize(int wide, int tall);
 protected:
 	virtual void paintBackground();
 	virtual void paint();
@@ -54,10 +54,14 @@ private:
 	bool _smallCaption;
 	bool _dragging;
 	bool _resizing;
-	bool _dragAnchorReady;   // anchor captured on first cursorMoved, not on press
+	bool _lastCursorValid;     // false until first cursorMoved arrives
+	int _lastCursor[2];        // last cursor pos seen by cursorMoved (screen)
+	int _resizeZone;           // bitmask: bit0=N, bit1=S, bit2=W, bit3=E
+	// Legacy fields kept for ABI compatibility (no longer used)
 	int _dragOrgPos[2];
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];
+	bool _dragAnchorReady;
 };
 
 }

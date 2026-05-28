@@ -1,4 +1,10 @@
-// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+// Frame.cpp - GoldSrc CS 1.6 VGUI frame: pixel-perfect look + robust touch drag/resize.
+//
+// Drag/resize uses incremental-delta tracking: each cursorMoved computes the
+// delta from the LAST seen cursor position, not from a stored anchor. This
+// eliminates the "jumps to the right" bug caused by stale press-time anchors
+// on Android (KEY_DOWN fires before cursor pos updates).
+
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 #include "TrackerScheme.h"
 
@@ -14,14 +20,13 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 namespace vgui
 {
 
-// GoldSrc VGUI Frame layout constants (pixel-perfect CS 1.6 reference @ 640x480).
-// All scaled via VS() at runtime for HD/4K.
+// GoldSrc VGUI Frame layout constants (CS 1.6 reference @ 640x480, scaled via VS).
 enum
 {
-	FRAME_CAPTION_HEIGHT       = 22,   // GoldSrc PC: 22px titlebar
+	FRAME_CAPTION_HEIGHT       = 22,
 	FRAME_CAPTION_HEIGHT_SMALL = 18,
-	FRAME_BORDER               = 4,    // outer frame edge thickness (2 outer + 2 inner)
-	FRAME_BUTTON_SIZE          = 16,   // close button = 16x16 square
+	FRAME_BORDER               = 4,
+	FRAME_BUTTON_SIZE          = 16,
 	FRAME_BUTTON_INSET         = 3
 };
 
@@ -31,22 +36,48 @@ static inline int Fborder()   { return VS(FRAME_BORDER); }
 static inline int FbtnSz()    { return VS(FRAME_BUTTON_SIZE); }
 static inline int FbtnIns()   { return VS(FRAME_BUTTON_INSET); }
 
-// Private close action signal
+// Resize zone bitmask
+enum { RZ_N = 1, RZ_S = 2, RZ_W = 4, RZ_E = 8 };
+
+// Edge grip thickness (clickable resize area along each side)
+static inline int EdgeGrip()   { return VS(6); }
+static inline int CornerGrip() { return VS(10); } // larger for corner hit-test
+static inline int MinW()       { return VS(360); }
+static inline int MinH()       { return VS(240); }
+
+// Hit-test resize zones. lx,ly are panel-local coords, w,h panel size.
+// Returns 0 if cursor is not in any resize edge.
+static int HitTestResize(int lx, int ly, int w, int h)
+{
+	int eg = EdgeGrip();
+	int cg = CornerGrip();
+	int zone = 0;
+
+	// Corners take priority (use larger grip)
+	if (lx < cg && ly < cg) return RZ_N | RZ_W;
+	if (lx >= w - cg && ly < cg) return RZ_N | RZ_E;
+	if (lx < cg && ly >= h - cg) return RZ_S | RZ_W;
+	if (lx >= w - cg && ly >= h - cg) return RZ_S | RZ_E;
+
+	// Edges
+	if (ly < eg) zone |= RZ_N;
+	else if (ly >= h - eg) zone |= RZ_S;
+	if (lx < eg) zone |= RZ_W;
+	else if (lx >= w - eg) zone |= RZ_E;
+	return zone;
+}
+
+// Close button signal
 class FrameCloseSignal : public ActionSignal
 {
 public:
 	FrameCloseSignal(Frame* frame) : _frame(frame) {}
-	virtual void actionPerformed(Panel* panel)
-	{
-		if (_frame)
-			_frame->setVisible(false);
-	}
+	virtual void actionPerformed(Panel* panel) { if (_frame) _frame->setVisible(false); }
 private:
 	Frame* _frame;
 };
 
-// GoldSrc close button: vector X with double bevel border (raised look).
-// Pressed state shifts glyph +1/+1 and inverts bevel. Matches PC CS 1.6.
+// GoldSrc close button: bevel border + thick X glyph
 class FrameCloseGlyph : public Button
 {
 public:
@@ -56,47 +87,39 @@ protected:
 	{
 		int wide, tall;
 		getSize(wide, tall);
-
 		bool sunken = isDepressed() || isSelected();
 
-		// Body fill
-		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5B6350;
+		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5C6450;
 		schemeBgColor(this, bg);
 		drawFilledRect(1, 1, wide - 1, tall - 1);
 
-		// Double bevel: outer 1px + inner 1px
 		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-		unsigned int mid    = 0xC84A5040; // mid-tone for inner bevel
 
 		if (sunken)
 		{
-			// Outer: dark top+left, bright bottom+right
 			schemeBgColor(this, dark);
 			drawFilledRect(0, 0, wide, 1);
 			drawFilledRect(0, 0, 1, tall);
 			schemeBgColor(this, bright);
 			drawFilledRect(0, tall - 1, wide, tall);
 			drawFilledRect(wide - 1, 0, wide, tall);
-			// Inner
-			schemeBgColor(this, mid);
+			schemeBgColor(this, 0xC83A3E30);
 			drawFilledRect(1, 1, wide - 1, 2);
 			drawFilledRect(1, 1, 2, tall - 1);
 		}
 		else
 		{
-			// Outer: bright top+left, dark bottom+right
 			schemeBgColor(this, bright);
 			drawFilledRect(0, 0, wide, 1);
 			drawFilledRect(0, 0, 1, tall);
 			schemeBgColor(this, dark);
 			drawFilledRect(0, tall - 1, wide, tall);
 			drawFilledRect(wide - 1, 0, wide, tall);
-			// Inner highlight/shadow
 			schemeBgColor(this, 0xC8909880);
 			drawFilledRect(1, 1, wide - 1, 2);
 			drawFilledRect(1, 1, 2, tall - 1);
-			schemeBgColor(this, mid);
+			schemeBgColor(this, 0xC83A3E30);
 			drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 			drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 		}
@@ -107,25 +130,16 @@ protected:
 		int wide, tall;
 		getSize(wide, tall);
 
-		unsigned int argb;
-		if (!isEnabled())
-			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFFA0A0A0;
-		else if (isArmed())
-			argb = g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF;
-		else
-			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE0E0E0;
+		unsigned int argb = isArmed()
+			? (g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF)
+			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE0E0E0);
 
-		// Chunky X glyph: 3px brush (thicker = closer to GoldSrc bitmap), ~55% of button
 		int side = (wide < tall ? wide : tall);
 		int extent = (side * 55) / 100;
 		if (extent < 6) extent = 6;
 		int sx = (wide - extent) / 2;
 		int sy = (tall - extent) / 2;
-		if (isDepressed())
-		{
-			sx += 1;
-			sy += 1;
-		}
+		if (isDepressed()) { sx += 1; sy += 1; }
 		int brush = VS(3);
 		if (brush < 2) brush = 2;
 
@@ -148,34 +162,26 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_smallCaption = false;
 	_dragging = false;
 	_resizing = false;
+	_lastCursorValid = false;
+	_lastCursor[0] = 0;
+	_lastCursor[1] = 0;
+	_resizeZone = 0;
+	_dragOrgPos[0] = 0; _dragOrgPos[1] = 0;
+	_dragOrgCursor[0] = 0; _dragOrgCursor[1] = 0;
+	_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 	_dragAnchorReady = false;
-	_dragOrgPos[0] = 0;
-	_dragOrgPos[1] = 0;
-	_dragOrgCursor[0] = 0;
-	_dragOrgCursor[1] = 0;
-	_dragOrgSize[0] = 0;
-	_dragOrgSize[1] = 0;
 
-	_topGrip = null;
-	_bottomGrip = null;
-	_leftGrip = null;
-	_rightGrip = null;
-	_topLeftGrip = null;
-	_topRightGrip = null;
-	_bottomLeftGrip = null;
-	_bottomRightGrip = null;
-	_minimizeButton = null;
-	_maximizeButton = null;
+	_topGrip = null; _bottomGrip = null; _leftGrip = null; _rightGrip = null;
+	_topLeftGrip = null; _topRightGrip = null;
+	_bottomLeftGrip = null; _bottomRightGrip = null;
+	_minimizeButton = null; _maximizeButton = null;
+	_captionBar = null;
 
 	int captionH = Fcap();
 	int border = Fborder();
 	_client = new Panel(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
 	addChild(_client);
 
-	// _captionBar kept as null (ABI), drag is handled by Frame::internalMousePressed
-	_captionBar = null;
-
-	// Close button: beveled square with vector X
 	int btnSize = FbtnSz();
 	int btnInset = FbtnIns();
 	_closeButton = new FrameCloseGlyph(wide - border - btnSize - btnInset,
@@ -186,16 +192,13 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 
 void Frame::setTitle(const char* title)
 {
-	if (title)
-		vgui_strcpy(_title, sizeof(_title), title);
-	else
-		_title[0] = 0;
+	if (title) vgui_strcpy(_title, sizeof(_title), title);
+	else _title[0] = 0;
 }
 
 void Frame::getTitle(char* buf, int bufLen)
 {
-	if (buf && bufLen > 0)
-		vgui_strcpy(buf, bufLen, _title);
+	if (buf && bufLen > 0) vgui_strcpy(buf, bufLen, _title);
 }
 
 void Frame::setMoveable(bool state) { _moveable = state; }
@@ -209,10 +212,10 @@ void Frame::setVisible(bool state)
 	{
 		_dragging = false;
 		_resizing = false;
-		_dragAnchorReady = false;
+		_resizeZone = 0;
+		_lastCursorValid = false;
 		App* app = App::getInstance();
-		if (app)
-			app->setMouseCapture(null);
+		if (app) app->setMouseCapture(null);
 	}
 	Panel::setVisible(state);
 }
@@ -229,21 +232,15 @@ void Frame::setSmallCaption(bool state)
 	getSize(wide, tall);
 	if (_client)
 		_client->setBounds(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
-	if (_captionBar)
-		_captionBar->setBounds(border, border, wide - border * 2, captionH);
 }
 
 void Frame::setSize(int wide, int tall)
 {
 	Panel::setSize(wide, tall);
-
 	int captionH = _smallCaption ? FcapSmall() : Fcap();
 	int border = Fborder();
-
 	if (_client)
 		_client->setBounds(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
-	if (_captionBar)
-		_captionBar->setBounds(border, border, wide - border * 2, captionH);
 	if (_closeButton)
 	{
 		int btnSize = FbtnSz();
@@ -258,25 +255,22 @@ void Frame::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Frame body fill - GoldSrc warm olive
 	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xE6646E50;
 	schemeBgColor(this, frameBg);
 	drawFilledRect(0, 0, wide, tall);
 
-	// Subtle vertical gradient: 1px brighter band just below titlebar,
-	// 1px darker band at very bottom (GoldSrc "soft 3D" feel)
 	int captionH = _smallCaption ? FcapSmall() : Fcap();
 	int border = Fborder();
-	schemeBgColor(this, 0x40FFFFFF); // very light translucent
+	// Subtle gradient bands
+	schemeBgColor(this, 0x40FFFFFF);
 	drawFilledRect(border, captionH + border, wide - border, captionH + border + 1);
-	schemeBgColor(this, 0x40000000); // very dark translucent
+	schemeBgColor(this, 0x40000000);
 	drawFilledRect(border, tall - border - 1, wide - border, tall - border);
 
-	// GoldSrc double-bevel outer frame border:
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Outer bevel
+	// Outer bevel (raised)
 	schemeBgColor(this, bright);
 	drawFilledRect(0, 0, wide, 1);
 	drawFilledRect(0, 0, 1, tall);
@@ -284,19 +278,17 @@ void Frame::paintBackground()
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
 
-	// Inner bevel (1px inside)
-	unsigned int innerBright = 0xC8909880;
-	unsigned int innerDark   = 0xC83A3E30;
-	schemeBgColor(this, innerBright);
+	// Inner bevel
+	schemeBgColor(this, 0xC8909880);
 	drawFilledRect(1, 1, wide - 1, 2);
 	drawFilledRect(1, 1, 2, tall - 1);
-	schemeBgColor(this, innerDark);
+	schemeBgColor(this, 0xC83A3E30);
 	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 
 	drawTitleBar(wide);
 
-	// Bottom-right resize grip
+	// Bottom-right resize grip dots
 	if (_sizeable)
 	{
 		schemeBgColor(this, bright);
@@ -311,36 +303,27 @@ void Frame::paintBackground()
 	}
 }
 
-void Frame::paint()
-{
-}
+void Frame::paint() {}
 
 void Frame::drawTitleBar(int wide)
 {
 	int captionH = _smallCaption ? FcapSmall() : Fcap();
 	int border = Fborder();
+	int barX = border, barY = border;
+	int barW = wide - border * 2, barH = captionH;
 
-	int barX = border;
-	int barY = border;
-	int barW = wide - border * 2;
-	int barH = captionH;
-
-	// Title bar background - slightly darker than frame body
-	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE6586248;
+	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE64A5440;
 	schemeBgColor(this, titleBg);
 	drawFilledRect(barX, barY, barX + barW, barY + barH);
 
-	// Top highlight
-	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF7A8268;
+	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF8E9678;
 	schemeBgColor(this, topEdge);
 	drawFilledRect(barX, barY, barX + barW, barY + 1);
 
-	// Bottom separator (dark line between titlebar and client)
-	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF3A4030;
+	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF2A3020;
 	schemeBgColor(this, botEdge);
 	drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
 
-	// Steam logo icon
 	static HIMAGE s_steamIcon = (HIMAGE)-1;
 	if (s_steamIcon == (HIMAGE)-1)
 		s_steamIcon = EngFuncs::PIC_Load("gfx/vgui2/steam_logo.tga");
@@ -360,7 +343,6 @@ void Frame::drawTitleBar(int wide)
 		titleTextX = iconX + iconW + VS(3);
 	}
 
-	// Title text - vertically centered in the taller titlebar
 	if (_title[0])
 	{
 		unsigned int titleFg = g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF;
@@ -372,60 +354,88 @@ void Frame::drawTitleBar(int wide)
 	}
 }
 
+// Robust drag/resize: incremental delta from last cursor position.
+// On the very first cursorMoved after a press, we just record the cursor
+// (no movement) - this prevents the press-time anchor desync that caused
+// the dialog to jump on touch.
 void Frame::internalCursorMoved(int x, int y)
 {
 	if (_dragging || _resizing)
 	{
-		if (!_dragAnchorReady)
+		if (!_lastCursorValid)
 		{
-			_dragOrgCursor[0] = x;
-			_dragOrgCursor[1] = y;
-			_dragOrgPos[0] = _pos[0];
-			_dragOrgPos[1] = _pos[1];
-			int wide, tall;
-			getSize(wide, tall);
-			_dragOrgSize[0] = wide;
-			_dragOrgSize[1] = tall;
-			_dragAnchorReady = true;
+			_lastCursor[0] = x;
+			_lastCursor[1] = y;
+			_lastCursorValid = true;
 			Panel::internalCursorMoved(x, y);
 			return;
 		}
-	}
 
-	if (_dragging && _moveable)
-	{
-		int dx = x - _dragOrgCursor[0];
-		int dy = y - _dragOrgCursor[1];
-		int newX = _dragOrgPos[0] + dx;
-		int newY = _dragOrgPos[1] + dy;
+		int dx = x - _lastCursor[0];
+		int dy = y - _lastCursor[1];
+		_lastCursor[0] = x;
+		_lastCursor[1] = y;
 
-		int wide, tall;
-		getSize(wide, tall);
-		Panel* p = getParent();
-		int rootW = 0, rootH = 0;
-		if (p) p->getSize(rootW, rootH);
-		if (rootW > 0 && rootH > 0)
+		if (_dragging && _moveable && (dx != 0 || dy != 0))
 		{
-			int margin = VS(24);
-			if (newX < -wide + margin) newX = -wide + margin;
-			if (newX > rootW - margin) newX = rootW - margin;
-			if (newY < 0) newY = 0;
-			if (newY > rootH - margin) newY = rootH - margin;
-		}
+			int newX = _pos[0] + dx;
+			int newY = _pos[1] + dy;
 
-		setPos(newX, newY);
-	}
-	else if (_resizing && _sizeable)
-	{
-		int dx = x - _dragOrgCursor[0];
-		int dy = y - _dragOrgCursor[1];
-		int newW = _dragOrgSize[0] + dx;
-		int newH = _dragOrgSize[1] + dy;
-		int minW = VS(360);
-		int minH = VS(240);
-		if (newW < minW) newW = minW;
-		if (newH < minH) newH = minH;
-		setSize(newW, newH);
+			// Clamp: keep title bar grabbable. Allow some off-screen for
+			// monitor-edge use, but never let dialog escape entirely.
+			int wide, tall;
+			getSize(wide, tall);
+			Panel* p = getParent();
+			int rootW = 0, rootH = 0;
+			if (p) p->getSize(rootW, rootH);
+			if (rootW > 0 && rootH > 0)
+			{
+				int margin = VS(24);
+				if (newX < -wide + margin) newX = -wide + margin;
+				if (newX > rootW - margin) newX = rootW - margin;
+				if (newY < 0) newY = 0;
+				if (newY > rootH - margin) newY = rootH - margin;
+			}
+			setPos(newX, newY);
+		}
+		else if (_resizing && _sizeable && _resizeZone && (dx != 0 || dy != 0))
+		{
+			int wide, tall;
+			getSize(wide, tall);
+			int newX = _pos[0], newY = _pos[1];
+			int newW = wide, newH = tall;
+			int minW = MinW(), minH = MinH();
+
+			if (_resizeZone & RZ_W)
+			{
+				newX += dx;
+				newW -= dx;
+				if (newW < minW) { newX -= (minW - newW); newW = minW; }
+			}
+			if (_resizeZone & RZ_E)
+			{
+				newW += dx;
+				if (newW < minW) newW = minW;
+			}
+			if (_resizeZone & RZ_N)
+			{
+				newY += dy;
+				newH -= dy;
+				if (newH < minH) { newY -= (minH - newH); newH = minH; }
+			}
+			if (_resizeZone & RZ_S)
+			{
+				newH += dy;
+				if (newH < minH) newH = minH;
+			}
+
+			// Apply pos and size in real time. setPos before setSize so the
+			// child layout in setSize sees the final position.
+			if (newX != _pos[0] || newY != _pos[1])
+				setPos(newX, newY);
+			if (newW != wide || newH != tall)
+				setSize(newW, newH);
+		}
 	}
 
 	Panel::internalCursorMoved(x, y);
@@ -449,36 +459,28 @@ void Frame::internalMousePressed(MouseCode code)
 			int wide = getWide();
 			int tall = getTall();
 
-			int grip = VS(14);
-			if (_sizeable && lx >= wide - grip && lx < wide && ly >= tall - grip && ly < tall)
+			// Resize hit-test (priority over titlebar drag)
+			int zone = _sizeable ? HitTestResize(lx, ly, wide, tall) : 0;
+			if (zone)
 			{
 				_resizing = true;
-				_dragAnchorReady = false;
-				_dragOrgSize[0] = wide;
-				_dragOrgSize[1] = tall;
-				_dragOrgCursor[0] = mx;
-				_dragOrgCursor[1] = my;
+				_resizeZone = zone;
+				_lastCursorValid = false; // first cursorMoved will seed lastCursor
 				setAsMouseCapture(true);
 			}
 			else if (_moveable)
 			{
 				int captionH = _smallCaption ? FcapSmall() : Fcap();
 				int border = Fborder();
-
 				if (ly >= border && ly < border + captionH && lx >= border && lx < wide - border)
 				{
 					_dragging = true;
-					_dragAnchorReady = false;
-					_dragOrgPos[0] = _pos[0];
-					_dragOrgPos[1] = _pos[1];
-					_dragOrgCursor[0] = mx;
-					_dragOrgCursor[1] = my;
+					_lastCursorValid = false;
 					setAsMouseCapture(true);
 				}
 			}
 		}
 	}
-
 	Panel::internalMousePressed(code);
 }
 
@@ -488,10 +490,10 @@ void Frame::internalMouseReleased(MouseCode code)
 	{
 		_dragging = false;
 		_resizing = false;
-		_dragAnchorReady = false;
+		_resizeZone = 0;
+		_lastCursorValid = false;
 		setAsMouseCapture(false);
 	}
-
 	Panel::internalMouseReleased(code);
 }
 
