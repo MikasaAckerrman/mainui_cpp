@@ -36,75 +36,35 @@ extern void WndConsole_Show( void );
 extern void WndServerBrowser_Show( void );
 extern void WndCreateGame_Show( void );
 
-// VGUI1 Options dialog - loaded from libvgui_support.so
-#include <dlfcn.h>
-#include <stdlib.h>
-#include <stdio.h>
+// VGUI1 Options dialog - linked directly into libmenu.so
+extern "C" void VGUI_SetScreenSize(int w, int h);
+extern "C" void VGUI_SetCvarFuncs(
+	float(*)(const char*), void(*)(const char*,float),
+	const char*(*)(const char*), void(*)(const char*,const char*), void(*)(const char*));
+extern "C" void VGUI_ShowOptions(void);
 
-// Wrapper for ClientCmd to match VGUI1 bridge signature (single arg)
 static void UI_VguiClientCmd( const char *cmd )
 {
 	EngFuncs::ClientCmd( false, cmd );
 }
 
+static bool s_vguiInitDone = false;
+
 static void UI_ShowVguiOptions( void )
 {
-	static void *s_vguiLib = NULL;
-	static void (*s_pfnShowOptions)( void ) = NULL;
-
-	if( !s_pfnShowOptions )
+	if( !s_vguiInitDone )
 	{
-		if( !s_vguiLib )
-		{
-			// On Android, libs are in XASH3D_GAMELIBDIR (nativeLibraryDir)
-			const char *libdir = getenv( "XASH3D_GAMELIBDIR" );
-			if( libdir && libdir[0] )
-			{
-				char fullpath[512];
-				snprintf( fullpath, sizeof( fullpath ), "%s/libvgui_support.so", libdir );
-				s_vguiLib = dlopen( fullpath, RTLD_NOW );
-			}
-
-			// Fallback: try without path
-			if( !s_vguiLib )
-				s_vguiLib = dlopen( "libvgui_support.so", RTLD_NOW );
-		}
-
-		if( s_vguiLib )
-		{
-			s_pfnShowOptions = (void(*)())dlsym( s_vguiLib, "VGUI_ShowOptions" );
-
-			// Set screen size for VGUI1 (needed for lazy init)
-			void (*pfnSetScreenSize)( int, int );
-			pfnSetScreenSize = (void(*)(int,int))dlsym( s_vguiLib, "VGUI_SetScreenSize" );
-			if( pfnSetScreenSize )
-				pfnSetScreenSize( ScreenWidth, ScreenHeight );
-
-			// Set up cvar bridge
-			typedef void (*SetCvarFuncsType)(
-				float(*)(const char*),
-				void(*)(const char*, float),
-				const char*(*)(const char*),
-				void(*)(const char*, const char*),
-				void(*)(const char*) );
-			SetCvarFuncsType SetCvarFuncs = (SetCvarFuncsType)dlsym( s_vguiLib, "VGUI_SetCvarFuncs" );
-			if( SetCvarFuncs )
-			{
-				SetCvarFuncs(
-					EngFuncs::engfuncs.pfnGetCvarFloat,
-					EngFuncs::engfuncs.pfnCvarSetValue,
-					EngFuncs::engfuncs.pfnGetCvarString,
-					EngFuncs::engfuncs.pfnCvarSetString,
-					UI_VguiClientCmd
-				);
-			}
-		}
+		VGUI_SetScreenSize( ScreenWidth, ScreenHeight );
+		VGUI_SetCvarFuncs(
+			EngFuncs::engfuncs.pfnGetCvarFloat,
+			EngFuncs::engfuncs.pfnCvarSetValue,
+			EngFuncs::engfuncs.pfnGetCvarString,
+			EngFuncs::engfuncs.pfnCvarSetString,
+			UI_VguiClientCmd
+		);
+		s_vguiInitDone = true;
 	}
-
-	if( s_pfnShowOptions )
-		s_pfnShowOptions();
-	else
-		EngFuncs::ClientCmd( false, "echo VGUI1: libvgui_support.so not found\n" );
+	VGUI_ShowOptions();
 }
 
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
