@@ -36,6 +36,28 @@ extern void WndConsole_Show( void );
 extern void WndServerBrowser_Show( void );
 extern void WndCreateGame_Show( void );
 
+// VGUI1 Options dialog - loaded from libvgui_support.so
+#include <dlfcn.h>
+static void UI_ShowVguiOptions( void )
+{
+	static void *s_vguiLib = NULL;
+	static void (*s_pfnShowOptions)( void ) = NULL;
+
+	if( !s_pfnShowOptions )
+	{
+		if( !s_vguiLib )
+			s_vguiLib = dlopen( "libvgui_support.so", RTLD_NOW );
+
+		if( s_vguiLib )
+			s_pfnShowOptions = (void(*)())dlsym( s_vguiLib, "VGUI_ShowOptions" );
+	}
+
+	if( s_pfnShowOptions )
+		s_pfnShowOptions();
+	else
+		EngFuncs::ClientCmd( false, "echo VGUI1: libvgui_support.so not found\n" );
+}
+
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
 #define ART_MINIMIZE_F	"gfx/shell/min_f"
 #define ART_MINIMIZE_D	"gfx/shell/min_d"
@@ -214,7 +236,7 @@ void CMenuMain::_Init( void )
 	configuration.SetNameAndStatus( L( "GameUI_Options" ), L( "StringsList_193" ) );
 	configuration.SetPicture( PC_CONFIG );
 	configuration.iFlags |= QMF_NOTIFY;
-	configuration.onReleased.SetCommand( false, "vgui_options\n" );
+	SET_EVENT( configuration.onReleased, UI_ShowVguiOptions() );
 
 	saveRestore.iFlags |= QMF_NOTIFY;
 
