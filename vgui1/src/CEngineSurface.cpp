@@ -2,14 +2,17 @@
 // This file is compiled directly into libmenu.so, so it uses EngFuncs directly
 // instead of going through g_api callbacks.
 
+// IMPORTANT: include mainui headers BEFORE VGUI headers, because VGUI defines
+// `null` as a macro which clashes with parameter names in mainui headers.
+#include "BaseMenu.h"
+#include "FontManager.h"
+
 #include <VGUI_SurfaceBase.h>
 #include <VGUI_Panel.h>
 #include <VGUI_App.h>
 #include <VGUI_Cursor.h>
 #include <VGUI_Font.h>
 #include <string.h>
-
-#include "enginecallback_menu.h"
 
 // From Utils.h - avoid including the full header to prevent key definition conflicts
 extern void UI_GetCursorPos( int *pos_x, int *pos_y );
@@ -214,27 +217,37 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 	if (_textColor[3] >= 255)
 		return;
 
-	// Build a null-terminated copy for the engine API
-	char buf[512];
-	int copyLen = textLen;
-	if (copyLen >= (int)sizeof(buf))
-		copyLen = (int)sizeof(buf) - 1;
-	memcpy(buf, text, copyLen);
-	buf[copyLen] = 0;
+	// Determine character height from the current VGUI font, default 12 (CS 1.6 Tahoma)
+	int charH = (_currentFont && _currentFont->getTall() > 0) ? _currentFont->getTall() : 12;
+
+	// Convert VGUI inverted alpha to engine standard alpha (255 = opaque).
+	int engineAlpha = 255 - _textColor[3];
+	unsigned int color = PackRGBA_local(_textColor[0], _textColor[1], _textColor[2], engineAlpha);
+
+	// Use mainui's FontManager directly with explicit character height.
+	// We do NOT use pfnDrawCharacter (requires valid HIMAGE) or DrawConsoleString
+	// (uses console font which is too large for VGUI1 widgets).
+	HFont hFont = uiStatic.hDefaultFont;
+	if (!hFont || !g_FontMgr)
+		return;
 
 	int x = _textPos[0];
 	int y = _textPos[1];
 
-	// Convert VGUI inverted alpha to engine standard alpha (255 = opaque).
-	// Use mainui's font manager via DrawConsoleString instead of the raw
-	// pfnDrawCharacter, because pfnDrawCharacter requires a valid HIMAGE
-	// font texture (hFont=0 renders nothing on Android).
-	int engineAlpha = 255 - _textColor[3];
-	EngFuncs::DrawSetTextColor(_textColor[0], _textColor[1], _textColor[2], engineAlpha);
-	int endX = EngFuncs::DrawConsoleString(x, y, buf);
+	for (int i = 0; i < textLen && text[i]; i++)
+	{
+		unsigned char ch = (unsigned char)text[i];
+		// Simple clip: skip glyphs entirely outside the current clip rect
+		if (x >= _clipRect[2] || y + charH < _clipRect[1] || y > _clipRect[3])
+			break;
 
-	// Advance the text cursor (engine returns absolute end-X in screen coords)
-	_textPos[0] = endX;
+		int dx = g_FontMgr->DrawCharacter(hFont, ch, Point(x, y), charH, color, false);
+		if (dx <= 0)
+			dx = charH / 2; // fallback so we don't get stuck on bad glyphs
+		x += dx;
+	}
+
+	_textPos[0] = x;
 }
 
 void CEngineSurface::drawSetTextureRGBA(int id, const char* rgba, int wide, int tall)

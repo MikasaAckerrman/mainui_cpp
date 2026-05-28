@@ -13,6 +13,7 @@ public:
 	CheckButton(const char* text, int x, int y);
 	CheckButton(const char* text, int x, int y, int wide, int tall);
 protected:
+	virtual void paint();
 	virtual void paintBackground();
 	virtual void internalMousePressed(MouseCode code);
 };

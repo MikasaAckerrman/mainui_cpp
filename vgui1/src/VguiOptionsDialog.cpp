@@ -47,6 +47,21 @@ private:
 };
 
 // ====================================================================
+// Action signal for Apply button (apply all but keep dialog open)
+// ====================================================================
+class OptionsApplySignal : public ActionSignal
+{
+public:
+	OptionsApplySignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
+	virtual void actionPerformed(Panel* panel)
+	{
+		_dlg->applyAll();
+	}
+private:
+	VguiOptionsDialog* _dlg;
+};
+
+// ====================================================================
 // VguiOptionsDialog
 // ====================================================================
 
@@ -54,14 +69,14 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	: Frame(0, 0, 480, 380)
 {
 	// Compute dialog size proportionally to screen
-	int dialogW = (screenW * 3) / 4;   // 75%
-	int dialogH = (screenH * 79) / 100; // 79%
+	int dialogW = (screenW * 4) / 5;    // 80%
+	int dialogH = (screenH * 80) / 100; // 80%
 
-	// Cap to reasonable limits
-	if (dialogW > 640) dialogW = 640;
-	if (dialogH > 500) dialogH = 500;
-	if (dialogW < 320) dialogW = 320;
-	if (dialogH < 240) dialogH = 240;
+	// Cap to reasonable limits (CS 1.6 PC reference is ~1100x650)
+	if (dialogW > 1100) dialogW = 1100;
+	if (dialogH > 650) dialogH = 650;
+	if (dialogW < 500) dialogW = 500;
+	if (dialogH < 320) dialogH = 320;
 
 	// Center on screen
 	int posX = (screenW - dialogW) / 2;
@@ -118,12 +133,17 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	buildAccountTab(accountPage);
 	buildSystemTab(systemPage);
 
-	// OK and Cancel buttons at bottom of client area
-	int btnW = 72;
-	int btnH = 24;
-	int btnY = clientH - 30;
-	int okX = clientW / 2 - btnW - 8;
-	int cancelX = clientW / 2 + 8;
+	// Bottom button row: OK | Cancel | Apply, anchored to bottom-right of client area
+	int btnW = 80;
+	int btnH = 22;
+	int btnGap = 6;
+	int btnY = clientH - btnH - 8;
+	int btnRight = clientW - 8;
+
+	// Apply (right-most), Cancel, OK (left-most of the trio)
+	int applyX  = btnRight - btnW;
+	int cancelX = applyX  - btnGap - btnW;
+	int okX     = cancelX - btnGap - btnW;
 
 	Button* okBtn = new Button("OK", okX, btnY, btnW, btnH);
 	client->addChild(okBtn);
@@ -132,6 +152,10 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	Button* cancelBtn = new Button("Cancel", cancelX, btnY, btnW, btnH);
 	client->addChild(cancelBtn);
 	cancelBtn->addActionSignal(new OptionsCancelSignal(this));
+
+	Button* applyBtn = new Button("Apply", applyX, btnY, btnW, btnH);
+	client->addChild(applyBtn);
+	applyBtn->addActionSignal(new OptionsApplySignal(this));
 }
 
 void VguiOptionsDialog::applyAll()

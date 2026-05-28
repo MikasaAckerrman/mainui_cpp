@@ -1,3 +1,10 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+#include "BaseMenu.h"
+#include "FontManager.h"
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_TabPanel.h>
 #include <VGUI_App.h>
 #include <string.h>
@@ -5,10 +12,28 @@
 namespace vgui
 {
 
+// CS 1.6 PC tab metrics (matches the reference screenshot).
+static const int TAB_HEIGHT       = 24; // tab strip height
+static const int TAB_TEXT_HEIGHT  = 12; // Tahoma 12px
+static const int TAB_TEXT_PAD     = 12; // padding on each side of text
+static const int TAB_GAP          = 0;  // pixel gap between adjacent tabs
+
+// Compute width of tab i based on text length (using mainui FontManager).
+static int ComputeTabWidth( const char *text )
+{
+	HFont font = uiStatic.hDefaultFont;
+	int textW = 0;
+	if ( g_FontMgr && font && text && text[0] )
+		textW = g_FontMgr->GetTextWideScaled( font, text, TAB_TEXT_HEIGHT );
+	else if ( text )
+		textW = (int)strlen( text ) * (TAB_TEXT_HEIGHT * 6 / 10);
+	return textW + TAB_TEXT_PAD * 2;
+}
+
 TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
 	_selectedTab = 0;
-	setBgColor(192, 192, 192, 0);
+	// Visual colors driven by g_Scheme at draw time
 }
 
 void TabPanel::addTab(const char* text, Panel* panel)
@@ -32,7 +57,6 @@ void TabPanel::setSelectedTab(int index)
 	if (index < 0 || index >= _tabDar.getCount())
 		return;
 
-	// Hide old panel
 	if (_selectedTab >= 0 && _selectedTab < _tabDar.getCount())
 	{
 		Tab* oldTab = _tabDar[_selectedTab];
@@ -42,7 +66,6 @@ void TabPanel::setSelectedTab(int index)
 
 	_selectedTab = index;
 
-	// Show new panel
 	Tab* newTab = _tabDar[_selectedTab];
 	if (newTab && newTab->panel)
 		newTab->panel->setVisible(true);
@@ -50,25 +73,17 @@ void TabPanel::setSelectedTab(int index)
 	repaint();
 }
 
-int TabPanel::getSelectedTab()
-{
-	return _selectedTab;
-}
+int TabPanel::getSelectedTab()  { return _selectedTab; }
+int TabPanel::getTabCount()     { return _tabDar.getCount(); }
 
 Panel* TabPanel::getSelectedPanel()
 {
 	if (_selectedTab >= 0 && _selectedTab < _tabDar.getCount())
 	{
 		Tab* tab = _tabDar[_selectedTab];
-		if (tab)
-			return tab->panel;
+		if (tab) return tab->panel;
 	}
 	return null;
-}
-
-int TabPanel::getTabCount()
-{
-	return _tabDar.getCount();
 }
 
 void TabPanel::performLayout()
@@ -76,27 +91,19 @@ void TabPanel::performLayout()
 	int wide, tall;
 	getSize(wide, tall);
 
-	int tabHeight = 28;
-
-	// Position page panels below tabs
+	// Page panels live below the tab strip, filling remaining space
 	for (int i = 0; i < _tabDar.getCount(); i++)
 	{
 		Tab* tab = _tabDar[i];
 		if (tab && tab->panel)
-		{
-			tab->panel->setBounds(0, tabHeight, wide, tall - tabHeight);
-		}
+			tab->panel->setBounds(0, TAB_HEIGHT, wide, tall - TAB_HEIGHT);
 	}
 }
 
 void TabPanel::paintBackground()
 {
-	int wide, tall;
-	getSize(wide, tall);
-
-	// Fill background
-	drawSetColor(192, 192, 192, 0);
-	drawFilledRect(0, 0, wide, tall);
+	// Background is drawn by the parent dialog (frameBgColor); TabPanel itself
+	// is transparent. Drawing nothing avoids a visible seam under the tabs.
 }
 
 void TabPanel::paint()
@@ -105,68 +112,83 @@ void TabPanel::paint()
 	getSize(wide, tall);
 
 	int tabCount = _tabDar.getCount();
-	if (tabCount == 0)
+	if (tabCount <= 0)
 		return;
 
-	int tabHeight = 28;
-	int tabWidth = tabCount > 0 ? wide / tabCount : wide;
-	if (tabWidth > 100) tabWidth = 100;
-	if (tabWidth < 20) tabWidth = 20;
+	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xE65F684E;
+	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE64E5643;
+	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFFDCDCDC;
+	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFBFB85E;
+	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xC85F6558;
+	unsigned int dark        = g_Scheme.borderDark         ? g_Scheme.borderDark         : 0xC8282C24;
 
+	// Track the active tab's x range so we can draw the strip-bottom line around it
+	int activeX = 0, activeW = 0;
+
+	int x = 0;
 	for (int i = 0; i < tabCount; i++)
 	{
 		Tab* tab = _tabDar[i];
-		if (!tab)
-			continue;
+		if (!tab) continue;
 
-		int tx = i * tabWidth;
+		int width = ComputeTabWidth(tab->text);
 		bool selected = (i == _selectedTab);
 
 		if (selected)
 		{
-			// Selected tab - raised, connects to panel below
-			drawSetColor(192, 192, 192, 0);
-			drawFilledRect(tx + 1, 2, tx + tabWidth - 1, tabHeight);
+			activeX = x;
+			activeW = width;
 
-			// Top-left highlight
-			drawSetColor(255, 255, 255, 0);
-			drawFilledRect(tx, 2, tx + 1, tabHeight);        // left
-			drawFilledRect(tx, 1, tx + tabWidth, 2);         // top
+			// Active tab: same olive as panel below, taller by 1px so it
+			// "merges" into the panel with no horizontal seam underneath.
+			schemeBgColor(this, frameBg);
+			drawFilledRect(x + 1, 0, x + width - 1, TAB_HEIGHT + 1);
 
-			// Top-right shadow
-			drawSetColor(64, 64, 64, 0);
-			drawFilledRect(tx + tabWidth - 1, 2, tx + tabWidth, tabHeight); // right
+			// Top + left bright edge
+			schemeBgColor(this, bright);
+			drawFilledRect(x, 0, x + width, 1);
+			drawFilledRect(x, 0, x + 1, TAB_HEIGHT + 1);
+
+			// Right dark edge
+			schemeBgColor(this, dark);
+			drawFilledRect(x + width - 1, 0, x + width, TAB_HEIGHT + 1);
 		}
 		else
 		{
-			// Unselected tab - smaller, recessed
-			drawSetColor(180, 180, 180, 0);
-			drawFilledRect(tx + 1, 4, tx + tabWidth - 1, tabHeight - 1);
+			// Inactive tab: 2px shorter at the top, all 4 bevels + bottom edge
+			int yTop = 2;
 
-			drawSetColor(255, 255, 255, 0);
-			drawFilledRect(tx, 4, tx + 1, tabHeight - 1);
-			drawFilledRect(tx, 3, tx + tabWidth, 4);
+			schemeBgColor(this, inactiveBg);
+			drawFilledRect(x + 1, yTop, x + width - 1, TAB_HEIGHT - 1);
 
-			drawSetColor(64, 64, 64, 0);
-			drawFilledRect(tx + tabWidth - 1, 4, tx + tabWidth, tabHeight - 1);
+			schemeBgColor(this, bright);
+			drawFilledRect(x, yTop, x + width, yTop + 1);
+			drawFilledRect(x, yTop, x + 1, TAB_HEIGHT - 1);
+
+			schemeBgColor(this, dark);
+			drawFilledRect(x + width - 1, yTop, x + width, TAB_HEIGHT - 1);
+			drawFilledRect(x, TAB_HEIGHT - 1, x + width, TAB_HEIGHT);
 		}
 
-		// Tab text
+		// Tab label (vertically centered in the strip)
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
-			drawSetTextColor(0, 0, 0, 0);
+			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
-			int textY = selected ? 7 : 9;
-			drawPrintText(tx + 6, textY, tab->text, textLen);
+			int textY = (TAB_HEIGHT - TAB_TEXT_HEIGHT) / 2;
+			drawPrintText(x + TAB_TEXT_PAD, textY, tab->text, textLen);
 		}
+
+		x += width + TAB_GAP;
 	}
 
-	// Bottom line under tabs (except selected)
-	drawSetColor(64, 64, 64, 0);
-	int selTx = _selectedTab * tabWidth;
-	drawFilledRect(0, tabHeight - 1, selTx, tabHeight);
-	drawFilledRect(selTx + tabWidth, tabHeight - 1, wide, tabHeight);
+	// Strip-bottom dark line everywhere except under the active tab
+	schemeBgColor(this, dark);
+	if (activeX > 0)
+		drawFilledRect(0, TAB_HEIGHT, activeX, TAB_HEIGHT + 1);
+	if (activeX + activeW < wide)
+		drawFilledRect(activeX + activeW, TAB_HEIGHT, wide, TAB_HEIGHT + 1);
 }
 
 void TabPanel::internalMousePressed(MouseCode code)
@@ -180,19 +202,22 @@ void TabPanel::internalMousePressed(MouseCode code)
 			app->getCursorPos(mx, my);
 			screenToLocal(mx, my);
 
-			int tabHeight = 28;
-			if (my < tabHeight)
+			if (my >= 0 && my < TAB_HEIGHT)
 			{
+				int x = 0;
 				int tabCount = _tabDar.getCount();
-				int wide, tall;
-				getSize(wide, tall);
-				int tabWidth = tabCount > 0 ? wide / tabCount : wide;
-				if (tabWidth > 100) tabWidth = 100;
-				if (tabWidth < 20) tabWidth = 20;
-
-				int clickedTab = mx / tabWidth;
-				if (clickedTab >= 0 && clickedTab < tabCount)
-					setSelectedTab(clickedTab);
+				for (int i = 0; i < tabCount; i++)
+				{
+					Tab* tab = _tabDar[i];
+					if (!tab) continue;
+					int w = ComputeTabWidth(tab->text);
+					if (mx >= x && mx < x + w)
+					{
+						setSelectedTab(i);
+						break;
+					}
+					x += w + TAB_GAP;
+				}
 			}
 		}
 	}
