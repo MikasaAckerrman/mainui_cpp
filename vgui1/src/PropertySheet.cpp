@@ -7,7 +7,6 @@ namespace vgui
 PropertySheet::PropertySheet(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
 	_tabPanel = new TabPanel(0, 0, wide, tall);
-	_tabPanel->setParent(this);
 	addChild(_tabPanel);
 }
 

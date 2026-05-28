@@ -14,9 +14,7 @@ enum
 	FRAME_CAPTION_HEIGHT = 20,
 	FRAME_CAPTION_HEIGHT_SMALL = 16,
 	FRAME_BORDER = 3,
-	FRAME_GRIP_SIZE = 5,
 	FRAME_BUTTON_SIZE = 16,
-	FRAME_BUTTON_SIZE_SMALL = 12,
 	FRAME_BUTTON_INSET = 2
 };
 
@@ -63,18 +61,15 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	int captionH = FRAME_CAPTION_HEIGHT;
 	int border = FRAME_BORDER;
 	_client = new Panel(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
-	_client->setParent(this);
 	addChild(_client);
 
 	// Caption bar panel (invisible, used for hit-testing)
 	_captionBar = new Panel(border, border, wide - border * 2, captionH);
-	_captionBar->setParent(this);
 	addChild(_captionBar);
 
 	// Close button
 	int btnSize = FRAME_BUTTON_SIZE;
 	_closeButton = new Button("X", wide - border - btnSize - FRAME_BUTTON_INSET, border + FRAME_BUTTON_INSET, btnSize, btnSize);
-	_closeButton->setParent(this);
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
 
@@ -161,7 +156,6 @@ void Frame::paintBackground()
 
 void Frame::paint()
 {
-	// Additional painting if needed
 }
 
 void Frame::drawTitleBar(int wide)

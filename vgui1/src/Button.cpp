@@ -1,7 +1,5 @@
 #include <VGUI_Button.h>
 #include <VGUI_ActionSignal.h>
-#include <VGUI_RaisedBorder.h>
-#include <VGUI_LoweredBorder.h>
 #include <string.h>
 
 namespace vgui

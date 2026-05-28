@@ -20,7 +20,6 @@ void TabPanel::addTab(const char* text, Panel* panel)
 
 	if (panel)
 	{
-		panel->setParent(this);
 		addChild(panel);
 		panel->setVisible(_tabDar.getCount() - 1 == _selectedTab);
 	}
@@ -110,9 +109,9 @@ void TabPanel::paint()
 		return;
 
 	int tabHeight = 28;
-	int tabWidth = wide / tabCount;
+	int tabWidth = tabCount > 0 ? wide / tabCount : wide;
 	if (tabWidth > 100) tabWidth = 100;
-	if (tabWidth < 40) tabWidth = 40;
+	if (tabWidth < 20) tabWidth = 20;
 
 	for (int i = 0; i < tabCount; i++)
 	{
@@ -187,9 +186,9 @@ void TabPanel::internalMousePressed(MouseCode code)
 				int tabCount = _tabDar.getCount();
 				int wide, tall;
 				getSize(wide, tall);
-				int tabWidth = wide / tabCount;
+				int tabWidth = tabCount > 0 ? wide / tabCount : wide;
 				if (tabWidth > 100) tabWidth = 100;
-				if (tabWidth < 40) tabWidth = 40;
+				if (tabWidth < 20) tabWidth = 20;
 
 				int clickedTab = mx / tabWidth;
 				if (clickedTab >= 0 && clickedTab < tabCount)

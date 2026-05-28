@@ -14,7 +14,6 @@ ListPanel::ListPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	// Create vertical scrollbar on right side
 	int sbWidth = 16;
 	_vscrollBar = new ScrollBar(wide - sbWidth, 0, sbWidth, tall, true);
-	_vscrollBar->setParent(this);
 	addChild(_vscrollBar);
 
 	setBgColor(255, 255, 255, 0);
@@ -40,7 +39,6 @@ void ListPanel::addItem(Panel* panel)
 	if (panel)
 	{
 		_itemDar.addElement(panel);
-		panel->setParent(this);
 		addChild(panel);
 		invalidateLayout(true);
 	}
