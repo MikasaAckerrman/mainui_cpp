@@ -278,11 +278,11 @@ void UI_LoadTrackerScheme( void )
 
 		// Apply CS 1.6 GoldSrc VGUI palette - warm olive/gray-green (pixel-perfect)
 		g_Scheme.frameBgColor        = 0xE6646E50; // warm olive body (100,110,80)
-		g_Scheme.frameTitleBarBg     = 0xE6586248; // slightly darker titlebar
+		g_Scheme.frameTitleBarBg     = 0xE64A5440; // darker grey-green titlebar (74,84,64)
 		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF;
 		g_Scheme.frameBorderColor    = 0xC8282C24;
-		g_Scheme.frameTitleBarTop    = 0xFF7A8268; // top highlight
-		g_Scheme.frameTitleBarBottom = 0xFF3A4030; // bottom separator
+		g_Scheme.frameTitleBarTop    = 0xFF8E9678; // bright top highlight (1px line)
+		g_Scheme.frameTitleBarBottom = 0xFF2A3020; // dark bottom separator
 
 		g_Scheme.borderBright        = 0xC87A8070; // brighter bevel (122,128,112)
 		g_Scheme.borderDark          = 0xC8282C24; // dark bevel (40,44,36)
