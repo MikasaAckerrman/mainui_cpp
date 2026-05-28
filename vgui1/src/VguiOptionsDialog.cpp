@@ -3,6 +3,7 @@
 // All pixel coordinates are passed through VS() so the dialog scales with
 // screen size (mainui's logical 768-unit reference => physical pixels).
 
+#include <VGUI_Log.h>
 #include <VGUI_OptionsDialog.h>
 #include <VGUI_TabPanel.h>
 #include <VGUI_Panel.h>
@@ -76,6 +77,7 @@ private:
 VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	: Frame(0, 0, VS(480), VS(380))
 {
+	VLOG("VguiOptionsDialog ctor: screenW=%d screenH=%d scale=%.2f", screenW, screenH, vgui::g_vguiScale);
 	_applyBtn = null;
 	_okBtn = null;
 	_cancelBtn = null;
@@ -101,7 +103,11 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 
 	Panel* client = getClient();
 	if (!client)
+	{
+		VLOG("ctor: getClient() returned null -- abort");
 		return;
+	}
+	VLOG("ctor: dialog %dx%d, client ready", dialogW, dialogH);
 
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
@@ -136,7 +142,8 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	_tabPanel->addTab("Account",     accountPage);
 	_tabPanel->addTab("System",      systemPage);
 
-	buildMultiplayerTab(mpPage);
+	VLOG("ctor: building tabs");
+	buildMultiplayerTab(mpPage);  VLOG("ctor: mp tab built");
 	buildKeyboardTab(kbPage);
 	buildMouseTab(mousePage);
 	buildAudioTab(audioPage);
@@ -144,6 +151,8 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	buildHudTab(hudPage);
 	buildAccountTab(accountPage);
 	buildSystemTab(systemPage);
+	VLOG("ctor: all tabs built. checks=%d sliders=%d entries=%d",
+		_checkButtons.getCount(), _sliders.getCount(), _textEntries.getCount());
 
 	// Bottom button row: OK | Cancel | Apply, anchored to bottom-right
 	int btnW    = VS(80);
@@ -167,14 +176,17 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	client->addChild(_applyBtn);
 	_applyBtn->addActionSignal(new OptionsApplySignal(this));
 	_applyBtn->setEnabled(false); // becomes enabled when something changes
+	VLOG("ctor: buttons created");
 
-	// Wire dirty-tracking signals on every cvar widget so Apply lights up
+	// Wire dirty-tracking signals on every cvar widget so Apply lights up.
+	// Guard each entry: a corrupted Dar slot must not deref-crash here.
 	for (int i = 0; i < _checkButtons.getCount(); i++)
-		_checkButtons[i]->addActionSignal(new MarkDirtyActionSignal(this));
+		if (_checkButtons[i]) _checkButtons[i]->addActionSignal(new MarkDirtyActionSignal(this));
 	for (int i = 0; i < _sliders.getCount(); i++)
-		_sliders[i]->addIntChangeSignal(new MarkDirtyIntSignal(this));
+		if (_sliders[i]) _sliders[i]->addIntChangeSignal(new MarkDirtyIntSignal(this));
 	for (int i = 0; i < _textEntries.getCount(); i++)
-		_textEntries[i]->addActionSignal(new MarkDirtyActionSignal(this));
+		if (_textEntries[i]) _textEntries[i]->addActionSignal(new MarkDirtyActionSignal(this));
+	VLOG("ctor: dirty signals wired -- ctor done");
 }
 
 void VguiOptionsDialog::setDirty(bool dirty)
@@ -401,33 +413,46 @@ extern "C" void VGUI_EnsureInitialized(int screenW, int screenH);
 
 OPTDLG_EXPORT void VGUI_ShowOptions(void)
 {
+	VLOG("VGUI_ShowOptions ENTRY");
+
 	int sw = 0, sh = 0;
 	vgui::VGUI_GetScreenSize(&sw, &sh);
 	if (sw <= 0) sw = 640;
 	if (sh <= 0) sh = 480;
+	VLOG("ShowOptions: screen %dx%d", sw, sh);
 
 	VGUI_EnsureInitialized(sw, sh);
+	VLOG("ShowOptions: ensure-init returned");
 
 	vgui::Panel* root = vgui::VGUI_GetRootPanel();
 	if (!root)
+	{
+		VLOG("ShowOptions: VGUI_GetRootPanel() == null -- abort");
 		return;
+	}
+	VLOG("ShowOptions: root=%p", (void*)root);
 
 	if (!vgui::g_pOptionsDialog)
 	{
+		VLOG("ShowOptions: creating dialog (first time)");
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
+		VLOG("ShowOptions: ctor returned dlg=%p", (void*)vgui::g_pOptionsDialog);
 		root->addChild(vgui::g_pOptionsDialog);
+		VLOG("ShowOptions: addChild done");
 	}
 	else
 	{
-		// Re-center on every reopen (CS 1.6 PC behavior). Keeps the user's
-		// last resize but always returns the window to the middle of the screen.
+		VLOG("ShowOptions: reusing existing dialog");
 		int dlgW, dlgH;
 		vgui::g_pOptionsDialog->getSize(dlgW, dlgH);
 		vgui::g_pOptionsDialog->setPos((sw - dlgW) / 2, (sh - dlgH) / 2);
 	}
 
+	VLOG("ShowOptions: about to resetAll");
 	vgui::g_pOptionsDialog->resetAll();
+	VLOG("ShowOptions: resetAll done, setting visible");
 	vgui::g_pOptionsDialog->setVisible(true);
+	VLOG("ShowOptions: EXIT (visible=true)");
 }
 
 OPTDLG_EXPORT void VGUI_HideOptions(void)
