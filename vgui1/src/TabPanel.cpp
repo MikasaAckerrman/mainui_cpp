@@ -14,14 +14,14 @@ namespace vgui
 {
 
 // GoldSrc CS 1.6 tab metrics (pixel-perfect @ 640x480, scaled via VS).
-static const int TAB_HEIGHT_BASE      = 20;  // active tab height
+static const int TAB_HEIGHT_BASE      = 24;  // active tab height (GoldSrc: 24px)
 static const int TAB_INACTIVE_SHRINK  = 2;   // inactive tabs 2px shorter at top
-static const int TAB_TEXT_HEIGHT_B    = 11;   // text glyph height (pixel font look)
-static const int TAB_TEXT_PAD_LEFT_B  = 6;    // left padding (GoldSrc: text slightly left-shifted)
-static const int TAB_TEXT_PAD_RIGHT_B = 12;   // right padding (asymmetric = left-aligned appearance)
-static const int TAB_OVERLAP          = 1;    // overlapping borders between adjacent tabs
+static const int TAB_TEXT_HEIGHT_B    = 13;  // text glyph height (bigger for readability)
+static const int TAB_TEXT_PAD_LEFT_B  = 8;
+static const int TAB_TEXT_PAD_RIGHT_B = 8;
+static const int TAB_OVERLAP          = 1;
 
-static int ComputeTabWidth( const char *text )
+static int NaturalTabWidth( const char *text )
 {
 	HFont font = uiStatic.hDefaultFont;
 	int textW = 0;
@@ -142,6 +142,18 @@ void TabPanel::paint()
 	int tabH   = VS(TAB_HEIGHT_BASE);
 	int shrink = VS(TAB_INACTIVE_SHRINK);
 
+	// Compute uniform tab width: max of natural widths across all tabs.
+	// All tabs render at this width (GoldSrc PC: equal-width tabs).
+	int uniformW = 0;
+	for (int i = 0; i < tabCount; i++)
+	{
+		Tab* t = _tabDar[i];
+		if (!t) continue;
+		int nw = NaturalTabWidth(t->text);
+		if (nw > uniformW) uniformW = nw;
+	}
+	if (uniformW < VS(48)) uniformW = VS(48);
+
 	// Track active tab x-range for the bottom separator gap
 	int activeX = 0, activeW = 0;
 
@@ -151,7 +163,7 @@ void TabPanel::paint()
 		Tab* tab = _tabDar[i];
 		if (!tab) continue;
 
-		int w = ComputeTabWidth(tab->text);
+		int w = uniformW;
 		bool selected = (i == _selectedTab);
 
 		if (selected)
@@ -163,18 +175,17 @@ void TabPanel::paint()
 			schemeBgColor(this, frameBg);
 			drawFilledRect(x + 2, 0, x + w - 2, tabH + 2);
 
-			// Double-bevel on active tab:
 			// Outer bright top + left
 			schemeBgColor(this, bright);
-			drawFilledRect(x, 0, x + w - 1, 1);      // top
-			drawFilledRect(x, 0, x + 1, tabH + 2);   // left
+			drawFilledRect(x, 0, x + w - 1, 1);
+			drawFilledRect(x, 0, x + 1, tabH + 2);
 
 			// Inner highlight (1px inset from outer)
 			schemeBgColor(this, 0xC8909880);
-			drawFilledRect(x + 1, 1, x + w - 2, 2);  // inner top
-			drawFilledRect(x + 1, 1, x + 2, tabH + 1); // inner left
+			drawFilledRect(x + 1, 1, x + w - 2, 2);
+			drawFilledRect(x + 1, 1, x + 2, tabH + 1);
 
-			// Outer dark right edge
+			// Outer dark right
 			schemeBgColor(this, dark);
 			drawFilledRect(x + w - 1, 0, x + w, tabH + 2);
 
@@ -184,7 +195,6 @@ void TabPanel::paint()
 		}
 		else
 		{
-			// Inactive tab: shorter by 'shrink' at top
 			int yTop = shrink;
 
 			schemeBgColor(this, inactiveBg);
@@ -192,42 +202,47 @@ void TabPanel::paint()
 
 			// Outer bevel
 			schemeBgColor(this, bright);
-			drawFilledRect(x, yTop, x + w - 1, yTop + 1);  // top
-			drawFilledRect(x, yTop, x + 1, tabH - 1);      // left
+			drawFilledRect(x, yTop, x + w - 1, yTop + 1);
+			drawFilledRect(x, yTop, x + 1, tabH - 1);
 
 			schemeBgColor(this, dark);
-			drawFilledRect(x + w - 1, yTop, x + w, tabH);  // right
-			drawFilledRect(x, tabH - 1, x + w, tabH);      // bottom
+			drawFilledRect(x + w - 1, yTop, x + w, tabH);
+			drawFilledRect(x, tabH - 1, x + w, tabH);
 
-			// Inner bevel (subtle)
+			// Inner highlight (top)
 			schemeBgColor(this, 0xC8686E58);
-			drawFilledRect(x + 1, yTop + 1, x + w - 1, yTop + 2); // inner top highlight
+			drawFilledRect(x + 1, yTop + 1, x + w - 1, yTop + 2);
 		}
 
-		// Tab label text - left-aligned, shifted 1px up from center for GoldSrc look
+		// Tab label - CENTERED horizontally within uniform tab width
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
-			int textY = (tabH - VS(TAB_TEXT_HEIGHT_B)) / 2 - 1;
+			HFont font = uiStatic.hDefaultFont;
+			int textH = VS(TAB_TEXT_HEIGHT_B);
+			int textW = 0;
+			if (g_FontMgr && font)
+				textW = g_FontMgr->GetTextWideScaled(font, tab->text, textH);
+			else
+				textW = textLen * (textH * 6 / 10);
+			int textX = x + (w - textW) / 2;
+			int textY = (tabH - textH) / 2 - 1;
 			if (!selected) textY += shrink / 2;
-			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			drawPrintText(textX, textY, tab->text, textLen);
 		}
 
-		x += w - VS(TAB_OVERLAP); // overlapping borders
+		x += w - VS(TAB_OVERLAP);
 	}
 
-	// Separator line below tab strip (everywhere except under active tab)
-	// Double line: dark + bright (GoldSrc separation look)
+	// Bottom separator: dark + bright double line, gap under active tab
 	schemeBgColor(this, dark);
 	if (activeX > 0)
 		drawFilledRect(0, tabH, activeX + 1, tabH + 1);
 	if (activeX + activeW < wide)
 		drawFilledRect(activeX + activeW - 1, tabH, wide, tabH + 1);
 
-	// Bright line just below dark line
 	schemeBgColor(this, bright);
 	if (activeX > 0)
 		drawFilledRect(0, tabH + 1, activeX + 1, tabH + 2);
@@ -248,19 +263,28 @@ void TabPanel::internalMousePressed(MouseCode code)
 
 			if (my >= 0 && my < VS(TAB_HEIGHT_BASE))
 			{
-				int x = 0;
 				int tabCount = _tabDar.getCount();
+				int uniformW = 0;
+				for (int i = 0; i < tabCount; i++)
+				{
+					Tab* t = _tabDar[i];
+					if (!t) continue;
+					int nw = NaturalTabWidth(t->text);
+					if (nw > uniformW) uniformW = nw;
+				}
+				if (uniformW < VS(48)) uniformW = VS(48);
+
+				int x = 0;
 				for (int i = 0; i < tabCount; i++)
 				{
 					Tab* tab = _tabDar[i];
 					if (!tab) continue;
-					int w = ComputeTabWidth(tab->text);
-					if (mx >= x && mx < x + w)
+					if (mx >= x && mx < x + uniformW)
 					{
 						setSelectedTab(i);
 						break;
 					}
-					x += w - VS(TAB_OVERLAP);
+					x += uniformW - VS(TAB_OVERLAP);
 				}
 			}
 		}

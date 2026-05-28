@@ -358,17 +358,17 @@ inline void StubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
 // GoldSrc grid layout constants (@ 640x480 reference, scaled via VS)
 // All multiples of 4 for pixel-perfect alignment.
 // ====================================================================
-static const int DLG_W = 560;   // dialog width (GoldSrc PC Options)
-static const int DLG_H = 400;   // dialog height
+static const int DLG_W = 520;   // dialog width (GoldSrc PC Options ~520x380)
+static const int DLG_H = 380;   // dialog height (4:3 sub-window)
 
 // Form metrics for tab page content
-static inline int LblX()   { return VS(8); }
+static inline int LblX()   { return VS(10); }
 static inline int LblW()   { return VS(120); }
-static inline int InpX()   { return VS(132); }
+static inline int InpX()   { return VS(140); }
 static inline int InpW()   { return VS(200); }
-static inline int RowH()   { return VS(24); }   // row pitch
-static inline int FldH()   { return VS(20); }   // field/button height (taller than before)
-static inline int FirstY() { return VS(8); }    // first row Y in page
+static inline int RowH()   { return VS(26); }
+static inline int FldH()   { return VS(22); }   // field/button height
+static inline int FirstY() { return VS(10); }   // first row Y in page
 
 // ====================================================================
 // VguiOptionsDialog
@@ -400,9 +400,9 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
 
-	// Bottom button row: 24px buttons + 8px margin
+	// Bottom button row: 24px buttons + 16px margin
 	int btnH    = VS(24);
-	int btnRowH = btnH + VS(12);
+	int btnRowH = btnH + VS(16);
 	int tabH    = clientH - btnRowH;
 	if (tabH < VS(100)) tabH = VS(100);
 
@@ -410,7 +410,7 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	client->addChild(_tabPanel);
 
 	// Tab page height (below tab strip)
-	int pageH = tabH - VS(24);
+	int pageH = tabH - VS(28);
 	Panel* mpPage      = new Panel(0, 0, clientW, pageH);
 	Panel* kbPage      = new Panel(0, 0, clientW, pageH);
 	Panel* mousePage   = new Panel(0, 0, clientW, pageH);
@@ -450,10 +450,10 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	buildAccountTab(accountPage);
 	buildSystemTab(systemPage);
 
-	// Bottom buttons: OK | Cancel | Apply (right-aligned, 4px gap)
-	int btnW    = VS(72);
-	int btnGap  = VS(4);
-	int btnY    = clientH - btnH - VS(4);
+	// Bottom buttons: OK | Cancel | Apply (right-aligned, 88px wide)
+	int btnW    = VS(88);
+	int btnGap  = VS(6);
+	int btnY    = clientH - btnH - VS(8);
 	int applyX  = clientW - VS(8) - btnW;
 	int cancelX = applyX  - btnGap - btnW;
 	int okX     = cancelX - btnGap - btnW;
@@ -501,15 +501,15 @@ void VguiOptionsDialog::setSize(int wide, int tall)
 	client->getSize(clientW, clientH);
 
 	int btnH    = VS(24);
-	int btnRowH = btnH + VS(12);
+	int btnRowH = btnH + VS(16);
 	int tabH    = clientH - btnRowH;
 	if (tabH < VS(100)) tabH = VS(100);
 
 	if (_tabPanel) _tabPanel->setBounds(0, 0, clientW, tabH);
 
-	int btnW   = VS(72);
-	int btnGap = VS(4);
-	int btnY   = clientH - btnH - VS(4);
+	int btnW   = VS(88);
+	int btnGap = VS(6);
+	int btnY   = clientH - btnH - VS(8);
 	int applyX  = clientW - VS(8) - btnW;
 	int cancelX = applyX  - btnGap - btnW;
 	int okX     = cancelX - btnGap - btnW;
@@ -559,70 +559,81 @@ void VguiOptionsDialog::resetAll()
 
 void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 {
-	// Two-column layout matching PC CS 1.6 Options > Multiplayer:
-	// Left: Avatar + Logo preview boxes with action buttons
-	// Right: Player name, VIP password fields
-	int leftX   = VS(8);
-	int rightX  = VS(248);
-	int colW    = VS(200);
-	int slotSz  = VS(64);   // smaller preview boxes (GoldSrc proportion)
-	int btnW    = VS(100);
-	int y;
+	// GoldSrc CS 1.6 Multiplayer tab reference layout (@ 520x380 dialog,
+	// page area ~500x300):
+	//   Left column (x=10..230): Avatar group, Logo group, hint, Advanced
+	//   Right column (x=240..490): Player name, VIP password
+	//
+	// Each group: label (12px tall, light grey), preview box (56x56), then
+	// action buttons aligned to vertical center of the preview box.
+	int leftX   = VS(10);
+	int rightX  = VS(240);
+	int colW    = VS(240);
+	int slotSz  = VS(56);    // smaller preview boxes (GoldSrc proportion)
+	int btnW    = VS(110);
+	int btnH    = VS(22);
+	int gap     = VS(6);
 
-	// ---- Left: Avatar ----
-	y = FirstY();
+	// ---- Left column: AVATAR group ----
+	int y = VS(8);
 	page->addChild(new Label("\xD0\x90\xD0\xB2\xD0\xB0\xD1\x82\xD0\xB0\xD1\x80",
-		leftX, y, VS(60), FldH()));
-	y += VS(16);
+		leftX, y, VS(60), VS(14)));
+	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSz, slotSz));
-	// "Загрузить..." button at right-top of preview box
+	// Avatar action buttons stacked to the right, vertically centered to box
+	int actX = leftX + slotSz + gap;
+	int btnGroupH = btnH * 2 + VS(4);
+	int btnY1 = y + (slotSz - btnGroupH) / 2;
 	page->addChild(new Button("\xD0\x97\xD0\xB0\xD0\xB3\xD1\x80\xD1\x83\xD0\xB7\xD0\xB8\xD1\x82\xD1\x8C...",
-		leftX + slotSz + VS(4), y, btnW, FldH()));
-	// Team combo below "Загрузить"
+		actX, btnY1, btnW, btnH));
 	static const char* k_teams[] = { "cts_team", "ts_team", "vip_team", "admin_team" };
 	StubComboButton* teamCombo = new StubComboButton("logo_team", k_teams, 4,
-		leftX + slotSz + VS(4), y + VS(24), btnW, FldH());
+		actX, btnY1 + btnH + VS(4), btnW, btnH);
 	teamCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(teamCombo);
-	y += slotSz + VS(8);
+	y += slotSz + VS(10);
 
-	// ---- Left: Logo ----
+	// ---- Left column: LOGO group ----
 	page->addChild(new Label("\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF",
-		leftX, y, VS(60), FldH()));
-	y += VS(16);
+		leftX, y, VS(60), VS(14)));
+	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSz, slotSz));
+	int btnY2 = y + (slotSz - btnGroupH) / 2;
 	static const char* k_logos[] = { "lambda", "skull", "ts_team", "cts_team", "n0!se" };
 	StubComboButton* logoCombo = new StubComboButton("cl_logofile", k_logos, 5,
-		leftX + slotSz + VS(4), y, btnW, FldH());
+		actX, btnY2, btnW, btnH);
 	logoCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(logoCombo);
-	page->addChild(new Button("\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
-		leftX + slotSz + VS(4), y + VS(24), btnW, FldH()));
+	page->addChild(new Button(
+		"\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
+		actX, btnY2 + btnH + VS(4), btnW, btnH));
 	y += slotSz + VS(8);
 
-	// Hint + "Дополнительно..."
+	// Dim hint label, single line if it fits
 	page->addChild(new Label(
 		"\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF \xD0\xB8\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x81\xD1\x8F \xD0\xBF\xD0\xBE\xD1\x81\xD0\xBB\xD0\xB5 \xD1\x81\xD0\xBE\xD0\xB5\xD0\xB4\xD0\xB8\xD0\xBD\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x8F.",
-		leftX, y, VS(220), VS(28)));
-	y += VS(28);
-	page->addChild(new Button("\xD0\x94\xD0\xBE\xD0\xBF\xD0\xBE\xD0\xBB\xD0\xBD\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE...",
-		leftX, y, btnW, FldH()));
+		leftX, y, colW, VS(14)));
+	y += VS(20);
+	page->addChild(new Button(
+		"\xD0\x94\xD0\xBE\xD0\xBF\xD0\xBE\xD0\xBB\xD0\xBD\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE...",
+		leftX, y, btnW, btnH));
 
-	// ---- Right: Имя игрока + Пароль ----
-	int ry = FirstY();
+	// ---- Right column: Имя игрока + VIP/Admin пароль ----
+	int ry = VS(8);
+	int fieldW = VS(220);
 	page->addChild(new Label("\xD0\x98\xD0\xBC\xD1\x8F \xD0\xB8\xD0\xB3\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0",
-		rightX, ry, VS(100), VS(16)));
+		rightX, ry, VS(140), VS(14)));
 	ry += VS(16);
-	CvarTextEntry* nameEntry = new CvarTextEntry("name", rightX, ry, colW, FldH());
+	CvarTextEntry* nameEntry = new CvarTextEntry("name", rightX, ry, fieldW, FldH());
 	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
-	ry += VS(32);
+	ry += VS(34);
 
 	page->addChild(new Label(
 		"\xD0\x9F\xD0\xB0\xD1\x80\xD0\xBE\xD0\xBB\xD1\x8C VIP/Admin",
-		rightX, ry, VS(160), VS(16)));
+		rightX, ry, VS(180), VS(14)));
 	ry += VS(16);
-	PasswordTextEntry* pwdEntry = new PasswordTextEntry("vip_password", rightX, ry, colW, FldH());
+	PasswordTextEntry* pwdEntry = new PasswordTextEntry("vip_password", rightX, ry, fieldW, FldH());
 	page->addChild(pwdEntry);
 	_textEntries.addElement(pwdEntry);
 }

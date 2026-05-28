@@ -18,11 +18,11 @@ namespace vgui
 // All scaled via VS() at runtime for HD/4K.
 enum
 {
-	FRAME_CAPTION_HEIGHT       = 18,   // GoldSrc: compact 18px titlebar
-	FRAME_CAPTION_HEIGHT_SMALL = 14,
-	FRAME_BORDER               = 3,    // outer frame edge thickness
-	FRAME_BUTTON_SIZE          = 14,   // close button = small square
-	FRAME_BUTTON_INSET         = 2
+	FRAME_CAPTION_HEIGHT       = 22,   // GoldSrc PC: 22px titlebar
+	FRAME_CAPTION_HEIGHT_SMALL = 18,
+	FRAME_BORDER               = 4,    // outer frame edge thickness (2 outer + 2 inner)
+	FRAME_BUTTON_SIZE          = 16,   // close button = 16x16 square
+	FRAME_BUTTON_INSET         = 3
 };
 
 static inline int Fcap()      { return VS(FRAME_CAPTION_HEIGHT); }
@@ -115,10 +115,10 @@ protected:
 		else
 			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE0E0E0;
 
-		// Chunky X glyph: 2px brush, ~60% of button size
+		// Chunky X glyph: 3px brush (thicker = closer to GoldSrc bitmap), ~55% of button
 		int side = (wide < tall ? wide : tall);
-		int extent = (side * 6) / 10;
-		if (extent < 5) extent = 5;
+		int extent = (side * 55) / 100;
+		if (extent < 6) extent = 6;
 		int sx = (wide - extent) / 2;
 		int sy = (tall - extent) / 2;
 		if (isDepressed())
@@ -126,8 +126,8 @@ protected:
 			sx += 1;
 			sy += 1;
 		}
-		int brush = VS(2);
-		if (brush < 1) brush = 1;
+		int brush = VS(3);
+		if (brush < 2) brush = 2;
 
 		schemeBgColor(this, argb);
 		for (int i = 0; i < extent; i++)
@@ -263,9 +263,16 @@ void Frame::paintBackground()
 	schemeBgColor(this, frameBg);
 	drawFilledRect(0, 0, wide, tall);
 
+	// Subtle vertical gradient: 1px brighter band just below titlebar,
+	// 1px darker band at very bottom (GoldSrc "soft 3D" feel)
+	int captionH = _smallCaption ? FcapSmall() : Fcap();
+	int border = Fborder();
+	schemeBgColor(this, 0x40FFFFFF); // very light translucent
+	drawFilledRect(border, captionH + border, wide - border, captionH + border + 1);
+	schemeBgColor(this, 0x40000000); // very dark translucent
+	drawFilledRect(border, tall - border - 1, wide - border, tall - border);
+
 	// GoldSrc double-bevel outer frame border:
-	// Outer ring: bright top+left, dark bottom+right
-	// Inner ring (1px inset): slightly dimmer highlight/shadow
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
@@ -353,13 +360,14 @@ void Frame::drawTitleBar(int wide)
 		titleTextX = iconX + iconW + VS(3);
 	}
 
-	// Title text - positioned 1px higher for GoldSrc look
+	// Title text - vertically centered in the taller titlebar
 	if (_title[0])
 	{
 		unsigned int titleFg = g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF;
 		schemeFgColor(this, titleFg);
 		drawSetTextFont(Scheme::sf_primary1);
-		int textY = barY + VS(2);
+		int textY = barY + (barH - VS(13)) / 2;
+		if (textY < barY + 2) textY = barY + 2;
 		drawPrintText(titleTextX, textY, _title, (int)strlen(_title));
 	}
 }
