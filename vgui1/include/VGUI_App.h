@@ -72,6 +72,7 @@ public:
 	virtual void repaintAll();
 private:
 	void init();
+	void initFields(bool externalMain); // shared by both ctors
 	void updateMouseFocus(int x, int y, SurfaceBase* surfaceBase);
 	void setMouseFocus(Panel* newMouseFocus);
 	void platTick();
