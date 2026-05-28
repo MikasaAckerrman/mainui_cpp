@@ -74,21 +74,26 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 
 	_tabPanel = null;
 
-	// Get the client panel (content area inside the frame)
+	// Recalculate client area after setSize (Frame creates client based on initial size)
 	Panel* client = getClient();
 	if (!client)
 		return;
 
+	// Update client size to match new dialog dimensions
+	int border = 3;
+	int captionH = 20;
+	client->setBounds(border, captionH + border, dialogW - border * 2, dialogH - captionH - border * 2);
+
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
 
-	// Reserve space for buttons at bottom (32 px)
+	// Reserve space for buttons at bottom (36 px)
 	int tabH = clientH - 36;
 	if (tabH < 100) tabH = 100;
 
-	// Create tab panel filling client area
+	// Create tab panel filling client area (use addChild, not setParent)
 	_tabPanel = new TabPanel(0, 0, clientW, tabH);
-	_tabPanel->setParent(client);
+	client->addChild(_tabPanel);
 
 	// Create pages for each tab
 	Panel* mpPage = new Panel(0, 0, clientW, tabH - 28);
@@ -127,11 +132,11 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	int cancelX = clientW / 2 + 8;
 
 	Button* okBtn = new Button("OK", okX, btnY, btnW, btnH);
-	okBtn->setParent(client);
+	client->addChild(okBtn);
 	okBtn->addActionSignal(new OptionsOKSignal(this));
 
 	Button* cancelBtn = new Button("Cancel", cancelX, btnY, btnW, btnH);
-	cancelBtn->setParent(client);
+	client->addChild(cancelBtn);
 	cancelBtn->addActionSignal(new OptionsCancelSignal(this));
 }
 
@@ -166,33 +171,33 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 	int y = 8;
 
 	Label* nameLabel = new Label("Player name:", 8, y, 100, 20);
-	nameLabel->setParent(page);
+	page->addChild(nameLabel);
 
 	CvarTextEntry* nameEntry = new CvarTextEntry("name", 112, y, 180, 20);
-	nameEntry->setParent(page);
+	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
 	y += 30;
 
 	Label* topLabel = new Label("Top color:", 8, y, 100, 20);
-	topLabel->setParent(page);
+	page->addChild(topLabel);
 
 	CvarSlider* topSlider = new CvarSlider("topcolor", 112, y, 180, 20, 0, 255);
-	topSlider->setParent(page);
+	page->addChild(topSlider);
 	_sliders.addElement(topSlider);
 	y += 30;
 
 	Label* botLabel = new Label("Bottom color:", 8, y, 100, 20);
-	botLabel->setParent(page);
+	page->addChild(botLabel);
 
 	CvarSlider* botSlider = new CvarSlider("bottomcolor", 112, y, 180, 20, 0, 255);
-	botSlider->setParent(page);
+	page->addChild(botSlider);
 	_sliders.addElement(botSlider);
 }
 
 void VguiOptionsDialog::buildKeyboardTab(Panel* page)
 {
 	Label* lbl = new Label("Key bindings", 8, 8, 200, 20);
-	lbl->setParent(page);
+	page->addChild(lbl);
 }
 
 void VguiOptionsDialog::buildMouseTab(Panel* page)
@@ -200,25 +205,25 @@ void VguiOptionsDialog::buildMouseTab(Panel* page)
 	int y = 8;
 
 	CvarCheckButton* filter = new CvarCheckButton("m_filter", "Mouse filter", 8, y, 200, 20);
-	filter->setParent(page);
+	page->addChild(filter);
 	_checkButtons.addElement(filter);
 	y += 28;
 
 	Label* sensLabel = new Label("Sensitivity:", 8, y, 100, 20);
-	sensLabel->setParent(page);
+	page->addChild(sensLabel);
 
 	CvarSlider* sensSlider = new CvarSlider("sensitivity", 112, y, 180, 20, 1, 20);
-	sensSlider->setParent(page);
+	page->addChild(sensSlider);
 	_sliders.addElement(sensSlider);
 	y += 30;
 
 	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput", "Raw input", 8, y, 200, 20);
-	rawinput->setParent(page);
+	page->addChild(rawinput);
 	_checkButtons.addElement(rawinput);
 	y += 28;
 
 	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel", "Custom acceleration", 8, y, 200, 20);
-	customaccel->setParent(page);
+	page->addChild(customaccel);
 	_checkButtons.addElement(customaccel);
 }
 
@@ -227,28 +232,28 @@ void VguiOptionsDialog::buildAudioTab(Panel* page)
 	int y = 8;
 
 	Label* volLabel = new Label("Volume:", 8, y, 100, 20);
-	volLabel->setParent(page);
+	page->addChild(volLabel);
 
 	CvarSlider* volSlider = new CvarSlider("volume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
-	volSlider->setParent(page);
+	page->addChild(volSlider);
 	_sliders.addElement(volSlider);
 	y += 30;
 
 	Label* suitLabel = new Label("Suit volume:", 8, y, 100, 20);
-	suitLabel->setParent(page);
+	page->addChild(suitLabel);
 
 	CvarSlider* suitSlider = new CvarSlider("suitvolume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
-	suitSlider->setParent(page);
+	page->addChild(suitSlider);
 	_sliders.addElement(suitSlider);
 	y += 30;
 
 	CvarCheckButton* a3d = new CvarCheckButton("s_a3d", "A3D Audio", 8, y, 200, 20);
-	a3d->setParent(page);
+	page->addChild(a3d);
 	_checkButtons.addElement(a3d);
 	y += 28;
 
 	CvarCheckButton* eax = new CvarCheckButton("s_eax", "EAX effects", 8, y, 200, 20);
-	eax->setParent(page);
+	page->addChild(eax);
 	_checkButtons.addElement(eax);
 }
 
@@ -257,23 +262,23 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 	int y = 8;
 
 	Label* gammaLabel = new Label("Gamma:", 8, y, 100, 20);
-	gammaLabel->setParent(page);
+	page->addChild(gammaLabel);
 
 	CvarSlider* gammaSlider = new CvarSlider("gamma", 112, y, 180, 20, 0, 100, 1.8f, 3.0f);
-	gammaSlider->setParent(page);
+	page->addChild(gammaSlider);
 	_sliders.addElement(gammaSlider);
 	y += 30;
 
 	Label* brightLabel = new Label("Brightness:", 8, y, 100, 20);
-	brightLabel->setParent(page);
+	page->addChild(brightLabel);
 
 	CvarSlider* brightSlider = new CvarSlider("brightness", 112, y, 180, 20, 0, 100, 0.0f, 2.0f);
-	brightSlider->setParent(page);
+	page->addChild(brightSlider);
 	_sliders.addElement(brightSlider);
 	y += 30;
 
 	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync", "VSync", 8, y, 200, 20);
-	vsync->setParent(page);
+	page->addChild(vsync);
 	_checkButtons.addElement(vsync);
 }
 
@@ -282,32 +287,32 @@ void VguiOptionsDialog::buildHudTab(Panel* page)
 	int y = 8;
 
 	CvarCheckButton* hudDraw = new CvarCheckButton("hud_draw", "Draw HUD", 8, y, 200, 20);
-	hudDraw->setParent(page);
+	page->addChild(hudDraw);
 	_checkButtons.addElement(hudDraw);
 	y += 28;
 
 	CvarCheckButton* showFps = new CvarCheckButton("cl_showfps", "Show FPS", 8, y, 200, 20);
-	showFps->setParent(page);
+	page->addChild(showFps);
 	_checkButtons.addElement(showFps);
 	y += 28;
 
 	Label* scaleLabel = new Label("HUD scale:", 8, y, 100, 20);
-	scaleLabel->setParent(page);
+	page->addChild(scaleLabel);
 
 	CvarSlider* scaleSlider = new CvarSlider("hud_scale", 112, y, 180, 20, 0, 10, 0.0f, 2.0f);
-	scaleSlider->setParent(page);
+	page->addChild(scaleSlider);
 	_sliders.addElement(scaleSlider);
 	y += 30;
 
 	CvarCheckButton* crosshair = new CvarCheckButton("crosshair", "Show crosshair", 8, y, 200, 20);
-	crosshair->setParent(page);
+	page->addChild(crosshair);
 	_checkButtons.addElement(crosshair);
 }
 
 void VguiOptionsDialog::buildAccountTab(Panel* page)
 {
 	Label* lbl = new Label("Account settings", 8, 8, 200, 20);
-	lbl->setParent(page);
+	page->addChild(lbl);
 }
 
 void VguiOptionsDialog::buildSystemTab(Panel* page)
@@ -315,7 +320,7 @@ void VguiOptionsDialog::buildSystemTab(Panel* page)
 	int y = 8;
 
 	CvarCheckButton* dev = new CvarCheckButton("developer", "Developer mode", 8, y, 200, 20);
-	dev->setParent(page);
+	page->addChild(dev);
 	_checkButtons.addElement(dev);
 }
 
@@ -356,7 +361,7 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 		if (sh <= 0) sh = 480;
 
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
-		vgui::g_pOptionsDialog->setParent(root);
+		root->addChild(vgui::g_pOptionsDialog);
 	}
 
 	vgui::g_pOptionsDialog->resetAll();
