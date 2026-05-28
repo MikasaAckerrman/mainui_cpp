@@ -19,6 +19,7 @@ public:
 public:
 	virtual void setArmed(bool state);
 	virtual bool isArmed();
+	virtual bool isDepressed();   // mouse held down on this button (transient)
 	virtual void setMouseClickEnabled(MouseCode code, bool state);
 	virtual bool isMouseClickEnabled(MouseCode code);
 	virtual void setSelected(bool state);
@@ -39,6 +40,7 @@ private:
 	void init();
 private:
 	bool _armed;
+	bool _depressed;
 	bool _selected;
 	bool _mouseClickMask[MOUSE_LAST];
 	Dar<ActionSignal*> _actionSignalDar;

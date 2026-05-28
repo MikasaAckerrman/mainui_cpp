@@ -70,11 +70,18 @@ protected:
 		// Diagonal extent: roughly 60% of button size, centered. Stroke is a
 		// 2px square brush stepped along the diagonal -- gives a chunky pixel
 		// X that matches GoldSrc bitmap close icon at any scale.
+		// When depressed (mouse down on close button) the X shifts +1/+1
+		// relative to its slot, mimicking a pressed-in physical button.
 		int side = (wide < tall ? wide : tall);
 		int extent = (side * 6) / 10;
 		if (extent < 6) extent = 6;
 		int sx = (wide - extent) / 2;
 		int sy = (tall - extent) / 2;
+		if (isDepressed())
+		{
+			sx += 1;
+			sy += 1;
+		}
 		int brush = VS(2);
 		if (brush < 2) brush = 2;
 

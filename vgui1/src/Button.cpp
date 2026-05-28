@@ -50,6 +50,7 @@ Button::Button(const char* text, int x, int y, int wide, int tall) : Label(text,
 void Button::init()
 {
 	_armed = false;
+	_depressed = false;
 	_selected = false;
 	_buttonGroup = null;
 	memset(_mouseClickMask, 0, sizeof(_mouseClickMask));
@@ -67,6 +68,11 @@ void Button::setArmed(bool state)
 bool Button::isArmed()
 {
 	return _armed;
+}
+
+bool Button::isDepressed()
+{
+	return _depressed;
 }
 
 void Button::setMouseClickEnabled(MouseCode code, bool state)
@@ -139,16 +145,21 @@ void Button::paintBackground()
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Selected (latched) buttons render sunken
-	bool sunken = _selected;
+	// Selected (latched) buttons render sunken; momentary press also inverts
+	// the bevel for the duration of mouse-down (PC CS 1.6 depressed look).
+	bool sunken = _selected || _depressed;
 
 	// Body fill
 	schemeBgColor(this, bg);
 	drawFilledRect(1, 1, wide - 1, tall - 1);
 
-	// 1px raised/sunken bevel
+	// 1px raised/sunken bevel. When depressed (transient press) the outer
+	// contour is suppressed so the click-feedback looks "pushed in" and the
+	// surrounding dark frame disappears -- exactly matches the user's
+	// "когда нажал, чёрный контур пропадает" observation.
 	if (sunken)
 	{
+		// Shadow now on top+left, highlight on bottom+right (inverted bevel)
 		schemeBgColor(this, dark);
 		drawFilledRect(0, 0, wide, 1);
 		drawFilledRect(0, 0, 1, tall);
@@ -196,6 +207,14 @@ void Button::internalCursorEntered()
 void Button::internalCursorExited()
 {
 	setArmed(false);
+	if (_depressed)
+	{
+		// If the user drags off the button while still holding mouse-down,
+		// release the depressed visual so the bevel doesn't stay inverted
+		// after a stray release that we won't receive.
+		_depressed = false;
+		repaint();
+	}
 	Panel::internalCursorExited();
 }
 
@@ -211,6 +230,11 @@ void Button::internalMouseReleased(MouseCode code)
 		}
 		setArmed(false);
 	}
+	if (_depressed)
+	{
+		_depressed = false;
+		repaint();
+	}
 	Panel::internalMouseReleased(code);
 }
 
@@ -224,6 +248,8 @@ void Button::internalMousePressed(MouseCode code)
 	if (code >= 0 && code < MOUSE_LAST && _mouseClickMask[code])
 	{
 		setArmed(true);
+		_depressed = true; // CS 1.6 PC: bevel inverts and outer contour disappears
+		repaint();
 	}
 	Panel::internalMousePressed(code);
 }
