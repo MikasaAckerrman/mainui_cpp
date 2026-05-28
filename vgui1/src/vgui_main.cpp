@@ -1,0 +1,264 @@
+// vgui_main.cpp - Entry points for vgui_support module
+// Implements the callbacks the engine calls: Startup, Shutdown, Paint, Mouse, Key, MouseMove
+
+#include <VGUI_App.h>
+#include <VGUI_Panel.h>
+#include <VGUI_SurfaceBase.h>
+#include <VGUI_Scheme.h>
+#include <string.h>
+
+// Forward declarations from CEngineSurface.cpp
+namespace vgui
+{
+class CEngineSurface;
+CEngineSurface* EngineSurface_Create(Panel* embeddedPanel);
+void EngineSurface_Destroy();
+}
+
+// Engine API struct (matches vgui_api.h from engine)
+#ifndef VGUI_API_DEFINED
+#define VGUI_API_DEFINED
+
+typedef float vec_t;
+typedef vec_t vec2_t[2];
+typedef int qboolean;
+
+typedef struct
+{
+	vec2_t point;
+	vec2_t coord;
+} vpoint_t;
+
+typedef int VGUI_DefaultCursor;
+
+enum VGUI_KeyAction { KA_TYPED = 0, KA_PRESSED, KA_RELEASED };
+enum VGUI_MouseAction { MA_PRESSED = 0, MA_RELEASED, MA_DOUBLE, MA_WHEEL };
+
+typedef unsigned int key_modifier_t;
+
+typedef struct vguiapi_s
+{
+	qboolean initialized;
+	void (*DrawInit)(void);
+	void (*DrawShutdown)(void);
+	void (*SetupDrawingText)(int *pColor);
+	void (*SetupDrawingRect)(int *pColor);
+	void (*SetupDrawingImage)(int *pColor);
+	void (*BindTexture)(int id);
+	void (*EnableTexture)(qboolean enable);
+	void (*Reserved0)(int id, int width, int height);
+	void (*UploadTexture)(int id, const char *buffer, int width, int height);
+	void (*Reserved1)(int id, int drawX, int drawY, const unsigned char *rgba, int blockWidth, int blockHeight);
+	void (*DrawQuad)(const vpoint_t *ul, const vpoint_t *lr);
+	void (*GetTextureSizes)(int *width, int *height);
+	int (*GenerateTexture)(void);
+	void *(*EngineMalloc)(size_t size);
+	void (*CursorSelect)(VGUI_DefaultCursor cursor);
+	unsigned char (*GetColor)(int i, int j);
+	qboolean (*IsInGame)(void);
+	void (*EnableTextInput)(qboolean enable, qboolean force);
+	void (*GetCursorPos)(int *x, int *y);
+	int (*ProcessUtfChar)(int ch);
+	int (*GetClipboardText)(char *buffer, size_t bufferSize);
+	void (*SetClipboardText)(const char *text);
+	key_modifier_t (*GetKeyModifiers)(void);
+	// Engine-called callbacks (filled by us)
+	void (*Startup)(int width, int height);
+	void (*Shutdown)(void);
+	void *(*GetPanel)(void);
+	void (*Paint)(void);
+	void (*Mouse)(enum VGUI_MouseAction action, int code);
+	void (*Key)(enum VGUI_KeyAction action, int code);
+	void (*MouseMove)(int x, int y);
+	void (*TextInput)(const char *text);
+} vguiapi_t;
+
+#endif // VGUI_API_DEFINED
+
+// Global engine API pointer
+vguiapi_t *g_api = nullptr;
+
+// VGUI state
+static vgui::App *s_app = nullptr;
+static vgui::Panel *s_rootPanel = nullptr;
+static vgui::Scheme *s_scheme = nullptr;
+static int s_screenWidth = 0;
+static int s_screenHeight = 0;
+
+// ====================================================================
+// Callbacks
+// ====================================================================
+
+static void VGUI_Startup(int width, int height)
+{
+	s_screenWidth = width;
+	s_screenHeight = height;
+
+	if (!s_app)
+	{
+		s_app = new vgui::App(true);
+		s_scheme = new vgui::Scheme();
+		s_app->setScheme(s_scheme);
+	}
+
+	if (!s_rootPanel)
+	{
+		s_rootPanel = new vgui::Panel(0, 0, width, height);
+		vgui::EngineSurface_Create(s_rootPanel);
+	}
+	else
+	{
+		s_rootPanel->setSize(width, height);
+	}
+
+	if (g_api && g_api->DrawInit)
+		g_api->DrawInit();
+}
+
+static void VGUI_Shutdown(void)
+{
+	if (g_api && g_api->DrawShutdown)
+		g_api->DrawShutdown();
+
+	vgui::EngineSurface_Destroy();
+
+	if (s_rootPanel)
+	{
+		delete s_rootPanel;
+		s_rootPanel = nullptr;
+	}
+
+	if (s_scheme)
+	{
+		delete s_scheme;
+		s_scheme = nullptr;
+	}
+
+	if (s_app)
+	{
+		delete s_app;
+		s_app = nullptr;
+	}
+}
+
+static void *VGUI_GetPanel(void)
+{
+	return s_rootPanel;
+}
+
+static void VGUI_Paint(void)
+{
+	if (!s_rootPanel || !s_app)
+		return;
+
+	s_app->externalTick();
+	s_rootPanel->solveTraverse();
+	s_rootPanel->paintTraverse();
+}
+
+static void VGUI_Mouse(enum VGUI_MouseAction action, int code)
+{
+	if (!s_app || !s_rootPanel)
+		return;
+
+	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
+	vgui::MouseCode mc = (vgui::MouseCode)code;
+
+	switch (action)
+	{
+	case MA_PRESSED:
+		s_app->internalMousePressed(mc, sb);
+		break;
+	case MA_RELEASED:
+		s_app->internalMouseReleased(mc, sb);
+		break;
+	case MA_DOUBLE:
+		s_app->internalMouseDoublePressed(mc, sb);
+		break;
+	case MA_WHEEL:
+		s_app->internalMouseWheeled(code, sb);
+		break;
+	}
+}
+
+static void VGUI_Key(enum VGUI_KeyAction action, int code)
+{
+	if (!s_app || !s_rootPanel)
+		return;
+
+	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
+	vgui::KeyCode kc = (vgui::KeyCode)code;
+
+	switch (action)
+	{
+	case KA_PRESSED:
+		s_app->internalKeyPressed(kc, sb);
+		break;
+	case KA_RELEASED:
+		s_app->internalKeyReleased(kc, sb);
+		break;
+	case KA_TYPED:
+		s_app->internalKeyTyped(kc, sb);
+		break;
+	}
+}
+
+static void VGUI_MouseMove(int x, int y)
+{
+	if (!s_app || !s_rootPanel)
+		return;
+
+	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
+	s_app->internalCursorMoved(x, y, sb);
+}
+
+static void VGUI_TextInput(const char *text)
+{
+	// Process UTF-8 text input as key typed events
+	if (!s_app || !text || !s_rootPanel)
+		return;
+
+	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
+	for (int i = 0; text[i]; i++)
+	{
+		// Map ASCII to key codes (simplified)
+		char ch = text[i];
+		if (ch >= 'a' && ch <= 'z')
+			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_A + (ch - 'a')), sb);
+		else if (ch >= 'A' && ch <= 'Z')
+			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_A + (ch - 'A')), sb);
+		else if (ch >= '0' && ch <= '9')
+			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_0 + (ch - '0')), sb);
+		else if (ch == ' ')
+			s_app->internalKeyTyped(vgui::KEY_SPACE, sb);
+	}
+}
+
+// ====================================================================
+// Export: called by engine to initialize vgui_support
+// ====================================================================
+extern "C"
+{
+
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT __attribute__((visibility("default")))
+#endif
+
+EXPORT void InitAPI(vguiapi_t *api)
+{
+	g_api = api;
+
+	// Register our callbacks
+	api->Startup = VGUI_Startup;
+	api->Shutdown = VGUI_Shutdown;
+	api->GetPanel = VGUI_GetPanel;
+	api->Paint = VGUI_Paint;
+	api->Mouse = VGUI_Mouse;
+	api->Key = VGUI_Key;
+	api->MouseMove = VGUI_MouseMove;
+	api->TextInput = VGUI_TextInput;
+}
+
+} // extern "C"
