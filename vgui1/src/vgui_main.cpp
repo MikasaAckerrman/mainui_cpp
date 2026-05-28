@@ -335,6 +335,50 @@ Panel* VGUI_GetRootPanel()
 }
 
 // ====================================================================
+// Lazy initialization - called from VGUI_ShowOptions if engine didn't
+// call InitAPI+Startup (e.g. when loaded via dlopen from mainui)
+// ====================================================================
+extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
+{
+	if (s_rootPanel)
+		return; // already initialized
+
+	if (screenW <= 0) screenW = 640;
+	if (screenH <= 0) screenH = 480;
+
+	s_screenWidth = screenW;
+	s_screenHeight = screenH;
+
+	if (!s_app)
+	{
+		s_app = new vgui::App(true);
+		s_scheme = new vgui::Scheme();
+
+		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", 12, 0, 0, 400, false, false, false, false);
+		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", 14, 0, 0, 700, false, false, false, false);
+		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", 10, 0, 0, 400, false, false, false, false);
+
+		s_scheme->setFont(vgui::Scheme::sf_primary1, fontPrimary1);
+		s_scheme->setFont(vgui::Scheme::sf_primary2, fontPrimary2);
+		s_scheme->setFont(vgui::Scheme::sf_primary3, fontPrimary3);
+
+		s_scheme->setColor(vgui::Scheme::sc_primary1, 192, 192, 192, 0);
+		s_scheme->setColor(vgui::Scheme::sc_primary2, 128, 128, 128, 0);
+		s_scheme->setColor(vgui::Scheme::sc_primary3, 64, 64, 64, 0);
+		s_scheme->setColor(vgui::Scheme::sc_secondary1, 0, 0, 128, 0);
+		s_scheme->setColor(vgui::Scheme::sc_secondary2, 255, 255, 255, 0);
+		s_scheme->setColor(vgui::Scheme::sc_secondary3, 0, 0, 0, 0);
+		s_scheme->setColor(vgui::Scheme::sc_white, 255, 255, 255, 0);
+		s_scheme->setColor(vgui::Scheme::sc_black, 0, 0, 0, 0);
+
+		s_app->setScheme(s_scheme);
+	}
+
+	s_rootPanel = new vgui::Panel(0, 0, screenW, screenH);
+	vgui::EngineSurface_Create(s_rootPanel);
+}
+
+// ====================================================================
 // Export: called by engine to initialize vgui_support
 // ====================================================================
 extern "C"
@@ -358,6 +402,12 @@ EXPORT void VGUI_SetCvarFuncs(
 	g_pfnGetCvarString = pfnGetCvarString;
 	g_pfnSetCvarString = pfnSetCvarString;
 	g_pfnClientCmd = pfnClientCmd;
+}
+
+EXPORT void VGUI_SetScreenSize(int w, int h)
+{
+	s_screenWidth = w;
+	s_screenHeight = h;
 }
 
 EXPORT void InitAPI(vguiapi_t *api)

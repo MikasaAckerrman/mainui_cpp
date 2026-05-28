@@ -74,6 +74,12 @@ static void UI_ShowVguiOptions( void )
 		{
 			s_pfnShowOptions = (void(*)())dlsym( s_vguiLib, "VGUI_ShowOptions" );
 
+			// Set screen size for VGUI1 (needed for lazy init)
+			void (*pfnSetScreenSize)( int, int );
+			pfnSetScreenSize = (void(*)(int,int))dlsym( s_vguiLib, "VGUI_SetScreenSize" );
+			if( pfnSetScreenSize )
+				pfnSetScreenSize( ScreenWidth, ScreenHeight );
+
 			// Set up cvar bridge
 			typedef void (*SetCvarFuncsType)(
 				float(*)(const char*),
