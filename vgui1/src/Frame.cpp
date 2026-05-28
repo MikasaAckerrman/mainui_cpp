@@ -313,12 +313,34 @@ void Frame::drawTitleBar(int wide)
 		drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
 	}
 
+	// Steam logo (25th-anniversary CS 1.6 look). Loaded once and cached;
+	// engine returns 0 when the asset is absent, and we silently fall back
+	// to a text-only title bar so layouts without the TGA still render.
+	static HIMAGE s_steamIcon = (HIMAGE)-1;
+	if (s_steamIcon == (HIMAGE)-1)
+		s_steamIcon = EngFuncs::PIC_Load("gfx/vgui2/steam_logo.tga");
+
+	int titleTextX = border + VS(6);
+	if (s_steamIcon)
+	{
+		int iconH = barH - VS(8);
+		if (iconH < VS(8)) iconH = VS(8);
+		int iconW = iconH;
+		int iconX = barX + VS(4);
+		int iconY = barY + (barH - iconH) / 2;
+		int sx = iconX, sy = iconY;
+		localToScreen(sx, sy);
+		EngFuncs::PIC_Set(s_steamIcon, 255, 255, 255, 255);
+		EngFuncs::PIC_DrawTrans(sx, sy, iconW, iconH);
+		titleTextX = iconX + iconW + VS(4);
+	}
+
 	// Title text
 	if (_title[0])
 	{
 		schemeFgColor(this, g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF);
 		drawSetTextFont(Scheme::sf_primary1);
-		drawPrintText(border + VS(6), border + VS(4), _title, (int)strlen(_title));
+		drawPrintText(titleTextX, border + VS(4), _title, (int)strlen(_title));
 	}
 }
 
