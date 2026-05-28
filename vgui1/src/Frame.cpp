@@ -45,6 +45,50 @@ private:
 	Frame* _frame;
 };
 
+// Title-bar close button -- draws a vector X (two diagonal strokes) instead
+// of using a font glyph. Matches PC CS 1.6 close-button look. Inherits all
+// hover / pressed feedback from Button.
+class FrameCloseGlyph : public Button
+{
+public:
+	FrameCloseGlyph(int x, int y, int w, int h) : Button("", x, y, w, h) {}
+protected:
+	virtual void paint()
+	{
+		int wide, tall;
+		getSize(wide, tall);
+
+		// Same color logic as Button::paint, no text drawn.
+		unsigned int argb;
+		if (!isEnabled())
+			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFFA0A0A0;
+		else if (_armed)
+			argb = g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF;
+		else
+			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFFFFFFF;
+
+		// Diagonal extent: roughly 60% of button size, centered. Stroke is a
+		// 2px square brush stepped along the diagonal -- gives a chunky pixel
+		// X that matches GoldSrc bitmap close icon at any scale.
+		int side = (wide < tall ? wide : tall);
+		int extent = (side * 6) / 10;
+		if (extent < 6) extent = 6;
+		int sx = (wide - extent) / 2;
+		int sy = (tall - extent) / 2;
+		int brush = VS(2);
+		if (brush < 2) brush = 2;
+
+		schemeBgColor(this, argb);
+		for (int i = 0; i < extent; i++)
+		{
+			// '\\' stroke: top-left -> bottom-right
+			drawFilledRect(sx + i, sy + i, sx + i + brush, sy + i + brush);
+			// '/' stroke: bottom-left -> top-right
+			drawFilledRect(sx + i, sy + extent - i - brush, sx + i + brush, sy + extent - i);
+		}
+	}
+};
+
 Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
 	VLOG("Frame ctor: pos(%d,%d) size(%dx%d)", x, y, wide, tall);
@@ -84,10 +128,10 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_captionBar = new Panel(border, border, wide - border * 2, captionH);
 	addChild(_captionBar);
 
-	// Close button (flat style: no raised bevel, see Button::paintBackground)
+	// Close button: vector X glyph instead of font character (PC CS 1.6 look)
 	int btnSize = FbtnSz();
 	int btnInset = FbtnIns();
-	_closeButton = new Button("X", wide - border - btnSize - btnInset,
+	_closeButton = new FrameCloseGlyph(wide - border - btnSize - btnInset,
 		border + btnInset, btnSize, btnSize);
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
