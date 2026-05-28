@@ -232,13 +232,78 @@ void VGUI_Mouse(enum VGUI_MouseAction action, int code)
 	}
 }
 
+// Translate Xash3D engine key codes (ASCII for printable, K_* defines from
+// keydefs.h for non-printable) to the vgui::KeyCode enum used by VGUI1
+// widgets. Returns vgui::KEY_LAST for keys that have no VGUI equivalent
+// (gamepad, joystick, mouse-paired engine codes etc.) so the caller can
+// drop them.
+static vgui::KeyCode EngineKeyToVgui(int engineCode)
+{
+	using namespace vgui;
+	if (engineCode <= 0)
+		return KEY_LAST;
+
+	// ASCII-range printable keys (engine sends letters/digits as raw ASCII)
+	if (engineCode >= '0' && engineCode <= '9')
+		return (KeyCode)(KEY_0 + (engineCode - '0'));
+	if (engineCode >= 'a' && engineCode <= 'z')
+		return (KeyCode)(KEY_A + (engineCode - 'a'));
+	if (engineCode >= 'A' && engineCode <= 'Z')
+		return (KeyCode)(KEY_A + (engineCode - 'A'));
+
+	switch (engineCode)
+	{
+	// Specials defined in sdk_includes/engine/keydefs.h
+	case 9:   return KEY_TAB;          // K_TAB
+	case 13:  return KEY_ENTER;        // K_ENTER
+	case 27:  return KEY_ESCAPE;       // K_ESCAPE (intercepted upstream, kept for completeness)
+	case 32:  return KEY_SPACE;        // K_SPACE
+	case 70:  return KEY_SCROLLLOCK;   // K_SCROLLLOCK
+	case 127: return KEY_BACKSPACE;    // K_BACKSPACE
+	case 128: return KEY_UP;           // K_UPARROW
+	case 129: return KEY_DOWN;         // K_DOWNARROW
+	case 130: return KEY_LEFT;         // K_LEFTARROW
+	case 131: return KEY_RIGHT;        // K_RIGHTARROW
+	case 132: return KEY_LALT;         // K_ALT
+	case 133: return KEY_LCONTROL;     // K_CTRL
+	case 134: return KEY_LSHIFT;       // K_SHIFT
+	case 135: case 136: case 137: case 138: case 139: case 140:
+	case 141: case 142: case 143: case 144: case 145: case 146:
+		return (KeyCode)(KEY_F1 + (engineCode - 135));    // K_F1..K_F12
+	case 147: return KEY_INSERT;       // K_INS
+	case 148: return KEY_DELETE;       // K_DEL
+	case 149: return KEY_PAGEDOWN;     // K_PGDN
+	case 150: return KEY_PAGEUP;       // K_PGUP
+	case 151: return KEY_HOME;         // K_HOME
+	case 152: return KEY_END;          // K_END
+	case 175: return KEY_CAPSLOCK;     // K_CAPSLOCK
+	case 178: return KEY_NUMLOCK;      // K_KP_NUMLOCK
+
+	// ASCII punctuation (TextEntry needs these for typing)
+	case '`':  return KEY_BACKQUOTE;
+	case '-':  return KEY_MINUS;
+	case '=':  return KEY_EQUAL;
+	case '[':  return KEY_LBRACKET;
+	case ']':  return KEY_RBRACKET;
+	case ';':  return KEY_SEMICOLON;
+	case '\'': return KEY_APOSTROPHE;
+	case ',':  return KEY_COMMA;
+	case '.':  return KEY_PERIOD;
+	case '/':  return KEY_SLASH;
+	case '\\': return KEY_BACKSLASH;
+	}
+	return KEY_LAST;
+}
+
 void VGUI_Key(enum VGUI_KeyAction action, int code)
 {
 	if (!s_app || !s_rootPanel)
 		return;
 
 	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
-	vgui::KeyCode kc = (vgui::KeyCode)code;
+	vgui::KeyCode kc = EngineKeyToVgui(code);
+	if (kc == vgui::KEY_LAST)
+		return; // unmapped engine key (mouse, joystick, gamepad) -- ignore
 
 	switch (action)
 	{
@@ -265,23 +330,23 @@ void VGUI_MouseMove(int x, int y)
 
 static void VGUI_TextInput(const char *text)
 {
-	// Process UTF-8 text input as key typed events
+	// UTF-8 text from the engine's IME / soft keyboard. Translate ASCII bytes
+	// to vgui::KeyCode via the shared engine->VGUI table so it routes through
+	// TextEntry::internalKeyTyped exactly like a hardware keypress.
 	if (!s_app || !text || !s_rootPanel)
 		return;
 
 	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
 	for (int i = 0; text[i]; i++)
 	{
-		// Map ASCII to key codes (simplified)
-		char ch = text[i];
-		if (ch >= 'a' && ch <= 'z')
-			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_A + (ch - 'a')), sb);
-		else if (ch >= 'A' && ch <= 'Z')
-			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_A + (ch - 'A')), sb);
-		else if (ch >= '0' && ch <= '9')
-			s_app->internalKeyTyped((vgui::KeyCode)(vgui::KEY_0 + (ch - '0')), sb);
-		else if (ch == ' ')
-			s_app->internalKeyTyped(vgui::KEY_SPACE, sb);
+		unsigned char ch = (unsigned char)text[i];
+		// Skip UTF-8 continuation bytes -- VGUI1 enum has no Cyrillic, just
+		// drop multibyte chars for now. Latin/digits/punctuation pass through.
+		if (ch >= 0x80)
+			continue;
+		vgui::KeyCode kc = EngineKeyToVgui((int)ch);
+		if (kc != vgui::KEY_LAST)
+			s_app->internalKeyTyped(kc, sb);
 	}
 }
 
@@ -455,6 +520,15 @@ EXPORT void VGUI_ForwardKey(int action, int code)
 EXPORT void VGUI_ForwardMouseMove(int x, int y)
 {
 	VGUI_MouseMove(x, y);
+}
+
+// Engine -> VGUI text input bridge. Called from UI_CharEvent for every typed
+// character (desktop hardware keyboard) and from the engine's IME callback
+// on touch platforms. ASCII printable chars get inserted into the focused
+// TextEntry; UTF-8 multibyte bytes are dropped (no Cyrillic input yet).
+EXPORT void VGUI_ForwardCharInput(const char *text)
+{
+	VGUI_TextInput(text);
 }
 
 } // extern "C"

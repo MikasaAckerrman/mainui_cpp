@@ -38,6 +38,7 @@ extern "C" int VGUI_IsVisible(void);
 extern "C" void VGUI_ForwardKey(int action, int code);
 extern "C" void VGUI_ForwardMouse(int action, int code);
 extern "C" void VGUI_ForwardMouseMove(int x, int y);
+extern "C" void VGUI_ForwardCharInput(const char *text);
 // Hide the Options dialog (defined in vgui1/src/VguiOptionsDialog.cpp)
 extern "C" void VGUI_HideOptions(void);
 
@@ -766,6 +767,15 @@ void UI_CharEvent( int key )
 
 	if( menuActive )
 		uiStatic.menu.CharEvent( key );
+
+	// Forward typed character to VGUI1 panels (e.g. TextEntry) when visible.
+	// VGUI's KA_PRESSED path handles only navigation keys; insertion of
+	// printable characters comes through this typed-char route.
+	if( VGUI_IsVisible() && key > 0 && key < 128 )
+	{
+		char buf[2] = { (char)key, 0 };
+		VGUI_ForwardCharInput( buf );
+	}
 }
 
 bool g_bCursorDown;
