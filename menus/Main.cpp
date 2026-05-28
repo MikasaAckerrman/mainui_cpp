@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern void WndConsole_Show( void );
 extern void WndServerBrowser_Show( void );
 extern void WndCreateGame_Show( void );
-extern void WndOptions_Show( void );
 
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
 #define ART_MINIMIZE_F	"gfx/shell/min_f"
@@ -215,7 +214,7 @@ void CMenuMain::_Init( void )
 	configuration.SetNameAndStatus( L( "GameUI_Options" ), L( "StringsList_193" ) );
 	configuration.SetPicture( PC_CONFIG );
 	configuration.iFlags |= QMF_NOTIFY;
-	configuration.onReleased = WndOptions_Show;
+	configuration.onReleased.SetCommand( false, "vgui_options\n" );
 
 	saveRestore.iFlags |= QMF_NOTIFY;
 
