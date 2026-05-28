@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Create VguiOptionsDialog - a Frame with TabPanel containing 8 tabs (Multiplayer, Keyboard, Mouse, Audio, Video, HUD, Account, System) populated with cvar-bound controls. Export show/hide functions.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1: Create src/VguiOptionsDialog.cpp and include/VGUI_OptionsDialog.h. The dialog is a class VguiOptionsDialog that inherits Frame. Constructor takes no args (or screen dimensions). It creates a Frame centered on screen using s_screenWidth/s_screenHeight via VGUI_GetScreenSize(). Size: 480x380 scaled proportionally if screen > 640x480 (use simple ratio: dialogW = screenW*0.75, dialogH = screenH*0.79, capped at reasonable max). Title: 'Options'.",
     "Step 2: Inside the Frame's client panel, create a TabPanel filling the entire client area. Add 8 tabs: 'Multiplayer', 'Keyboard', 'Mouse', 'Audio', 'Video', 'HUD', 'Account', 'System'. Each tab gets a Panel as its page.",
@@ -28,5 +28,5 @@
     "rm -rf /projects/sandbox/mainui_cpp/vgui1/.build && mkdir -p /projects/sandbox/mainui_cpp/vgui1/.build && cmake -S /projects/sandbox/mainui_cpp/vgui1 -B /projects/sandbox/mainui_cpp/vgui1/.build && make -C /projects/sandbox/mainui_cpp/vgui1/.build -j$(nproc) 2>&1 | grep -E '(error|warning:)' || echo 'Build clean'"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Build compiles cleanly with zero errors/warnings. VGUI_GetRootPanel() accessor added to vgui_main.cpp in the vgui namespace (not extern C) for internal use by VguiOptionsDialog. The dialog uses extern C VGUI_ShowOptions/VGUI_HideOptions with visibility default. TabPanel pages sized to tabH-28 to account for tab header area."
 }
