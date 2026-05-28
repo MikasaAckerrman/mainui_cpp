@@ -76,12 +76,12 @@ typedef struct vguiapi_s
 #endif // VGUI_API_DEFINED
 
 // Global engine API pointer
-vguiapi_t *g_api = nullptr;
+vguiapi_t *g_api = 0;
 
 // VGUI state
-static vgui::App *s_app = nullptr;
-static vgui::Panel *s_rootPanel = nullptr;
-static vgui::Scheme *s_scheme = nullptr;
+static vgui::App *s_app = 0;
+static vgui::Panel *s_rootPanel = 0;
+static vgui::Scheme *s_scheme = 0;
 static int s_screenWidth = 0;
 static int s_screenHeight = 0;
 
@@ -120,24 +120,28 @@ static void VGUI_Shutdown(void)
 	if (g_api && g_api->DrawShutdown)
 		g_api->DrawShutdown();
 
+	// Clear surface reference from panels BEFORE destroying surface
+	if (s_rootPanel)
+		s_rootPanel->setSurfaceBaseTraverse(0);
+
 	vgui::EngineSurface_Destroy();
 
 	if (s_rootPanel)
 	{
 		delete s_rootPanel;
-		s_rootPanel = nullptr;
+		s_rootPanel = 0;
 	}
 
 	if (s_scheme)
 	{
 		delete s_scheme;
-		s_scheme = nullptr;
+		s_scheme = 0;
 	}
 
 	if (s_app)
 	{
 		delete s_app;
-		s_app = nullptr;
+		s_app = 0;
 	}
 }
 
