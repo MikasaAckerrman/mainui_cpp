@@ -1,5 +1,6 @@
 // CEngineSurface - bridge between VGUI1 library and Xash3D engine drawing API
-// This implements SurfaceBase using vguiapi_t callbacks from the engine.
+// This file is compiled directly into libmenu.so, so it uses EngFuncs directly
+// instead of going through g_api callbacks.
 
 #include <VGUI_SurfaceBase.h>
 #include <VGUI_Panel.h>
@@ -8,55 +9,15 @@
 #include <VGUI_Font.h>
 #include <string.h>
 
-// Engine interface types (minimal forward decl matching vgui_api.h)
-typedef float vec_t;
-typedef vec_t vec2_t[2];
-typedef int qboolean;
-typedef int VGUI_DefaultCursor;
+#include "enginecallback_menu.h"
 
-typedef struct
+// From Utils.h - avoid including the full header to prevent key definition conflicts
+extern void UI_GetCursorPos( int *pos_x, int *pos_y );
+
+static inline unsigned int PackRGBA_local( unsigned int r, unsigned int g, unsigned int b, unsigned int a )
 {
-	vec2_t point;
-	vec2_t coord;
-} vpoint_t;
-
-typedef struct vguiapi_s
-{
-	qboolean initialized;
-	void (*DrawInit)(void);
-	void (*DrawShutdown)(void);
-	void (*SetupDrawingText)(int *pColor);
-	void (*SetupDrawingRect)(int *pColor);
-	void (*SetupDrawingImage)(int *pColor);
-	void (*BindTexture)(int id);
-	void (*EnableTexture)(qboolean enable);
-	void (*Reserved0)(int id, int width, int height);
-	void (*UploadTexture)(int id, const char *buffer, int width, int height);
-	void (*Reserved1)(int id, int drawX, int drawY, const unsigned char *rgba, int blockWidth, int blockHeight);
-	void (*DrawQuad)(const vpoint_t *ul, const vpoint_t *lr);
-	void (*GetTextureSizes)(int *width, int *height);
-	int (*GenerateTexture)(void);
-	void *(*EngineMalloc)(size_t size);
-	void (*CursorSelect)(VGUI_DefaultCursor cursor);
-	unsigned char (*GetColor)(int i, int j);
-	qboolean (*IsInGame)(void);
-	void (*EnableTextInput)(qboolean enable, qboolean force);
-	void (*GetCursorPos)(int *x, int *y);
-	int (*ProcessUtfChar)(int ch);
-	int (*GetClipboardText)(char *buffer, size_t bufferSize);
-	void (*SetClipboardText)(const char *text);
-	unsigned int (*GetKeyModifiers)(void);
-	void (*Startup)(int width, int height);
-	void (*Shutdown)(void);
-	void *(*GetPanel)(void);
-	void (*Paint)(void);
-	void (*Mouse)(int action, int code);
-	void (*Key)(int action, int code);
-	void (*MouseMove)(int x, int y);
-	void (*TextInput)(const char *text);
-} vguiapi_t;
-
-extern vguiapi_t *g_api;
+	return ((a)<<24|(r)<<16|(g)<<8|(b));
+}
 
 namespace vgui
 {
@@ -170,20 +131,13 @@ bool CEngineSurface::isWithin(int x, int y)
 
 int CEngineSurface::createNewTextureID()
 {
-	if (g_api && g_api->GenerateTexture)
-		return g_api->GenerateTexture();
-	return 0;
+	static int s_nextTextureId = 1;
+	return s_nextTextureId++;
 }
 
 void CEngineSurface::GetMousePos(int &x, int &y)
 {
-	if (g_api && g_api->GetCursorPos)
-		g_api->GetCursorPos(&x, &y);
-	else
-	{
-		x = 0;
-		y = 0;
-	}
+	UI_GetCursorPos(&x, &y);
 }
 
 void CEngineSurface::drawSetColor(int r, int g, int b, int a)
@@ -196,9 +150,6 @@ void CEngineSurface::drawSetColor(int r, int g, int b, int a)
 
 void CEngineSurface::drawFilledRect(int x0, int y0, int x1, int y1)
 {
-	if (!g_api)
-		return;
-
 	// Apply translation
 	x0 += _translateX;
 	y0 += _translateY;
@@ -213,28 +164,8 @@ void CEngineSurface::drawFilledRect(int x0, int y0, int x1, int y1)
 	if (x0 >= x1 || y0 >= y1)
 		return;
 
-	if (g_api->EnableTexture)
-		g_api->EnableTexture(false);
-
-	if (g_api->SetupDrawingRect)
-		g_api->SetupDrawingRect(_drawColor);
-
-	if (g_api->DrawQuad)
-	{
-		vpoint_t ul, lr;
-		ul.point[0] = (float)x0;
-		ul.point[1] = (float)y0;
-		ul.coord[0] = 0;
-		ul.coord[1] = 0;
-		lr.point[0] = (float)x1;
-		lr.point[1] = (float)y1;
-		lr.coord[0] = 1;
-		lr.coord[1] = 1;
-		g_api->DrawQuad(&ul, &lr);
-	}
-
-	if (g_api->EnableTexture)
-		g_api->EnableTexture(true);
+	EngFuncs::FillRGBA(x0, y0, x1 - x0, y1 - y0,
+		_drawColor[0], _drawColor[1], _drawColor[2], _drawColor[3]);
 }
 
 void CEngineSurface::drawOutlinedRect(int x0, int y0, int x1, int y1)
@@ -266,15 +197,13 @@ void CEngineSurface::drawSetTextPos(int x, int y)
 
 void CEngineSurface::drawPrintText(const char* text, int textLen)
 {
-	if (!g_api || !text || textLen <= 0)
+	if (!text || textLen <= 0)
 		return;
-
-	if (g_api->SetupDrawingText)
-		g_api->SetupDrawingText(_textColor);
 
 	int x = _textPos[0];
 	int y = _textPos[1];
 	int charH = (_currentFont && _currentFont->getTall() > 0) ? _currentFont->getTall() : 14;
+	unsigned int color = PackRGBA_local(_textColor[0], _textColor[1], _textColor[2], _textColor[3]);
 
 	for (int i = 0; i < textLen && text[i]; i++)
 	{
@@ -294,19 +223,7 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 		if (x >= _clipRect[0] && x + b <= _clipRect[2] &&
 			y >= _clipRect[1] && y + charH <= _clipRect[3])
 		{
-			if (g_api->DrawQuad)
-			{
-				vpoint_t ul, lr;
-				ul.point[0] = (float)x;
-				ul.point[1] = (float)y;
-				ul.coord[0] = 0;
-				ul.coord[1] = 0;
-				lr.point[0] = (float)(x + b);
-				lr.point[1] = (float)(y + charH);
-				lr.coord[0] = 1;
-				lr.coord[1] = 1;
-				g_api->DrawQuad(&ul, &lr);
-			}
+			EngFuncs::DrawCharacter(x, y, b, charH, (unsigned char)text[i], color, 0);
 		}
 
 		x += b + c; // char body + trailing space
@@ -317,51 +234,17 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 
 void CEngineSurface::drawSetTextureRGBA(int id, const char* rgba, int wide, int tall)
 {
-	if (g_api && g_api->UploadTexture)
-		g_api->UploadTexture(id, rgba, wide, tall);
+	// No-op: Options dialog does not use textures
 }
 
 void CEngineSurface::drawSetTexture(int id)
 {
 	_currentTexture = id;
-	if (g_api && g_api->BindTexture)
-		g_api->BindTexture(id);
 }
 
 void CEngineSurface::drawTexturedRect(int x0, int y0, int x1, int y1)
 {
-	if (!g_api)
-		return;
-
-	x0 += _translateX;
-	y0 += _translateY;
-	x1 += _translateX;
-	y1 += _translateY;
-
-	// Clip
-	if (x0 < _clipRect[0]) x0 = _clipRect[0];
-	if (y0 < _clipRect[1]) y0 = _clipRect[1];
-	if (x1 > _clipRect[2]) x1 = _clipRect[2];
-	if (y1 > _clipRect[3]) y1 = _clipRect[3];
-	if (x0 >= x1 || y0 >= y1)
-		return;
-
-	if (g_api->SetupDrawingImage)
-		g_api->SetupDrawingImage(_drawColor);
-
-	if (g_api->DrawQuad)
-	{
-		vpoint_t ul, lr;
-		ul.point[0] = (float)x0;
-		ul.point[1] = (float)y0;
-		ul.coord[0] = 0;
-		ul.coord[1] = 0;
-		lr.point[0] = (float)x1;
-		lr.point[1] = (float)y1;
-		lr.coord[0] = 1;
-		lr.coord[1] = 1;
-		g_api->DrawQuad(&ul, &lr);
-	}
+	// No-op: Options dialog does not use textured rects
 }
 
 void CEngineSurface::invalidate(Panel* panel)
@@ -378,12 +261,6 @@ void CEngineSurface::enableMouseCapture(bool state)
 void CEngineSurface::setCursor(Cursor* cursor)
 {
 	_currentCursor = cursor;
-
-	if (g_api && g_api->CursorSelect && cursor)
-	{
-		Cursor::DefaultCursor dc = cursor->getDefaultCursor();
-		g_api->CursorSelect((VGUI_DefaultCursor)dc);
-	}
 }
 
 void CEngineSurface::swapBuffers()

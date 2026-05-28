@@ -32,6 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "utflib.h"
 #include "TrackerScheme.h"
 
+// VGUI1 forwarding functions (defined in vgui1/src/vgui_main.cpp)
+extern "C" void VGUI_PaintAll(void);
+extern "C" void VGUI_ForwardKey(int action, int code);
+extern "C" void VGUI_ForwardMouse(int action, int code);
+extern "C" void VGUI_ForwardMouseMove(int x, int y);
+
 cvar_t		*ui_showmodels;
 cvar_t		*ui_show_window_stack;
 cvar_t		*ui_borderclip;
@@ -684,6 +690,9 @@ void UI_UpdateMenu( float flTime )
 	uiStatic.enableAlphaFactor = enableAlphaFactor;
 
 	uiStatic.menu.Update();
+
+	// Render VGUI1 panels on top
+	VGUI_PaintAll();
 }
 
 /*
@@ -713,6 +722,16 @@ void UI_KeyEvent( int key, int down )
 	if( menuActive )
 		down ? uiStatic.menu.KeyDownEvent( key ) :
 			uiStatic.menu.KeyUpEvent( key );
+
+	// Forward to VGUI1 panels
+	if( key >= K_MOUSE1 && key <= K_MOUSE5 )
+	{
+		VGUI_ForwardMouse(down ? 0 : 1, key - K_MOUSE1);
+	}
+	else
+	{
+		VGUI_ForwardKey(down ? 1 : 2, key);
+	}
 }
 
 /*
@@ -793,6 +812,9 @@ void UI_MouseMove( int x, int y )
 
 	if( menuActive )
 		uiStatic.menu.MouseEvent( x, y );
+
+	// Forward to VGUI1 panels
+	VGUI_ForwardMouseMove(x, y);
 }
 
 
