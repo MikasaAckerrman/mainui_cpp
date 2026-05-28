@@ -5,6 +5,7 @@
 #include <VGUI_Panel.h>
 #include <VGUI_SurfaceBase.h>
 #include <VGUI_Scheme.h>
+#include <VGUI_Font.h>
 #include <string.h>
 
 // Forward declarations from CEngineSurface.cpp
@@ -108,6 +109,29 @@ static void VGUI_Startup(int width, int height)
 	{
 		s_app = new vgui::App(true);
 		s_scheme = new vgui::Scheme();
+
+		// Create default fonts matching GoldSrc CS 1.6 style
+		// Primary font: Tahoma 12px (used for labels, buttons)
+		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", 12, 0, 0, 400, false, false, false, false);
+		// Secondary font: Tahoma 14px (titles, headers)
+		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", 14, 0, 0, 700, false, false, false, false);
+		// Small font: Tahoma 10px
+		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", 10, 0, 0, 400, false, false, false, false);
+
+		s_scheme->setFont(vgui::Scheme::sf_primary1, fontPrimary1);
+		s_scheme->setFont(vgui::Scheme::sf_primary2, fontPrimary2);
+		s_scheme->setFont(vgui::Scheme::sf_primary3, fontPrimary3);
+
+		// Set GoldSrc scheme colors
+		s_scheme->setColor(vgui::Scheme::sc_primary1, 192, 192, 192, 0);   // gray bg
+		s_scheme->setColor(vgui::Scheme::sc_primary2, 128, 128, 128, 0);   // dark gray
+		s_scheme->setColor(vgui::Scheme::sc_primary3, 64, 64, 64, 0);      // darker
+		s_scheme->setColor(vgui::Scheme::sc_secondary1, 0, 0, 128, 0);     // dark blue (title)
+		s_scheme->setColor(vgui::Scheme::sc_secondary2, 255, 255, 255, 0); // white (text)
+		s_scheme->setColor(vgui::Scheme::sc_secondary3, 0, 0, 0, 0);       // black
+		s_scheme->setColor(vgui::Scheme::sc_white, 255, 255, 255, 0);
+		s_scheme->setColor(vgui::Scheme::sc_black, 0, 0, 0, 0);
+
 		s_app->setScheme(s_scheme);
 	}
 

@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create cvar bridge layer: function pointers in vgui_main.cpp for engine cvar access, plus CvarSlider, CvarCheckButton, and CvarTextEntry controls that bind to engine cvars via those function pointers.",
+  "status": "completed",
+  "steps": [
+    "Step 1: Add cvar bridge function pointers and exported setter API to vgui_main.cpp. Add these global function pointers after the existing g_api declaration: static float (*g_pfnGetCvarFloat)(const char* name) = null; static void (*g_pfnSetCvarFloat)(const char* name, float value) = null; static const char* (*g_pfnGetCvarString)(const char* name) = null; static void (*g_pfnSetCvarString)(const char* name, const char* value) = null; static void (*g_pfnClientCmd)(const char* cmd) = null. Add accessor functions: VGUI_GetCvarFloat, VGUI_SetCvarFloat, VGUI_GetCvarString, VGUI_SetCvarString, VGUI_ClientCmd that call through the pointers if non-null. Add an exported extern C function VGUI_SetCvarFuncs(...) that the engine/mainui can call to set all pointers at once. Also export VGUI_GetScreenSize(int* w, int* h) returning s_screenWidth/s_screenHeight.",
+    "Step 2: Create include/VGUI_CvarBridge.h header that declares the accessor functions (VGUI_GetCvarFloat etc) so other source files can use them. Use extern declarations within namespace vgui or at global scope with proper include guards.",
+    "Step 3: Create src/CvarCheckButton.cpp and include/VGUI_CvarCheckButton.h. Class CvarCheckButton extends CheckButton. Constructor takes (const char* cvarName, const char* text, int x, int y, int wide, int tall). Stores cvar name in char[64]. On construction and when reset() is called, reads cvar float value and calls setSelected(value != 0). Override internalMousePressed to toggle and write cvar (SetCvarFloat cvarName 1.0/0.0). Provide apply() method that writes current selected state to cvar.",
+    "Step 4: Create src/CvarSlider.cpp and include/VGUI_CvarSlider.h. Class CvarSlider extends Slider. Constructor takes (const char* cvarName, int x, int y, int wide, int tall, int minVal, int maxVal). Stores cvar name in char[64]. On construction and reset(), reads cvar float, clamps to range, calls setValue(). Overrides fireIntChangeSignal() to also write cvar value. Provide apply() and reset() methods.",
+    "Step 5: Create src/CvarTextEntry.cpp and include/VGUI_CvarTextEntry.h. Class CvarTextEntry extends TextEntry. Constructor takes (const char* cvarName, int x, int y, int wide, int tall). Stores cvar name in char[64]. On construction and reset(), reads cvar string and calls setText(). Provide apply() that writes current text to cvar via SetCvarString."
+  ],
+  "acceptance_criteria": [
+    "Project compiles cleanly with cmake (zero errors) after adding all new files",
+    "CvarCheckButton reads/writes float cvar on toggle",
+    "CvarSlider reads/writes float cvar on value change",
+    "CvarTextEntry reads/writes string cvar on apply()",
+    "VGUI_SetCvarFuncs is exported as extern C with visibility default",
+    "All code uses null not nullptr, follows existing code style"
+  ],
+  "verification": [
+    "rm -rf /projects/sandbox/mainui_cpp/vgui1/.build && mkdir -p /projects/sandbox/mainui_cpp/vgui1/.build && cmake -S /projects/sandbox/mainui_cpp/vgui1 -B /projects/sandbox/mainui_cpp/vgui1/.build && make -C /projects/sandbox/mainui_cpp/vgui1/.build -j$(nproc) 2>&1 | grep -E '(error|warning:)' || echo 'Build clean'"
+  ],
+  "blocked_reason": null,
+  "findings": "Build compiles cleanly with GCC 11.5.0, zero errors and warnings. All new files auto-discovered by CMake file(GLOB). The EXPORT macro was already defined in vgui_main.cpp so VGUI_SetCvarFuncs reuses it. CheckButton::fireActionSignal inherited from Button base class."
+}
