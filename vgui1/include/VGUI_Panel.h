@@ -34,7 +34,7 @@ friend class Border;
 public:
 	Panel();
 	Panel(int x, int y, int wide, int tall);
-	virtual ~Panel() {}
+	virtual ~Panel();
 public:
 	virtual void setPos(int x, int y);
 	virtual void getPos(int& x, int& y);

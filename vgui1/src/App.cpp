@@ -190,7 +190,15 @@ void App::setMouseArena(Panel* panel)
 
 void App::requestFocus(Panel* panel)
 {
-	_wantedKeyFocus = panel;
+	if (_keyFocus != panel)
+	{
+		if (_keyFocus)
+			_keyFocus->internalFocusChanged(true);
+		_keyFocus = panel;
+		if (_keyFocus)
+			_keyFocus->internalFocusChanged(false);
+	}
+	_wantedKeyFocus = null;
 }
 
 Panel* App::getFocus()

@@ -161,7 +161,21 @@ void TextEntry::paint()
 	// Draw cursor if focused
 	if (hasFocus() && _editable)
 	{
-		int cursorX = textX + _cursorPos * 8; // Approximate char width
+		// Compute cursor X using font metrics
+		int cursorX = textX;
+		if (_font)
+		{
+			for (int i = 0; i < _cursorPos && i < _textLen; i++)
+			{
+				int a, b, c;
+				_font->getCharABCwide((unsigned char)_text[i], a, b, c);
+				cursorX += a + b + c;
+			}
+		}
+		else
+		{
+			cursorX += _cursorPos * 8;
+		}
 		drawSetColor(0, 0, 0, 0);
 		drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
 	}
@@ -172,14 +186,36 @@ void TextEntry::internalMousePressed(MouseCode code)
 	if (code == MOUSE_LEFT)
 	{
 		requestFocus();
-		// Place cursor (approximate)
 		App* app = App::getInstance();
 		if (app)
 		{
 			int mx, my;
 			app->getCursorPos(mx, my);
 			screenToLocal(mx, my);
-			int charPos = (mx - 3 + _scrollOffset) / 8;
+
+			// Find char position using font metrics
+			int targetX = mx - 3 + _scrollOffset;
+			int charPos = 0;
+			int accum = 0;
+
+			if (_font)
+			{
+				for (int i = 0; i < _textLen; i++)
+				{
+					int a, b, c;
+					_font->getCharABCwide((unsigned char)_text[i], a, b, c);
+					int cw = a + b + c;
+					if (accum + cw / 2 > targetX)
+						break;
+					accum += cw;
+					charPos++;
+				}
+			}
+			else
+			{
+				charPos = targetX / 8;
+			}
+
 			if (charPos < 0) charPos = 0;
 			if (charPos > _textLen) charPos = _textLen;
 			_cursorPos = charPos;

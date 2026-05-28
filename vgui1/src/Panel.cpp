@@ -26,6 +26,25 @@ Panel::Panel(int x, int y, int wide, int tall)
 	init(x, y, wide, tall);
 }
 
+Panel::~Panel()
+{
+	// Remove from parent's child list without recursing back
+	if (_parent)
+		_parent->_childDar.removeElement(this);
+
+	// Delete all children (they remove themselves from our _childDar via setParent)
+	while (_childDar.getCount() > 0)
+	{
+		Panel* child = _childDar[_childDar.getCount() - 1];
+		if (child)
+		{
+			child->_parent = null; // prevent removeElement during delete
+			delete child;
+		}
+		_childDar.removeElementAt(_childDar.getCount() - 1);
+	}
+}
+
 void Panel::init(int x, int y, int wide, int tall)
 {
 	_pos[0] = x;

@@ -104,6 +104,7 @@ private:
 	int _translateX;
 	int _translateY;
 	int _clipRect[4];
+	Font* _currentFont;
 
 	struct PanelState
 	{
@@ -128,6 +129,7 @@ CEngineSurface::CEngineSurface(Panel* embeddedPanel) : SurfaceBase(embeddedPanel
 	_translateY = 0;
 	memset(_clipRect, 0, sizeof(_clipRect));
 	_stateStackCount = 0;
+	_currentFont = 0;
 }
 
 CEngineSurface::~CEngineSurface()
@@ -245,7 +247,7 @@ void CEngineSurface::drawOutlinedRect(int x0, int y0, int x1, int y1)
 
 void CEngineSurface::drawSetTextFont(Font* font)
 {
-	// Font selection handled by engine - stub
+	_currentFont = font;
 }
 
 void CEngineSurface::drawSetTextColor(int r, int g, int b, int a)
@@ -270,17 +272,27 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 	if (g_api->SetupDrawingText)
 		g_api->SetupDrawingText(_textColor);
 
-	// Engine handles text rendering via its own font system
-	// Each character is rendered as a textured quad
 	int x = _textPos[0];
 	int y = _textPos[1];
-	int charW = 8; // Approximate fixed-width char size
+	int charH = _currentFont ? _currentFont->getTall() : 14;
 
 	for (int i = 0; i < textLen && text[i]; i++)
 	{
-		// Clip check
-		if (x >= _clipRect[0] && x + charW <= _clipRect[2] &&
-			y >= _clipRect[1] && y + 14 <= _clipRect[3])
+		int a, b, c;
+		if (_currentFont)
+			_currentFont->getCharABCwide((unsigned char)text[i], a, b, c);
+		else
+		{
+			a = 0; b = 8; c = 0;
+		}
+
+		int charW = a + b + c;
+		if (charW <= 0) charW = 8;
+
+		x += a; // leading space
+
+		if (x >= _clipRect[0] && x + b <= _clipRect[2] &&
+			y >= _clipRect[1] && y + charH <= _clipRect[3])
 		{
 			if (g_api->DrawQuad)
 			{
@@ -289,14 +301,15 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 				ul.point[1] = (float)y;
 				ul.coord[0] = 0;
 				ul.coord[1] = 0;
-				lr.point[0] = (float)(x + charW);
-				lr.point[1] = (float)(y + 14);
+				lr.point[0] = (float)(x + b);
+				lr.point[1] = (float)(y + charH);
 				lr.coord[0] = 1;
 				lr.coord[1] = 1;
 				g_api->DrawQuad(&ul, &lr);
 			}
 		}
-		x += charW;
+
+		x += b + c; // char body + trailing space
 	}
 
 	_textPos[0] = x;
