@@ -274,7 +274,7 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 
 	int x = _textPos[0];
 	int y = _textPos[1];
-	int charH = _currentFont ? _currentFont->getTall() : 14;
+	int charH = (_currentFont && _currentFont->getTall() > 0) ? _currentFont->getTall() : 14;
 
 	for (int i = 0; i < textLen && text[i]; i++)
 	{
