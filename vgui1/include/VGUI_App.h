@@ -18,6 +18,7 @@ class App
 public:
 	App();
 	App(bool externalMain);
+	virtual ~App();
 public:
 	static App* getInstance();
 	virtual void start();

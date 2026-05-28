@@ -74,6 +74,15 @@ App* App::getInstance()
 	return _instance;
 }
 
+App::~App()
+{
+	// Avoid leaving a dangling singleton pointer when the menu lib unloads
+	// (level change, lazy reinit). Without this, App::getInstance() returns
+	// freed memory and the next click crashes deep inside Panel.
+	if (_instance == this)
+		_instance = null;
+}
+
 void App::start()
 {
 	_running = true;
