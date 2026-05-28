@@ -15,6 +15,9 @@ CEngineSurface* EngineSurface_Create(Panel* embeddedPanel);
 void EngineSurface_Destroy();
 }
 
+// Forward declaration from VguiOptionsDialog.cpp
+void VGUI_OptionsShutdown(void);
+
 // Engine API struct (matches vgui_api.h from engine)
 #ifndef VGUI_API_DEFINED
 #define VGUI_API_DEFINED
@@ -126,6 +129,9 @@ static void VGUI_Shutdown(void)
 {
 	if (g_api && g_api->DrawShutdown)
 		g_api->DrawShutdown();
+
+	// Null out the options dialog pointer before destroying the panel tree
+	VGUI_OptionsShutdown();
 
 	// Clear surface reference from panels BEFORE destroying surface
 	if (s_rootPanel)
