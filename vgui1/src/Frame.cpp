@@ -354,90 +354,117 @@ void Frame::drawTitleBar(int wide)
 	}
 }
 
-// Robust drag/resize: incremental delta from last cursor position.
-// On the very first cursorMoved after a press, we just record the cursor
-// (no movement) - this prevents the press-time anchor desync that caused
-// the dialog to jump on touch.
-void Frame::internalCursorMoved(int x, int y)
+// Robust drag/resize via per-frame cursor polling.
+//
+// On Android touch, cursorMoved events fire infrequently and may not deliver
+// at all during a continuous drag (engine batches ACTION_MOVE). To get smooth
+// real-time feedback EVERY FRAME, we poll uiStatic.cursorX/Y inside
+// solveTraverse() (called by VGUI_PaintAll once per frame).
+//
+// Pattern:
+//   PRESS: set _dragging/_resizing flag, _lastCursorValid=false (defer capture)
+//   FRAME 1: poll cursor pos, capture as _lastCursor, return without moving.
+//            This avoids using a stale press-time cursor pos.
+//   FRAME N: poll cursor, compute delta from _lastCursor, apply, update.
+//   RELEASE: clear flags.
+//
+// Result: dialog moves continuously even if cursorMoved events never fire.
+// First-frame skip prevents the "jumps to right" artifact when the engine
+// updates cursor pos AFTER firing the down-key event.
+void Frame::pollDragResize()
 {
-	if (_dragging || _resizing)
-	{
-		if (!_lastCursorValid)
-		{
-			_lastCursor[0] = x;
-			_lastCursor[1] = y;
-			_lastCursorValid = true;
-			Panel::internalCursorMoved(x, y);
-			return;
-		}
+	if (!_dragging && !_resizing) return;
 
-		int dx = x - _lastCursor[0];
-		int dy = y - _lastCursor[1];
+	App* app = App::getInstance();
+	if (!app) return;
+
+	int x, y;
+	app->getCursorPos(x, y);
+
+	if (!_lastCursorValid)
+	{
+		// First poll after press: just record cursor pos (no movement).
+		// Cursor may still be stale at this point, but it doesn't matter -
+		// any drift will be absorbed on the next frame's delta.
 		_lastCursor[0] = x;
 		_lastCursor[1] = y;
-
-		if (_dragging && _moveable && (dx != 0 || dy != 0))
-		{
-			int newX = _pos[0] + dx;
-			int newY = _pos[1] + dy;
-
-			// Clamp: keep title bar grabbable. Allow some off-screen for
-			// monitor-edge use, but never let dialog escape entirely.
-			int wide, tall;
-			getSize(wide, tall);
-			Panel* p = getParent();
-			int rootW = 0, rootH = 0;
-			if (p) p->getSize(rootW, rootH);
-			if (rootW > 0 && rootH > 0)
-			{
-				int margin = VS(24);
-				if (newX < -wide + margin) newX = -wide + margin;
-				if (newX > rootW - margin) newX = rootW - margin;
-				if (newY < 0) newY = 0;
-				if (newY > rootH - margin) newY = rootH - margin;
-			}
-			setPos(newX, newY);
-		}
-		else if (_resizing && _sizeable && _resizeZone && (dx != 0 || dy != 0))
-		{
-			int wide, tall;
-			getSize(wide, tall);
-			int newX = _pos[0], newY = _pos[1];
-			int newW = wide, newH = tall;
-			int minW = MinW(), minH = MinH();
-
-			if (_resizeZone & RZ_W)
-			{
-				newX += dx;
-				newW -= dx;
-				if (newW < minW) { newX -= (minW - newW); newW = minW; }
-			}
-			if (_resizeZone & RZ_E)
-			{
-				newW += dx;
-				if (newW < minW) newW = minW;
-			}
-			if (_resizeZone & RZ_N)
-			{
-				newY += dy;
-				newH -= dy;
-				if (newH < minH) { newY -= (minH - newH); newH = minH; }
-			}
-			if (_resizeZone & RZ_S)
-			{
-				newH += dy;
-				if (newH < minH) newH = minH;
-			}
-
-			// Apply pos and size in real time. setPos before setSize so the
-			// child layout in setSize sees the final position.
-			if (newX != _pos[0] || newY != _pos[1])
-				setPos(newX, newY);
-			if (newW != wide || newH != tall)
-				setSize(newW, newH);
-		}
+		_lastCursorValid = true;
+		return;
 	}
 
+	int dx = x - _lastCursor[0];
+	int dy = y - _lastCursor[1];
+	if (dx == 0 && dy == 0) return;
+	_lastCursor[0] = x;
+	_lastCursor[1] = y;
+
+	if (_dragging && _moveable)
+	{
+		int newX = _pos[0] + dx;
+		int newY = _pos[1] + dy;
+		// Clamp: keep title bar grabbable
+		int wide, tall;
+		getSize(wide, tall);
+		Panel* p = getParent();
+		int rootW = 0, rootH = 0;
+		if (p) p->getSize(rootW, rootH);
+		if (rootW > 0 && rootH > 0)
+		{
+			int margin = VS(24);
+			if (newX < -wide + margin) newX = -wide + margin;
+			if (newX > rootW - margin) newX = rootW - margin;
+			if (newY < 0) newY = 0;
+			if (newY > rootH - margin) newY = rootH - margin;
+		}
+		setPos(newX, newY);
+	}
+	else if (_resizing && _sizeable && _resizeZone)
+	{
+		int wide, tall;
+		getSize(wide, tall);
+		int newX = _pos[0], newY = _pos[1];
+		int newW = wide, newH = tall;
+		int minW = MinW(), minH = MinH();
+
+		if (_resizeZone & RZ_W)
+		{
+			newX += dx;
+			newW -= dx;
+			if (newW < minW) { newX -= (minW - newW); newW = minW; }
+		}
+		if (_resizeZone & RZ_E)
+		{
+			newW += dx;
+			if (newW < minW) newW = minW;
+		}
+		if (_resizeZone & RZ_N)
+		{
+			newY += dy;
+			newH -= dy;
+			if (newH < minH) { newY -= (minH - newH); newH = minH; }
+		}
+		if (_resizeZone & RZ_S)
+		{
+			newH += dy;
+			if (newH < minH) newH = minH;
+		}
+
+		if (newX != _pos[0] || newY != _pos[1])
+			setPos(newX, newY);
+		if (newW != wide || newH != tall)
+			setSize(newW, newH);
+	}
+}
+
+void Frame::solveTraverse()
+{
+	pollDragResize();
+	Panel::solveTraverse();
+}
+
+// Kept for compatibility but does nothing during drag (polling handles it).
+void Frame::internalCursorMoved(int x, int y)
+{
 	Panel::internalCursorMoved(x, y);
 }
 
@@ -465,7 +492,9 @@ void Frame::internalMousePressed(MouseCode code)
 			{
 				_resizing = true;
 				_resizeZone = zone;
-				_lastCursorValid = false; // first cursorMoved will seed lastCursor
+				// Don't capture cursor pos here - polling will capture on
+				// the first frame to avoid stale-press-pos artifacts.
+				_lastCursorValid = false;
 				setAsMouseCapture(true);
 			}
 			else if (_moveable)

@@ -25,6 +25,7 @@ public:
 	virtual void setInternal(bool state);
 	virtual void setSmallCaption(bool state);
 	virtual void setSize(int wide, int tall);
+	virtual void solveTraverse(); // override - poll cursor for live drag/resize
 protected:
 	virtual void paintBackground();
 	virtual void paint();
@@ -33,6 +34,7 @@ protected:
 	virtual void internalMouseReleased(MouseCode code);
 private:
 	void drawTitleBar(int wide);
+	void pollDragResize();
 private:
 	char _title[128];
 	Panel* _topGrip;
@@ -54,10 +56,10 @@ private:
 	bool _smallCaption;
 	bool _dragging;
 	bool _resizing;
-	bool _lastCursorValid;     // false until first cursorMoved arrives
-	int _lastCursor[2];        // last cursor pos seen by cursorMoved (screen)
-	int _resizeZone;           // bitmask: bit0=N, bit1=S, bit2=W, bit3=E
-	// Legacy fields kept for ABI compatibility (no longer used)
+	bool _lastCursorValid;
+	int _lastCursor[2];
+	int _resizeZone;
+	// Legacy fields kept for ABI compatibility (unused)
 	int _dragOrgPos[2];
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];

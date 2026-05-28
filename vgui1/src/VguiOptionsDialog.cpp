@@ -420,16 +420,11 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	Panel* accountPage = new Panel(0, 0, clientW, pageH);
 	Panel* systemPage  = new Panel(0, 0, clientW, pageH);
 
-	// Etched border around each page (GoldSrc groove)
-	static EtchedBorder s_pageBorder;
-	mpPage->setBorder(&s_pageBorder);
-	kbPage->setBorder(&s_pageBorder);
-	mousePage->setBorder(&s_pageBorder);
-	audioPage->setBorder(&s_pageBorder);
-	videoPage->setBorder(&s_pageBorder);
-	hudPage->setBorder(&s_pageBorder);
-	accountPage->setBorder(&s_pageBorder);
-	systemPage->setBorder(&s_pageBorder);
+	// Etched border around each page: REMOVED. The active tab merges into
+	// the page area (+2px overlap), and an etched border drawn on top of
+	// that overlap creates a visible seam under the active tab. Without
+	// the border, the tab + page form one continuous olive surface, which
+	// is the GoldSrc CS 1.6 reference look.
 
 
 	_tabPanel->addTab("\xD0\x9C\xD1\x83\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB8\xD0\xBF\xD0\xBB\xD0\xB5\xD0\xB5\xD1\x80",   mpPage);
