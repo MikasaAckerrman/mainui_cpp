@@ -206,9 +206,9 @@ void Panel::setParent(Panel* newParent)
 	if (_parent)
 		_parent->_childDar.removeElement(this);
 	_parent = newParent;
-	if (_parent)
+	if (_parent && _parent->_surfaceBase)
 	{
-		_surfaceBase = _parent->_surfaceBase;
+		setSurfaceBaseTraverse(_parent->_surfaceBase);
 	}
 }
 
