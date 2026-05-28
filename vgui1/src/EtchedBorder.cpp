@@ -21,11 +21,11 @@ void EtchedBorder::paint(Panel* panel)
 	int wide, tall;
 	panel->getSize(wide, tall);
 
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Etched look = a 2-line groove. Outer dark line at top+left and bottom+right
-	// inner edges, inner bright line offset by 1 pixel forms the recessed groove.
+	// GoldSrc etched groove: outer dark + inner bright = recessed channel.
+	// Slightly different from previous: more visible groove depth.
 	schemeBgColor(panel, dark);
 	drawFilledRect(0, 0, wide - 1, 1);            // outer top
 	drawFilledRect(0, 0, 1, tall - 1);            // outer left

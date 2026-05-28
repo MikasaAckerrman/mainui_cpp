@@ -4,6 +4,7 @@ extern void UI_EnableTextInput( bool enable );  // mainui bridge -> EngFuncs::En
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
+#include <VGUI_UIScale.h>
 #include <VGUI_TextEntry.h>
 #include <VGUI_App.h>
 #include <VGUI_ActionSignal.h>
@@ -30,8 +31,6 @@ TextEntry::TextEntry(const char* text, int x, int y, int wide, int tall) : Panel
 	_editable = true;
 	_font = null;
 	_schemeFont = Scheme::sf_primary1;
-
-	// Visual colors driven by g_Scheme at draw time
 }
 
 void TextEntry::setText(const char* text, int textLen)
@@ -51,15 +50,12 @@ void TextEntry::setText(const char* text, int textLen)
 		_textLen = copyLen;
 	}
 	_cursorPos = _textLen;
-	_scrollOffset = 0;     // reset horizontal scroll so old offset doesn't bleed across opens
+	_scrollOffset = 0;
 	_selectStart = -1;
 	_selectEnd = -1;
 	repaint();
 }
 
-// Override: when this entry gains keyboard focus, ask the engine to bring up
-// the Android soft keyboard. When focus is lost, hide it. Without this the
-// IME never appears on touch-only devices.
 void TextEntry::internalFocusChanged(bool lost)
 {
 	UI_EnableTextInput(!lost);
@@ -68,92 +64,63 @@ void TextEntry::internalFocusChanged(bool lost)
 
 void TextEntry::getText(int offset, char* buf, int bufLen)
 {
-	if (!buf || bufLen <= 0)
-		return;
+	if (!buf || bufLen <= 0) return;
 	if (offset < 0) offset = 0;
-	if (offset >= _textLen)
-	{
-		buf[0] = 0;
-		return;
-	}
+	if (offset >= _textLen) { buf[0] = 0; return; }
 	int copyLen = _textLen - offset;
-	if (copyLen >= bufLen)
-		copyLen = bufLen - 1;
+	if (copyLen >= bufLen) copyLen = bufLen - 1;
 	memcpy(buf, _text + offset, copyLen);
 	buf[copyLen] = 0;
 }
 
-int TextEntry::getTextLength()
-{
-	return _textLen;
-}
+int TextEntry::getTextLength() { return _textLen; }
+void TextEntry::setEditable(bool state) { _editable = state; }
+void TextEntry::setFont(Font* font) { _font = font; }
+void TextEntry::setFont(Scheme::SchemeFont schemeFont) { _schemeFont = schemeFont; _font = null; }
 
-void TextEntry::setEditable(bool state)
-{
-	_editable = state;
-}
-
-void TextEntry::setFont(Font* font)
-{
-	_font = font;
-}
-
-void TextEntry::setFont(Scheme::SchemeFont schemeFont)
-{
-	_schemeFont = schemeFont;
-	_font = null;
-}
-
-void TextEntry::addActionSignal(ActionSignal* s)
-{
-	_actionSignalDar.addElement(s);
-}
+void TextEntry::addActionSignal(ActionSignal* s) { _actionSignalDar.addElement(s); }
 
 void TextEntry::fireActionSignal()
 {
 	for (int i = 0; i < _actionSignalDar.getCount(); i++)
 	{
 		ActionSignal* s = _actionSignalDar[i];
-		if (s)
-			s->actionPerformed(this);
+		if (s) s->actionPerformed(this);
 	}
 }
 
-void TextEntry::selectNone()
-{
-	_selectStart = -1;
-	_selectEnd = -1;
-	repaint();
-}
-
-void TextEntry::selectAll()
-{
-	_selectStart = 0;
-	_selectEnd = _textLen;
-	repaint();
-}
+void TextEntry::selectNone() { _selectStart = -1; _selectEnd = -1; repaint(); }
+void TextEntry::selectAll() { _selectStart = 0; _selectEnd = _textLen; repaint(); }
 
 void TextEntry::paintBackground()
 {
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int bg     = g_Scheme.fieldBgColor   ? g_Scheme.fieldBgColor   : 0xE655604B;
-	unsigned int bright = g_Scheme.borderBright   ? g_Scheme.borderBright   : 0xC85F6558;
-	unsigned int dark   = g_Scheme.borderDark     ? g_Scheme.borderDark     : 0xC8282C24;
+	unsigned int bg     = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE64A5440;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
 
-	// Field background
+	// Field background (darker than frame for recessed look)
 	schemeBgColor(this, bg);
 	drawFilledRect(0, 0, wide, tall);
 
-	// Sunken bevel: dark top + left, bright bottom + right
+	// GoldSrc double-inset border:
+	// Outer: dark top+left, bright bottom+right
 	schemeBgColor(this, dark);
 	drawFilledRect(0, 0, wide, 1);
 	drawFilledRect(0, 0, 1, tall);
-
 	schemeBgColor(this, bright);
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
+
+	// Inner inset (1px inside outer)
+	schemeBgColor(this, 0xC83A3E30);
+	drawFilledRect(1, 1, wide - 1, 2);
+	drawFilledRect(1, 1, 2, tall - 1);
+	schemeBgColor(this, 0xC8606850);
+	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
+	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 }
 
 void TextEntry::paint()
@@ -172,14 +139,17 @@ void TextEntry::paint()
 	else
 		drawSetTextFont(_schemeFont);
 
-	int textX = 4 - _scrollOffset;
-	int textY = 3;
+	// GoldSrc left padding: 6px inside the inset border
+	int textX = VS(6) - _scrollOffset;
+	// Vertical center: text baseline aligned to center of field
+	int textY = (ptall - VS(11)) / 2;
+	if (textY < 2) textY = 2;
+
 	drawPrintText(textX, textY, _text, _textLen);
 
-	// Draw cursor if focused
+	// Cursor
 	if (hasFocus() && _editable)
 	{
-		// Compute cursor X using font metrics
 		int cursorX = textX;
 		if (_font)
 		{
@@ -194,9 +164,8 @@ void TextEntry::paint()
 		{
 			cursorX += _cursorPos * 8;
 		}
-		// Cursor uses field text color
-		schemeBgColor(this, g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF);
-		drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
+		schemeBgColor(this, textCol);
+		drawFilledRect(cursorX, 3, cursorX + 1, ptall - 3);
 	}
 }
 
@@ -212,8 +181,7 @@ void TextEntry::internalMousePressed(MouseCode code)
 			app->getCursorPos(mx, my);
 			screenToLocal(mx, my);
 
-			// Find char position using font metrics
-			int targetX = mx - 3 + _scrollOffset;
+			int targetX = mx - VS(6) + _scrollOffset;
 			int charPos = 0;
 			int accum = 0;
 
@@ -224,8 +192,7 @@ void TextEntry::internalMousePressed(MouseCode code)
 					int a, b, c;
 					_font->getCharABCwide((unsigned char)_text[i], a, b, c);
 					int cw = a + b + c;
-					if (accum + cw / 2 > targetX)
-						break;
+					if (accum + cw / 2 > targetX) break;
 					accum += cw;
 					charPos++;
 				}
@@ -244,23 +211,12 @@ void TextEntry::internalMousePressed(MouseCode code)
 	Panel::internalMousePressed(code);
 }
 
-void TextEntry::internalCursorMoved(int x, int y)
-{
-	Panel::internalCursorMoved(x, y);
-}
-
-void TextEntry::internalMouseReleased(MouseCode code)
-{
-	Panel::internalMouseReleased(code);
-}
+void TextEntry::internalCursorMoved(int x, int y) { Panel::internalCursorMoved(x, y); }
+void TextEntry::internalMouseReleased(MouseCode code) { Panel::internalMouseReleased(code); }
 
 void TextEntry::internalKeyPressed(KeyCode code)
 {
-	if (!_editable)
-	{
-		Panel::internalKeyPressed(code);
-		return;
-	}
+	if (!_editable) { Panel::internalKeyPressed(code); return; }
 
 	switch (code)
 	{
@@ -282,7 +238,7 @@ void TextEntry::internalKeyPressed(KeyCode code)
 			memmove(_text + _cursorPos - 1, _text + _cursorPos, _textLen - _cursorPos + 1);
 			_cursorPos--;
 			_textLen--;
-			fireActionSignal(); // notify "value changed" so dirty-tracking works
+			fireActionSignal();
 		}
 		break;
 	case KEY_DELETE:
@@ -305,18 +261,10 @@ void TextEntry::internalKeyPressed(KeyCode code)
 
 void TextEntry::internalKeyTyped(KeyCode code)
 {
-	if (!_editable)
-	{
-		Panel::internalKeyTyped(code);
-		return;
-	}
+	if (!_editable) { Panel::internalKeyTyped(code); return; }
 
 	App* app = App::getInstance();
-	if (!app)
-	{
-		Panel::internalKeyTyped(code);
-		return;
-	}
+	if (!app) { Panel::internalKeyTyped(code); return; }
 
 	char ch = app->getKeyCodeChar(code, false);
 	if (ch && ch != '\n' && ch != '\t' && _textLen < (int)sizeof(_text) - 1)
@@ -326,7 +274,7 @@ void TextEntry::internalKeyTyped(KeyCode code)
 		_cursorPos++;
 		_textLen++;
 		repaint();
-		fireActionSignal(); // notify dirty-tracking on every typed char
+		fireActionSignal();
 	}
 
 	Panel::internalKeyTyped(code);

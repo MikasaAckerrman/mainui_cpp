@@ -14,15 +14,15 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 namespace vgui
 {
 
-// Base GoldSrc Frame layout constants. Scaled at runtime via VS() so the
-// dialog stays readable on HD/4K Android screens.
+// GoldSrc VGUI Frame layout constants (pixel-perfect CS 1.6 reference @ 640x480).
+// All scaled via VS() at runtime for HD/4K.
 enum
 {
-	FRAME_CAPTION_HEIGHT = 22,
-	FRAME_CAPTION_HEIGHT_SMALL = 18,
-	FRAME_BORDER = 3,
-	FRAME_BUTTON_SIZE = 16,
-	FRAME_BUTTON_INSET = 3
+	FRAME_CAPTION_HEIGHT       = 18,   // GoldSrc: compact 18px titlebar
+	FRAME_CAPTION_HEIGHT_SMALL = 14,
+	FRAME_BORDER               = 3,    // outer frame edge thickness
+	FRAME_BUTTON_SIZE          = 14,   // close button = small square
+	FRAME_BUTTON_INSET         = 2
 };
 
 static inline int Fcap()      { return VS(FRAME_CAPTION_HEIGHT); }
@@ -45,36 +45,80 @@ private:
 	Frame* _frame;
 };
 
-// Title-bar close button -- draws a vector X (two diagonal strokes) instead
-// of using a font glyph. Matches PC CS 1.6 close-button look. Inherits all
-// hover / pressed feedback from Button.
+// GoldSrc close button: vector X with double bevel border (raised look).
+// Pressed state shifts glyph +1/+1 and inverts bevel. Matches PC CS 1.6.
 class FrameCloseGlyph : public Button
 {
 public:
 	FrameCloseGlyph(int x, int y, int w, int h) : Button("", x, y, w, h) {}
 protected:
+	virtual void paintBackground()
+	{
+		int wide, tall;
+		getSize(wide, tall);
+
+		bool sunken = isDepressed() || isSelected();
+
+		// Body fill
+		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5B6350;
+		schemeBgColor(this, bg);
+		drawFilledRect(1, 1, wide - 1, tall - 1);
+
+		// Double bevel: outer 1px + inner 1px
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
+		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+		unsigned int mid    = 0xC84A5040; // mid-tone for inner bevel
+
+		if (sunken)
+		{
+			// Outer: dark top+left, bright bottom+right
+			schemeBgColor(this, dark);
+			drawFilledRect(0, 0, wide, 1);
+			drawFilledRect(0, 0, 1, tall);
+			schemeBgColor(this, bright);
+			drawFilledRect(0, tall - 1, wide, tall);
+			drawFilledRect(wide - 1, 0, wide, tall);
+			// Inner
+			schemeBgColor(this, mid);
+			drawFilledRect(1, 1, wide - 1, 2);
+			drawFilledRect(1, 1, 2, tall - 1);
+		}
+		else
+		{
+			// Outer: bright top+left, dark bottom+right
+			schemeBgColor(this, bright);
+			drawFilledRect(0, 0, wide, 1);
+			drawFilledRect(0, 0, 1, tall);
+			schemeBgColor(this, dark);
+			drawFilledRect(0, tall - 1, wide, tall);
+			drawFilledRect(wide - 1, 0, wide, tall);
+			// Inner highlight/shadow
+			schemeBgColor(this, 0xC8909880);
+			drawFilledRect(1, 1, wide - 1, 2);
+			drawFilledRect(1, 1, 2, tall - 1);
+			schemeBgColor(this, mid);
+			drawFilledRect(1, tall - 2, wide - 1, tall - 1);
+			drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
+		}
+	}
+
 	virtual void paint()
 	{
 		int wide, tall;
 		getSize(wide, tall);
 
-		// Same color logic as Button::paint, no text drawn.
 		unsigned int argb;
 		if (!isEnabled())
 			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFFA0A0A0;
 		else if (isArmed())
 			argb = g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF;
 		else
-			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFFFFFFF;
+			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE0E0E0;
 
-		// Diagonal extent: roughly 60% of button size, centered. Stroke is a
-		// 2px square brush stepped along the diagonal -- gives a chunky pixel
-		// X that matches GoldSrc bitmap close icon at any scale.
-		// When depressed (mouse down on close button) the X shifts +1/+1
-		// relative to its slot, mimicking a pressed-in physical button.
+		// Chunky X glyph: 2px brush, ~60% of button size
 		int side = (wide < tall ? wide : tall);
 		int extent = (side * 6) / 10;
-		if (extent < 6) extent = 6;
+		if (extent < 5) extent = 5;
 		int sx = (wide - extent) / 2;
 		int sy = (tall - extent) / 2;
 		if (isDepressed())
@@ -83,14 +127,12 @@ protected:
 			sy += 1;
 		}
 		int brush = VS(2);
-		if (brush < 2) brush = 2;
+		if (brush < 1) brush = 1;
 
 		schemeBgColor(this, argb);
 		for (int i = 0; i < extent; i++)
 		{
-			// '\\' stroke: top-left -> bottom-right
 			drawFilledRect(sx + i, sy + i, sx + i + brush, sy + i + brush);
-			// '/' stroke: bottom-left -> top-right
 			drawFilledRect(sx + i, sy + extent - i - brush, sx + i + brush, sy + extent - i);
 		}
 	}
@@ -114,7 +156,6 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_dragOrgSize[0] = 0;
 	_dragOrgSize[1] = 0;
 
-	// Create grips (null for now - drag handled directly)
 	_topGrip = null;
 	_bottomGrip = null;
 	_leftGrip = null;
@@ -126,29 +167,21 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_minimizeButton = null;
 	_maximizeButton = null;
 
-	// Create client area panel
 	int captionH = Fcap();
 	int border = Fborder();
 	_client = new Panel(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
 	addChild(_client);
 
-	// Caption bar panel removed: as a child Panel covering the title-bar
-	// area, it stole hit-test ownership from Frame (App::updateMouseFocus
-	// picks the deepest child), so Frame::internalMousePressed never ran
-	// and drag could not start. Frame::internalMousePressed already does
-	// its own caption-zone hit-test, so the helper panel is unnecessary.
+	// _captionBar kept as null (ABI), drag is handled by Frame::internalMousePressed
 	_captionBar = null;
 
-	// Close button: vector X glyph instead of font character (PC CS 1.6 look)
+	// Close button: beveled square with vector X
 	int btnSize = FbtnSz();
 	int btnInset = FbtnIns();
 	_closeButton = new FrameCloseGlyph(wide - border - btnSize - btnInset,
 		border + btnInset, btnSize, btnSize);
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
-
-	// CS 1.6 frame has a flat panel + thin scheme-driven border drawn in
-	// paintBackground; no chunky RaisedBorder around the frame itself.
 }
 
 void Frame::setTitle(const char* title)
@@ -165,34 +198,15 @@ void Frame::getTitle(char* buf, int bufLen)
 		vgui_strcpy(buf, bufLen, _title);
 }
 
-void Frame::setMoveable(bool state)
-{
-	_moveable = state;
-}
-
-bool Frame::isMoveable()
-{
-	return _moveable;
-}
-
-void Frame::setSizeable(bool state)
-{
-	_sizeable = state;
-}
-
-bool Frame::isSizeable()
-{
-	return _sizeable;
-}
+void Frame::setMoveable(bool state) { _moveable = state; }
+bool Frame::isMoveable() { return _moveable; }
+void Frame::setSizeable(bool state) { _sizeable = state; }
+bool Frame::isSizeable() { return _sizeable; }
 
 void Frame::setVisible(bool state)
 {
 	if (!state && (_dragging || _resizing))
 	{
-		// Drop any active drag/resize so a hidden frame does not leak its
-		// state into the next show. Without this, _dragging stays true
-		// after closing mid-drag and the next mousemove on reopen (e.g.
-		// tapping a button) would teleport the dialog.
 		_dragging = false;
 		_resizing = false;
 		_dragAnchorReady = false;
@@ -203,15 +217,8 @@ void Frame::setVisible(bool state)
 	Panel::setVisible(state);
 }
 
-Panel* Frame::getClient()
-{
-	return _client;
-}
-
-void Frame::setInternal(bool state)
-{
-	_internal = state;
-}
+Panel* Frame::getClient() { return _client; }
+void Frame::setInternal(bool state) { _internal = state; }
 
 void Frame::setSmallCaption(bool state)
 {
@@ -251,32 +258,48 @@ void Frame::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Frame body - olive panel from CS 1.6 scheme
-	schemeBgColor(this, g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xE65F684E);
+	// Frame body fill - GoldSrc warm olive
+	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xE6646E50;
+	schemeBgColor(this, frameBg);
 	drawFilledRect(0, 0, wide, tall);
 
-	// Subtle dark border around the frame (1px on right + bottom = drop shadow look)
-	unsigned int borderDark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282C24;
-	schemeBgColor(this, borderDark);
-	drawFilledRect(0, 0, wide, 1);          // top
-	drawFilledRect(0, 0, 1, tall);          // left
-	drawFilledRect(0, tall - 1, wide, tall); // bottom
-	drawFilledRect(wide - 1, 0, wide, tall); // right
+	// GoldSrc double-bevel outer frame border:
+	// Outer ring: bright top+left, dark bottom+right
+	// Inner ring (1px inset): slightly dimmer highlight/shadow
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+
+	// Outer bevel
+	schemeBgColor(this, bright);
+	drawFilledRect(0, 0, wide, 1);
+	drawFilledRect(0, 0, 1, tall);
+	schemeBgColor(this, dark);
+	drawFilledRect(0, tall - 1, wide, tall);
+	drawFilledRect(wide - 1, 0, wide, tall);
+
+	// Inner bevel (1px inside)
+	unsigned int innerBright = 0xC8909880;
+	unsigned int innerDark   = 0xC83A3E30;
+	schemeBgColor(this, innerBright);
+	drawFilledRect(1, 1, wide - 1, 2);
+	drawFilledRect(1, 1, 2, tall - 1);
+	schemeBgColor(this, innerDark);
+	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
+	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 
 	drawTitleBar(wide);
 
-	// Bottom-right resize grip: 3 diagonal lines (CS 1.6 PC look)
+	// Bottom-right resize grip
 	if (_sizeable)
 	{
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
 		schemeBgColor(this, bright);
-		int gx = wide - VS(3);
-		int gy = tall - VS(3);
+		int gx = wide - VS(4);
+		int gy = tall - VS(4);
 		for (int i = 0; i < 3; i++)
 		{
-			int off = i * VS(4);
-			drawFilledRect(gx - off, gy, gx - off + VS(2), gy + VS(2));
-			drawFilledRect(gx, gy - off, gx + VS(2), gy - off + VS(2));
+			int off = i * VS(3);
+			drawFilledRect(gx - off, gy, gx - off + VS(1), gy + VS(1));
+			drawFilledRect(gx, gy - off, gx + VS(1), gy - off + VS(1));
 		}
 	}
 }
@@ -295,52 +318,49 @@ void Frame::drawTitleBar(int wide)
 	int barW = wide - border * 2;
 	int barH = captionH;
 
-	// Title bar background - dark olive/gray from scheme
-	schemeBgColor(this, g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE65F684F);
+	// Title bar background - slightly darker than frame body
+	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE6586248;
+	schemeBgColor(this, titleBg);
 	drawFilledRect(barX, barY, barX + barW, barY + barH);
 
-	// Top highlight edge (subtle 1px lighter line at the very top of title bar)
-	if (g_Scheme.frameTitleBarTop)
-	{
-		schemeBgColor(this, g_Scheme.frameTitleBarTop);
-		drawFilledRect(barX, barY, barX + barW, barY + 1);
-	}
+	// Top highlight
+	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF7A8268;
+	schemeBgColor(this, topEdge);
+	drawFilledRect(barX, barY, barX + barW, barY + 1);
 
-	// Bottom separator edge between title bar and panel body
-	if (g_Scheme.frameTitleBarBottom)
-	{
-		schemeBgColor(this, g_Scheme.frameTitleBarBottom);
-		drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
-	}
+	// Bottom separator (dark line between titlebar and client)
+	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF3A4030;
+	schemeBgColor(this, botEdge);
+	drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
 
-	// Steam logo (25th-anniversary CS 1.6 look). Loaded once and cached;
-	// engine returns 0 when the asset is absent, and we silently fall back
-	// to a text-only title bar so layouts without the TGA still render.
+	// Steam logo icon
 	static HIMAGE s_steamIcon = (HIMAGE)-1;
 	if (s_steamIcon == (HIMAGE)-1)
 		s_steamIcon = EngFuncs::PIC_Load("gfx/vgui2/steam_logo.tga");
 
-	int titleTextX = border + VS(6);
+	int titleTextX = border + VS(4);
 	if (s_steamIcon)
 	{
-		int iconH = barH - VS(8);
-		if (iconH < VS(8)) iconH = VS(8);
+		int iconH = barH - VS(4);
+		if (iconH < VS(6)) iconH = VS(6);
 		int iconW = iconH;
-		int iconX = barX + VS(4);
+		int iconX = barX + VS(3);
 		int iconY = barY + (barH - iconH) / 2;
 		int sx = iconX, sy = iconY;
 		localToScreen(sx, sy);
 		EngFuncs::PIC_Set(s_steamIcon, 255, 255, 255, 255);
 		EngFuncs::PIC_DrawTrans(sx, sy, iconW, iconH);
-		titleTextX = iconX + iconW + VS(4);
+		titleTextX = iconX + iconW + VS(3);
 	}
 
-	// Title text
+	// Title text - positioned 1px higher for GoldSrc look
 	if (_title[0])
 	{
-		schemeFgColor(this, g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF);
+		unsigned int titleFg = g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF;
+		schemeFgColor(this, titleFg);
 		drawSetTextFont(Scheme::sf_primary1);
-		drawPrintText(titleTextX, border + VS(4), _title, (int)strlen(_title));
+		int textY = barY + VS(2);
+		drawPrintText(titleTextX, textY, _title, (int)strlen(_title));
 	}
 }
 
@@ -348,12 +368,6 @@ void Frame::internalCursorMoved(int x, int y)
 {
 	if (_dragging || _resizing)
 	{
-		// Deferred-anchor pattern: on Android the cursor pos read in
-		// internalMousePressed via app->getCursorPos() can be stale on the
-		// very first touch (engine fires KEY_DOWN before updating cursor
-		// from ACTION_DOWN). The first cursorMoved arrives with correct
-		// coords, so we capture the anchor here instead. Without this the
-		// first delta could be huge and the dialog would teleport.
 		if (!_dragAnchorReady)
 		{
 			_dragOrgCursor[0] = x;
@@ -377,9 +391,6 @@ void Frame::internalCursorMoved(int x, int y)
 		int newX = _dragOrgPos[0] + dx;
 		int newY = _dragOrgPos[1] + dy;
 
-		// Clamp so the title bar stays grabbable: never let the dialog leave
-		// the screen entirely. Allows partial off-screen on left/right/bottom
-		// for monitor-edge use, but keeps the caption row visible at top.
 		int wide, tall;
 		getSize(wide, tall);
 		Panel* p = getParent();
@@ -387,10 +398,10 @@ void Frame::internalCursorMoved(int x, int y)
 		if (p) p->getSize(rootW, rootH);
 		if (rootW > 0 && rootH > 0)
 		{
-			int margin = VS(24); // keep at least this many px of caption visible (scaled for HD)
+			int margin = VS(24);
 			if (newX < -wide + margin) newX = -wide + margin;
 			if (newX > rootW - margin) newX = rootW - margin;
-			if (newY < 0) newY = 0;                    // never above top
+			if (newY < 0) newY = 0;
 			if (newY > rootH - margin) newY = rootH - margin;
 		}
 
@@ -402,7 +413,6 @@ void Frame::internalCursorMoved(int x, int y)
 		int dy = y - _dragOrgCursor[1];
 		int newW = _dragOrgSize[0] + dx;
 		int newH = _dragOrgSize[1] + dy;
-		// Keep dialog bigger than its bottom button row + tab strip
 		int minW = VS(360);
 		int minH = VS(240);
 		if (newW < minW) newW = minW;
@@ -431,12 +441,11 @@ void Frame::internalMousePressed(MouseCode code)
 			int wide = getWide();
 			int tall = getTall();
 
-			// Bottom-right resize grip area takes priority over body clicks.
 			int grip = VS(14);
 			if (_sizeable && lx >= wide - grip && lx < wide && ly >= tall - grip && ly < tall)
 			{
 				_resizing = true;
-				_dragAnchorReady = false; // anchor will be captured on first cursorMoved
+				_dragAnchorReady = false;
 				_dragOrgSize[0] = wide;
 				_dragOrgSize[1] = tall;
 				_dragOrgCursor[0] = mx;
@@ -451,7 +460,7 @@ void Frame::internalMousePressed(MouseCode code)
 				if (ly >= border && ly < border + captionH && lx >= border && lx < wide - border)
 				{
 					_dragging = true;
-					_dragAnchorReady = false; // anchor will be captured on first cursorMoved
+					_dragAnchorReady = false;
 					_dragOrgPos[0] = _pos[0];
 					_dragOrgPos[1] = _pos[1];
 					_dragOrgCursor[0] = mx;
