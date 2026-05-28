@@ -27,6 +27,8 @@ private:
 	char* _name;
 	BaseFontPlat* _plat;
 	int _id;
+	int _tall;
+	int _wide;
 };
 
 class BaseFontPlat

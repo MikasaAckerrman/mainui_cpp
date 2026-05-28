@@ -1,0 +1,33 @@
+{
+  "project_type": "VGUI1 UI library for Xash3D game engine (vgui_support module)",
+  "language": "C++11",
+  "build_system": "CMake - file(GLOB src/*.cpp) auto-discovers new source files. Static library by default, shared with -DVGUI_BUILD_SHARED=ON",
+  "test_framework": "No unit tests - verification is compile-only",
+  "build_command": "rm -rf /projects/sandbox/mainui_cpp/vgui1/.build && mkdir -p /projects/sandbox/mainui_cpp/vgui1/.build && cmake -S /projects/sandbox/mainui_cpp/vgui1 -B /projects/sandbox/mainui_cpp/vgui1/.build && make -C /projects/sandbox/mainui_cpp/vgui1/.build -j$(nproc)",
+  "test_command": "make -C /projects/sandbox/mainui_cpp/vgui1/.build -j$(nproc)",
+  "verification_instructions": "Build with cmake and verify zero compiler errors/warnings. The file(GLOB) pattern auto-picks up new .cpp files after re-running cmake.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "cmake -S /projects/sandbox/mainui_cpp/vgui1 -B /projects/sandbox/mainui_cpp/vgui1/.build && make -C /projects/sandbox/mainui_cpp/vgui1/.build -j$(nproc)",
+  "environment_constraints": "C++11 standard only. Must use 'null' not 'nullptr'. Must compile with GCC and NDK Clang (aarch64-linux-android21). No STL headers beyond what existing code uses (stdlib.h, string.h, stddef.h).",
+  "contribution_requirements": "All new files in /projects/sandbox/mainui_cpp/vgui1/src/. Headers in /projects/sandbox/mainui_cpp/vgui1/include/. Follow existing naming conventions: PascalCase files, VGUI_ prefix for headers.",
+  "key_patterns": "All classes in namespace vgui. Controls inherit Panel. Signals are abstract classes (ActionSignal, IntChangeSignal) with virtual callbacks. Dar<T> is the dynamic array template. Use drawSetColor/drawFilledRect for painting. Frame has _client panel for content. TabPanel manages tabs with addTab(). CheckButton extends Button. Slider uses IntChangeSignal for value changes. TextEntry stores text in char[256]. vgui_strcpy for safe string copy. Global g_api pointer provides engine functions.",
+  "relevant_files": [
+    "/projects/sandbox/mainui_cpp/vgui1/src/vgui_main.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/src/CheckButton.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/src/Slider.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/src/TextEntry.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/src/Frame.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/src/TabPanel.cpp",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_CheckButton.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_Slider.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_TextEntry.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_Frame.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_TabPanel.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_ActionSignal.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_IntChangeSignal.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI_Panel.h",
+    "/projects/sandbox/mainui_cpp/vgui1/include/VGUI.h",
+    "/projects/sandbox/mainui_cpp/vgui1/CMakeLists.txt"
+  ],
+  "directory_structure": "vgui1/src/ - implementation files (.cpp), vgui1/include/ - headers (VGUI_*.h), vgui1/CMakeLists.txt - build config. CMake GLOB auto-discovers new src/*.cpp files."
+}
