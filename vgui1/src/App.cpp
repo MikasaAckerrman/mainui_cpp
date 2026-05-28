@@ -572,20 +572,6 @@ void App::platTick()
 
 void App::internalTick()
 {
-	// Process wanted key focus
-	if (_wantedKeyFocus)
-	{
-		if (_keyFocus != _wantedKeyFocus)
-		{
-			if (_keyFocus)
-				_keyFocus->internalFocusChanged(true);
-			_keyFocus = _wantedKeyFocus;
-			if (_keyFocus)
-				_keyFocus->internalFocusChanged(false);
-		}
-		_wantedKeyFocus = null;
-	}
-
 	// Fire tick signals
 	for (int i = 0; i < _tickSignalDar.getCount(); i++)
 	{
