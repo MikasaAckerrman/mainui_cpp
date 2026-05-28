@@ -378,8 +378,8 @@ protected:
 
 // Stub combo-box: button that cycles through a fixed list of options on
 // click and writes the current option to a cvar. No popup yet -- popup
-// menu widget is a separate PR. Visually shows "value [v]" so user sees
-// the text and the dropdown affordance.
+// menu widget is a separate PR. Renders just the option text; a small
+// dropdown chevron is drawn at the right edge in paint() for affordance.
 class StubComboButton;
 class StubCombo_CycleSignal : public ActionSignal
 {
@@ -406,7 +406,6 @@ public:
 		{
 			if (cur && opts[i] && strcmp(cur, opts[i]) == 0) { _idx = i; break; }
 		}
-		_buf[0] = 0;
 		refreshLabel();
 		addActionSignal(new StubCombo_CycleSignal(this));
 	}
@@ -419,22 +418,36 @@ public:
 			VGUI_SetCvarString(_cvar, _opts[_idx]);
 		refreshLabel();
 	}
+protected:
+	// Draw chevron arrow on the right edge over Button's text-paint result.
+	virtual void paint()
+	{
+		Button::paint();
+		int wide, tall;
+		getSize(wide, tall);
+		unsigned int col = isEnabled()
+			? (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFFFFFFF)
+			: (g_Scheme.labelDimColor   ? g_Scheme.labelDimColor   : 0xFFA0A0A0);
+		schemeBgColor(this, col);
+		// 5x3 px filled triangle pointing down, right-aligned with 6px margin
+		int cx = wide - VS(8);
+		int cy = tall / 2 - VS(1);
+		int t  = VS(1) > 0 ? VS(1) : 1;
+		drawFilledRect(cx - VS(4), cy,           cx + VS(4), cy + t);
+		drawFilledRect(cx - VS(3), cy + t,       cx + VS(3), cy + 2*t);
+		drawFilledRect(cx - VS(2), cy + 2*t,     cx + VS(2), cy + 3*t);
+		drawFilledRect(cx - VS(1), cy + 3*t,     cx + VS(1), cy + 4*t);
+	}
 private:
 	void refreshLabel()
 	{
 		const char* v = (_idx >= 0 && _idx < _optCount && _opts[_idx]) ? _opts[_idx] : "";
-		int n = 0;
-		while (v[n] && n < 60) { _buf[n] = v[n]; n++; }
-		const char* tail = "  [v]";
-		for (int i = 0; tail[i] && n < 63; i++) _buf[n++] = tail[i];
-		_buf[n] = 0;
-		setText("%s", _buf);
+		setText("%s", v);
 	}
 	char _cvar[64];
 	const char* const* _opts;
 	int _optCount;
 	int _idx;
-	char _buf[64];
 };
 
 inline void StubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
@@ -452,70 +465,63 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 	int leftX  = VS(14);
 	int rightX = VS(280);
 	int colW   = VS(240);
-	int y = VS(10);
+	int slotSize  = VS(80);
+	int btnW      = VS(120);
+	int rowGap    = VS(8);
+	int groupGap  = VS(14);
+	int y = VS(8);
 
 	// ---- Left column: Avatar group -------------------------------------
-	// "Аватар"
 	page->addChild(new Label("\xD0\x90\xD0\xB2\xD0\xB0\xD1\x82\xD0\xB0\xD1\x80",
 		leftX, y, VS(80), FldH()));
-	y += VS(16);
-	int slotSize = VS(64);
+	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSize, slotSize));
-	// "Загрузить..."
 	page->addChild(new Button("\xD0\x97\xD0\xB0\xD0\xB3\xD1\x80\xD1\x83\xD0\xB7\xD0\xB8\xD1\x82\xD1\x8C...",
-		leftX + slotSize + VS(8), y, VS(120), VS(22)));
-	// cts_team combo placed below the load button
+		leftX + slotSize + rowGap, y, btnW, VS(22)));
 	static const char* k_teams[] = { "cts_team", "ts_team", "vip_team", "admin_team" };
 	StubComboButton* teamCombo = new StubComboButton("logo_team", k_teams, 4,
-		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22));
+		leftX + slotSize + rowGap, y + VS(28), btnW, VS(22));
 	teamCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(teamCombo);
-	y += slotSize + VS(12);
+	y += slotSize + groupGap;
 
 	// ---- Left column: Logo group ---------------------------------------
-	// "Логотип"
 	page->addChild(new Label("\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF",
 		leftX, y, VS(80), FldH()));
-	y += VS(16);
+	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSize, slotSize));
-	// lambda combo (cl_logofile cvar in CS 1.6)
 	static const char* k_logos[] = { "lambda", "skull", "ts_team", "cts_team", "n0!se" };
 	StubComboButton* logoCombo = new StubComboButton("cl_logofile", k_logos, 5,
-		leftX + slotSize + VS(8), y, VS(120), VS(22));
+		leftX + slotSize + rowGap, y, btnW, VS(22));
 	logoCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(logoCombo);
-	// "Изменить цвет"
 	page->addChild(new Button("\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
-		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22)));
-	y += slotSize + VS(12);
+		leftX + slotSize + rowGap, y + VS(28), btnW, VS(22)));
+	y += slotSize + groupGap;
 
 	// "Логотип изменится после соединения с сервером." -- dim hint
-	Label* hint = new Label(
+	page->addChild(new Label(
 		"\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF \xD0\xB8\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x81\xD1\x8F \xD0\xBF\xD0\xBE\xD1\x81\xD0\xBB\xD0\xB5 \xD1\x81\xD0\xBE\xD0\xB5\xD0\xB4\xD0\xB8\xD0\xBD\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x8F \xD1\x81 \xD1\x81\xD0\xB5\xD1\x80\xD0\xB2\xD0\xB5\xD1\x80\xD0\xBE\xD0\xBC.",
-		leftX, y, colW, FldH() * 2);
-	page->addChild(hint);
-	y += VS(28);
+		leftX, y, colW, FldH() * 2));
+	y += VS(34);
 
-	// "Дополнительно..."
 	page->addChild(new Button("\xD0\x94\xD0\xBE\xD0\xBF\xD0\xBE\xD0\xBB\xD0\xBD\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE...",
-		leftX, y, VS(120), VS(22)));
+		leftX, y, btnW, VS(22)));
 
 	// ---- Right column: Имя игрока + Пароль -----------------------------
-	int ry = VS(10);
-	// "Имя игрока"
+	int ry = VS(8);
 	page->addChild(new Label("\xD0\x98\xD0\xBC\xD1\x8F \xD0\xB8\xD0\xB3\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0",
 		rightX, ry, VS(120), FldH()));
-	ry += VS(16);
+	ry += VS(14);
 	CvarTextEntry* nameEntry = new CvarTextEntry("name", rightX, ry, colW, FldH());
 	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
-	ry += VS(36);
+	ry += VS(40);
 
-	// "Пароль для VIP/Admin доступа"
 	page->addChild(new Label(
 		"\xD0\x9F\xD0\xB0\xD1\x80\xD0\xBE\xD0\xBB\xD1\x8C \xD0\xB4\xD0\xBB\xD1\x8F VIP/Admin \xD0\xB4\xD0\xBE\xD1\x81\xD1\x82\xD1\x83\xD0\xBF\xD0\xB0",
 		rightX, ry, VS(220), FldH()));
-	ry += VS(16);
+	ry += VS(14);
 	PasswordTextEntry* pwdEntry = new PasswordTextEntry("vip_password", rightX, ry, colW, FldH());
 	page->addChild(pwdEntry);
 	_textEntries.addElement(pwdEntry);

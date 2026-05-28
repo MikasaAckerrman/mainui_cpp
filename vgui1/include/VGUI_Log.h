@@ -26,7 +26,14 @@ void VguiLogFile( const char *fmt, ... );  // separate file
 }
 #endif
 
-// Convenience: log to BOTH places at once. Cheap to call.
-#define VLOG(...)  do { VguiLog(__VA_ARGS__); VguiLogFile(__VA_ARGS__); } while (0)
+// Convenience: log to BOTH places at once. In release builds VLOG compiles
+// to a no-op so the per-call fopen + Con_Printf cost (~12 calls per click
+// in the Options dialog) is fully eliminated. Define VGUI_DIAG at build
+// time to re-enable diagnostic logging.
+#ifdef VGUI_DIAG
+#  define VLOG(...)  do { VguiLog(__VA_ARGS__); VguiLogFile(__VA_ARGS__); } while (0)
+#else
+#  define VLOG(...)  ((void)0)
+#endif
 
 #endif // VGUI_LOG_H

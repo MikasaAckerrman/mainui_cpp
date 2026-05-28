@@ -54,6 +54,7 @@ private:
 	bool _smallCaption;
 	bool _dragging;
 	bool _resizing;
+	bool _dragAnchorReady;   // anchor captured on first cursorMoved, not on press
 	int _dragOrgPos[2];
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];

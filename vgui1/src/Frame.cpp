@@ -99,6 +99,7 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_smallCaption = false;
 	_dragging = false;
 	_resizing = false;
+	_dragAnchorReady = false;
 	_dragOrgPos[0] = 0;
 	_dragOrgPos[1] = 0;
 	_dragOrgCursor[0] = 0;
@@ -187,6 +188,7 @@ void Frame::setVisible(bool state)
 		// tapping a button) would teleport the dialog.
 		_dragging = false;
 		_resizing = false;
+		_dragAnchorReady = false;
 		App* app = App::getInstance();
 		if (app)
 			app->setMouseCapture(null);
@@ -315,6 +317,30 @@ void Frame::drawTitleBar(int wide)
 
 void Frame::internalCursorMoved(int x, int y)
 {
+	if (_dragging || _resizing)
+	{
+		// Deferred-anchor pattern: on Android the cursor pos read in
+		// internalMousePressed via app->getCursorPos() can be stale on the
+		// very first touch (engine fires KEY_DOWN before updating cursor
+		// from ACTION_DOWN). The first cursorMoved arrives with correct
+		// coords, so we capture the anchor here instead. Without this the
+		// first delta could be huge and the dialog would teleport.
+		if (!_dragAnchorReady)
+		{
+			_dragOrgCursor[0] = x;
+			_dragOrgCursor[1] = y;
+			_dragOrgPos[0] = _pos[0];
+			_dragOrgPos[1] = _pos[1];
+			int wide, tall;
+			getSize(wide, tall);
+			_dragOrgSize[0] = wide;
+			_dragOrgSize[1] = tall;
+			_dragAnchorReady = true;
+			Panel::internalCursorMoved(x, y);
+			return;
+		}
+	}
+
 	if (_dragging && _moveable)
 	{
 		int dx = x - _dragOrgCursor[0];
@@ -381,6 +407,7 @@ void Frame::internalMousePressed(MouseCode code)
 			if (_sizeable && lx >= wide - grip && lx < wide && ly >= tall - grip && ly < tall)
 			{
 				_resizing = true;
+				_dragAnchorReady = false; // anchor will be captured on first cursorMoved
 				_dragOrgSize[0] = wide;
 				_dragOrgSize[1] = tall;
 				_dragOrgCursor[0] = mx;
@@ -395,6 +422,7 @@ void Frame::internalMousePressed(MouseCode code)
 				if (ly >= border && ly < border + captionH && lx >= border && lx < wide - border)
 				{
 					_dragging = true;
+					_dragAnchorReady = false; // anchor will be captured on first cursorMoved
 					_dragOrgPos[0] = _pos[0];
 					_dragOrgPos[1] = _pos[1];
 					_dragOrgCursor[0] = mx;
@@ -414,6 +442,7 @@ void Frame::internalMouseReleased(MouseCode code)
 	{
 		_dragging = false;
 		_resizing = false;
+		_dragAnchorReady = false;
 		setAsMouseCapture(false);
 	}
 
