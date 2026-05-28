@@ -62,7 +62,7 @@ protected:
 		unsigned int argb;
 		if (!isEnabled())
 			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFFA0A0A0;
-		else if (_armed)
+		else if (isArmed())
 			argb = g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF;
 		else
 			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFFFFFFF;
@@ -124,9 +124,12 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_client = new Panel(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
 	addChild(_client);
 
-	// Caption bar panel (invisible, used for hit-testing)
-	_captionBar = new Panel(border, border, wide - border * 2, captionH);
-	addChild(_captionBar);
+	// Caption bar panel removed: as a child Panel covering the title-bar
+	// area, it stole hit-test ownership from Frame (App::updateMouseFocus
+	// picks the deepest child), so Frame::internalMousePressed never ran
+	// and drag could not start. Frame::internalMousePressed already does
+	// its own caption-zone hit-test, so the helper panel is unnecessary.
+	_captionBar = null;
 
 	// Close button: vector X glyph instead of font character (PC CS 1.6 look)
 	int btnSize = FbtnSz();
@@ -176,6 +179,18 @@ bool Frame::isSizeable()
 
 void Frame::setVisible(bool state)
 {
+	if (!state && (_dragging || _resizing))
+	{
+		// Drop any active drag/resize so a hidden frame does not leak its
+		// state into the next show. Without this, _dragging stays true
+		// after closing mid-drag and the next mousemove on reopen (e.g.
+		// tapping a button) would teleport the dialog.
+		_dragging = false;
+		_resizing = false;
+		App* app = App::getInstance();
+		if (app)
+			app->setMouseCapture(null);
+	}
 	Panel::setVisible(state);
 }
 

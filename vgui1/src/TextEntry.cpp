@@ -282,6 +282,7 @@ void TextEntry::internalKeyPressed(KeyCode code)
 			memmove(_text + _cursorPos - 1, _text + _cursorPos, _textLen - _cursorPos + 1);
 			_cursorPos--;
 			_textLen--;
+			fireActionSignal(); // notify "value changed" so dirty-tracking works
 		}
 		break;
 	case KEY_DELETE:
@@ -289,6 +290,7 @@ void TextEntry::internalKeyPressed(KeyCode code)
 		{
 			memmove(_text + _cursorPos, _text + _cursorPos + 1, _textLen - _cursorPos);
 			_textLen--;
+			fireActionSignal();
 		}
 		break;
 	case KEY_ENTER:
@@ -324,6 +326,7 @@ void TextEntry::internalKeyTyped(KeyCode code)
 		_cursorPos++;
 		_textLen++;
 		repaint();
+		fireActionSignal(); // notify dirty-tracking on every typed char
 	}
 
 	Panel::internalKeyTyped(code);

@@ -251,15 +251,15 @@ void VguiOptionsDialog::setSize(int wide, int tall)
 }
 
 // Override: when the dialog is hidden, drop keyboard focus from any inner
-// TextEntry and tell the engine to hide the soft keyboard. Otherwise the
-// blinking cursor and Android IME stay active after closing the menu.
+// TextEntry and tell the engine to hide the soft keyboard. Frame::setVisible
+// handles drag/resize state and mouse capture cleanup.
 void VguiOptionsDialog::setVisible(bool state)
 {
 	if (!state)
 	{
 		App* app = App::getInstance();
 		if (app)
-			app->requestFocus(null); // dispatches internalFocusChanged(true) on prev focus
+			app->requestFocus(null); // dispatches internalFocusChanged(true)
 		UI_EnableTextInput(false);
 	}
 	Frame::setVisible(state);
@@ -466,8 +466,10 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 		leftX + slotSize + VS(8), y, VS(120), VS(22)));
 	// cts_team combo placed below the load button
 	static const char* k_teams[] = { "cts_team", "ts_team", "vip_team", "admin_team" };
-	page->addChild(new StubComboButton("logo_team", k_teams, 4,
-		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22)));
+	StubComboButton* teamCombo = new StubComboButton("logo_team", k_teams, 4,
+		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22));
+	teamCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	page->addChild(teamCombo);
 	y += slotSize + VS(12);
 
 	// ---- Left column: Logo group ---------------------------------------
@@ -478,8 +480,10 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 	page->addChild(new PreviewBox(leftX, y, slotSize, slotSize));
 	// lambda combo (cl_logofile cvar in CS 1.6)
 	static const char* k_logos[] = { "lambda", "skull", "ts_team", "cts_team", "n0!se" };
-	page->addChild(new StubComboButton("cl_logofile", k_logos, 5,
-		leftX + slotSize + VS(8), y, VS(120), VS(22)));
+	StubComboButton* logoCombo = new StubComboButton("cl_logofile", k_logos, 5,
+		leftX + slotSize + VS(8), y, VS(120), VS(22));
+	logoCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	page->addChild(logoCombo);
 	// "Изменить цвет"
 	page->addChild(new Button("\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
 		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22)));

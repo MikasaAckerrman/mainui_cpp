@@ -13,34 +13,17 @@ App* App::_instance = null;
 
 App::App()
 {
-	_instance = this;
-	_externalMain = false;
-	_running = false;
-	_keyFocus = null;
-	_oldMouseFocus = null;
-	_mouseFocus = null;
-	_mouseCapture = null;
-	_wantedKeyFocus = null;
-	_scheme = null;
-	_buildMode = false;
-	_wantedBuildMode = false;
-	_mouseArenaPanel = null;
-	_cursorOveride = null;
-	_nextTickMillis = 0;
-	_minimumTickMillisInterval = 0;
-	memset(_mousePressed, 0, sizeof(_mousePressed));
-	memset(_mouseDoublePressed, 0, sizeof(_mouseDoublePressed));
-	memset(_mouseDown, 0, sizeof(_mouseDown));
-	memset(_mouseReleased, 0, sizeof(_mouseReleased));
-	memset(_keyPressed, 0, sizeof(_keyPressed));
-	memset(_keyTyped, 0, sizeof(_keyTyped));
-	memset(_keyDown, 0, sizeof(_keyDown));
-	memset(_keyReleased, 0, sizeof(_keyReleased));
-	memset(_cursor, 0, sizeof(_cursor));
+	initFields(false);
 	init();
 }
 
 App::App(bool externalMain)
+{
+	initFields(externalMain);
+	init();
+}
+
+void App::initFields(bool externalMain)
 {
 	_instance = this;
 	_externalMain = externalMain;
@@ -66,7 +49,6 @@ App::App(bool externalMain)
 	memset(_keyDown, 0, sizeof(_keyDown));
 	memset(_keyReleased, 0, sizeof(_keyReleased));
 	memset(_cursor, 0, sizeof(_cursor));
-	init();
 }
 
 App* App::getInstance()
@@ -488,9 +470,12 @@ void App::internalMouseReleased(MouseCode code, SurfaceBase* surfaceBase)
 
 void App::internalMouseWheeled(int delta, SurfaceBase* surfaceBase)
 {
-	if (_mouseFocus)
+	// Wheel goes to capture target during drag (matches the other input
+	// routes), otherwise to the panel under the cursor.
+	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
+	if (target)
 	{
-		_mouseFocus->internalMouseWheeled(delta);
+		target->internalMouseWheeled(delta);
 	}
 }
 
