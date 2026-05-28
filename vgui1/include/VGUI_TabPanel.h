@@ -12,6 +12,7 @@ class TabPanel : public Panel
 {
 public:
 	TabPanel(int x, int y, int wide, int tall);
+	virtual ~TabPanel();
 public:
 	virtual void addTab(const char* text, Panel* panel);
 	virtual void setSelectedTab(int index);

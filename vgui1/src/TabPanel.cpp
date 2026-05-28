@@ -37,6 +37,19 @@ TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	// Visual colors driven by g_Scheme at draw time
 }
 
+TabPanel::~TabPanel()
+{
+	// Free heap-allocated Tab structs (Dar only stores pointers).
+	// Page panels themselves are children -- Panel::~Panel deletes them.
+	for (int i = 0; i < _tabDar.getCount(); i++)
+	{
+		Tab* t = _tabDar[i];
+		if (t)
+			delete t;
+	}
+	_tabDar.removeAll();
+}
+
 void TabPanel::addTab(const char* text, Panel* panel)
 {
 	Tab* tab = new Tab;
