@@ -77,6 +77,8 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	: Frame(0, 0, VS(480), VS(380))
 {
 	_applyBtn = null;
+	_okBtn = null;
+	_cancelBtn = null;
 	_dirty = false;
 
 	// Compute dialog size proportionally to screen, no upper cap so it
@@ -154,10 +156,12 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	Button* okBtn = new Button("OK", okX, btnY, btnW, btnH);
 	client->addChild(okBtn);
 	okBtn->addActionSignal(new OptionsOKSignal(this));
+	_okBtn = okBtn;
 
 	Button* cancelBtn = new Button("Cancel", cancelX, btnY, btnW, btnH);
 	client->addChild(cancelBtn);
 	cancelBtn->addActionSignal(new OptionsCancelSignal(this));
+	_cancelBtn = cancelBtn;
 
 	_applyBtn = new Button("Apply", applyX, btnY, btnW, btnH);
 	client->addChild(_applyBtn);
@@ -178,6 +182,38 @@ void VguiOptionsDialog::setDirty(bool dirty)
 	_dirty = dirty;
 	if (_applyBtn)
 		_applyBtn->setEnabled(dirty);
+}
+
+// Re-layout TabPanel and bottom buttons to match the new size.
+void VguiOptionsDialog::setSize(int wide, int tall)
+{
+	Frame::setSize(wide, tall);
+
+	Panel* client = getClient();
+	if (!client)
+		return;
+
+	int clientW, clientH;
+	client->getSize(clientW, clientH);
+
+	int btnH    = VS(22);
+	int btnRowH = btnH + VS(16);
+	int tabH    = clientH - btnRowH;
+	if (tabH < VS(120)) tabH = VS(120);
+
+	if (_tabPanel)
+		_tabPanel->setBounds(0, 0, clientW, tabH);
+
+	int btnW   = VS(80);
+	int btnGap = VS(6);
+	int btnY   = clientH - btnH - VS(8);
+	int applyX  = clientW - VS(8) - btnW;
+	int cancelX = applyX  - btnGap - btnW;
+	int okX     = cancelX - btnGap - btnW;
+
+	if (_okBtn)     _okBtn->setBounds(okX,     btnY, btnW, btnH);
+	if (_cancelBtn) _cancelBtn->setBounds(cancelX, btnY, btnW, btnH);
+	if (_applyBtn)  _applyBtn->setBounds(applyX,  btnY, btnW, btnH);
 }
 
 void VguiOptionsDialog::applyAll()
@@ -367,6 +403,8 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 {
 	int sw = 0, sh = 0;
 	vgui::VGUI_GetScreenSize(&sw, &sh);
+	if (sw <= 0) sw = 640;
+	if (sh <= 0) sh = 480;
 
 	VGUI_EnsureInitialized(sw, sh);
 
@@ -376,10 +414,16 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 
 	if (!vgui::g_pOptionsDialog)
 	{
-		if (sw <= 0) sw = 640;
-		if (sh <= 0) sh = 480;
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
 		root->addChild(vgui::g_pOptionsDialog);
+	}
+	else
+	{
+		// Re-center on every reopen (CS 1.6 PC behavior). Keeps the user's
+		// last resize but always returns the window to the middle of the screen.
+		int dlgW, dlgH;
+		vgui::g_pOptionsDialog->getSize(dlgW, dlgH);
+		vgui::g_pOptionsDialog->setPos((sw - dlgW) / 2, (sh - dlgH) / 2);
 	}
 
 	vgui::g_pOptionsDialog->resetAll();

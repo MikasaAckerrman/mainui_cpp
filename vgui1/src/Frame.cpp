@@ -52,10 +52,13 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_internal = false;
 	_smallCaption = false;
 	_dragging = false;
+	_resizing = false;
 	_dragOrgPos[0] = 0;
 	_dragOrgPos[1] = 0;
 	_dragOrgCursor[0] = 0;
 	_dragOrgCursor[1] = 0;
+	_dragOrgSize[0] = 0;
+	_dragOrgSize[1] = 0;
 
 	// Create grips (null for now - drag handled directly)
 	_topGrip = null;
@@ -191,6 +194,21 @@ void Frame::paintBackground()
 	drawFilledRect(wide - 1, 0, wide, tall); // right
 
 	drawTitleBar(wide);
+
+	// Bottom-right resize grip: 3 diagonal lines (CS 1.6 PC look)
+	if (_sizeable)
+	{
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
+		schemeBgColor(this, bright);
+		int gx = wide - VS(3);
+		int gy = tall - VS(3);
+		for (int i = 0; i < 3; i++)
+		{
+			int off = i * VS(4);
+			drawFilledRect(gx - off, gy, gx - off + VS(2), gy + VS(2));
+			drawFilledRect(gx, gy - off, gx + VS(2), gy - off + VS(2));
+		}
+	}
 }
 
 void Frame::paint()
@@ -242,13 +260,26 @@ void Frame::internalCursorMoved(int x, int y)
 		int dy = y - _dragOrgCursor[1];
 		setPos(_dragOrgPos[0] + dx, _dragOrgPos[1] + dy);
 	}
+	else if (_resizing && _sizeable)
+	{
+		int dx = x - _dragOrgCursor[0];
+		int dy = y - _dragOrgCursor[1];
+		int newW = _dragOrgSize[0] + dx;
+		int newH = _dragOrgSize[1] + dy;
+		// Keep dialog bigger than its bottom button row + tab strip
+		int minW = VS(360);
+		int minH = VS(240);
+		if (newW < minW) newW = minW;
+		if (newH < minH) newH = minH;
+		setSize(newW, newH);
+	}
 
 	Panel::internalCursorMoved(x, y);
 }
 
 void Frame::internalMousePressed(MouseCode code)
 {
-	if (code == MOUSE_LEFT && _moveable)
+	if (code == MOUSE_LEFT)
 	{
 		App* app = App::getInstance();
 		if (app)
@@ -256,25 +287,39 @@ void Frame::internalMousePressed(MouseCode code)
 			int mx, my;
 			app->getCursorPos(mx, my);
 
-			// Get absolute position of this frame
 			int ax = 0, ay = 0;
 			localToScreen(ax, ay);
 
-			// Convert cursor to local frame coords
 			int lx = mx - ax;
 			int ly = my - ay;
+			int wide = getWide();
+			int tall = getTall();
 
-			int captionH = _smallCaption ? FcapSmall() : Fcap();
-			int border = Fborder();
-
-			if (ly >= border && ly < border + captionH && lx >= border && lx < getWide() - border)
+			// Bottom-right resize grip area takes priority over body clicks.
+			int grip = VS(14);
+			if (_sizeable && lx >= wide - grip && lx < wide && ly >= tall - grip && ly < tall)
 			{
-				_dragging = true;
-				_dragOrgPos[0] = _pos[0];
-				_dragOrgPos[1] = _pos[1];
+				_resizing = true;
+				_dragOrgSize[0] = wide;
+				_dragOrgSize[1] = tall;
 				_dragOrgCursor[0] = mx;
 				_dragOrgCursor[1] = my;
 				setAsMouseCapture(true);
+			}
+			else if (_moveable)
+			{
+				int captionH = _smallCaption ? FcapSmall() : Fcap();
+				int border = Fborder();
+
+				if (ly >= border && ly < border + captionH && lx >= border && lx < wide - border)
+				{
+					_dragging = true;
+					_dragOrgPos[0] = _pos[0];
+					_dragOrgPos[1] = _pos[1];
+					_dragOrgCursor[0] = mx;
+					_dragOrgCursor[1] = my;
+					setAsMouseCapture(true);
+				}
 			}
 		}
 	}
@@ -284,9 +329,10 @@ void Frame::internalMousePressed(MouseCode code)
 
 void Frame::internalMouseReleased(MouseCode code)
 {
-	if (code == MOUSE_LEFT && _dragging)
+	if (code == MOUSE_LEFT && (_dragging || _resizing))
 	{
 		_dragging = false;
+		_resizing = false;
 		setAsMouseCapture(false);
 	}
 
