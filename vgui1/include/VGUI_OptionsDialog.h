@@ -8,7 +8,9 @@
 namespace vgui
 {
 
+class VguiOptionsDialog;
 class TabPanel;
+class Button;
 class CvarCheckButton;
 class CvarSlider;
 class CvarTextEntry;
@@ -20,6 +22,7 @@ public:
 public:
 	void applyAll();
 	void resetAll();
+	void setDirty(bool dirty);
 private:
 	void buildMultiplayerTab(Panel* page);
 	void buildKeyboardTab(Panel* page);
@@ -31,6 +34,8 @@ private:
 	void buildSystemTab(Panel* page);
 private:
 	TabPanel* _tabPanel;
+	Button*   _applyBtn;
+	bool      _dirty;
 	Dar<CvarCheckButton*> _checkButtons;
 	Dar<CvarSlider*> _sliders;
 	Dar<CvarTextEntry*> _textEntries;

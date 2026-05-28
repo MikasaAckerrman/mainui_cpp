@@ -96,6 +96,17 @@ static vgui::Scheme *s_scheme = 0;
 static int s_screenWidth = 0;
 static int s_screenHeight = 0;
 
+// Global UI scale derived from physical screen height (mainui logical 768 ref).
+namespace vgui { float g_vguiScale = 1.0f; }
+
+static void VGUI_ComputeScale(int screenH)
+{
+	float s = (float)screenH / 768.0f;
+	if (s < 1.0f) s = 1.0f;
+	if (s > 3.0f) s = 3.0f;
+	vgui::g_vguiScale = s;
+}
+
 // ====================================================================
 // Callbacks
 // ====================================================================
@@ -104,19 +115,21 @@ static void VGUI_Startup(int width, int height)
 {
 	s_screenWidth = width;
 	s_screenHeight = height;
+	VGUI_ComputeScale(height);
 
 	if (!s_app)
 	{
 		s_app = new vgui::App(true);
 		s_scheme = new vgui::Scheme();
 
-		// Create default fonts matching GoldSrc CS 1.6 style
-		// Primary font: Tahoma 12px (used for labels, buttons)
-		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", 12, 0, 0, 400, false, false, false, false);
-		// Secondary font: Tahoma 14px (titles, headers)
-		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", 14, 0, 0, 700, false, false, false, false);
-		// Small font: Tahoma 10px
-		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", 10, 0, 0, 400, false, false, false, false);
+		// Create default fonts matching GoldSrc CS 1.6 style, scaled by screen
+		int fontMed   = (int)(12.0f * vgui::g_vguiScale + 0.5f);
+		int fontTitle = (int)(14.0f * vgui::g_vguiScale + 0.5f);
+		int fontSmall = (int)(10.0f * vgui::g_vguiScale + 0.5f);
+
+		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", fontMed,   0, 0, 400, false, false, false, false);
+		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", fontTitle, 0, 0, 700, false, false, false, false);
+		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", fontSmall, 0, 0, 400, false, false, false, false);
 
 		s_scheme->setFont(vgui::Scheme::sf_primary1, fontPrimary1);
 		s_scheme->setFont(vgui::Scheme::sf_primary2, fontPrimary2);
@@ -342,15 +355,21 @@ extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
 
 	s_screenWidth = screenW;
 	s_screenHeight = screenH;
+	VGUI_ComputeScale(screenH);
 
 	if (!s_app)
 	{
 		s_app = new vgui::App(true);
 		s_scheme = new vgui::Scheme();
 
-		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", 12, 0, 0, 400, false, false, false, false);
-		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", 14, 0, 0, 700, false, false, false, false);
-		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", 10, 0, 0, 400, false, false, false, false);
+		// Font sizes scale with screen height so HD devices get readable text
+		int fontMed   = (int)(12.0f * vgui::g_vguiScale + 0.5f);
+		int fontTitle = (int)(14.0f * vgui::g_vguiScale + 0.5f);
+		int fontSmall = (int)(10.0f * vgui::g_vguiScale + 0.5f);
+
+		vgui::Font* fontPrimary1 = new vgui::Font("Tahoma", fontMed,   0, 0, 400, false, false, false, false);
+		vgui::Font* fontPrimary2 = new vgui::Font("Tahoma", fontTitle, 0, 0, 700, false, false, false, false);
+		vgui::Font* fontPrimary3 = new vgui::Font("Tahoma", fontSmall, 0, 0, 400, false, false, false, false);
 
 		s_scheme->setFont(vgui::Scheme::sf_primary1, fontPrimary1);
 		s_scheme->setFont(vgui::Scheme::sf_primary2, fontPrimary2);

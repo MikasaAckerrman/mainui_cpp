@@ -1,4 +1,7 @@
 // VguiOptionsDialog.cpp - Options dialog with tabbed cvar controls
+//
+// All pixel coordinates are passed through VS() so the dialog scales with
+// screen size (mainui's logical 768-unit reference => physical pixels).
 
 #include <VGUI_OptionsDialog.h>
 #include <VGUI_TabPanel.h>
@@ -6,57 +9,62 @@
 #include <VGUI_Label.h>
 #include <VGUI_Button.h>
 #include <VGUI_ActionSignal.h>
+#include <VGUI_IntChangeSignal.h>
 #include <VGUI_CvarBridge.h>
 #include <VGUI_CvarCheckButton.h>
 #include <VGUI_CvarSlider.h>
 #include <VGUI_CvarTextEntry.h>
+#include <VGUI_UIScale.h>
 #include <string.h>
 
 namespace vgui
 {
 
 // ====================================================================
-// Action signal for OK button (apply all and hide)
+// Action signals
 // ====================================================================
 class OptionsOKSignal : public ActionSignal
 {
 public:
 	OptionsOKSignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
-	virtual void actionPerformed(Panel* panel)
-	{
-		_dlg->applyAll();
-		_dlg->setVisible(false);
-	}
+	virtual void actionPerformed(Panel* panel) { _dlg->applyAll(); _dlg->setVisible(false); }
 private:
 	VguiOptionsDialog* _dlg;
 };
 
-// ====================================================================
-// Action signal for Cancel button (hide without applying)
-// ====================================================================
 class OptionsCancelSignal : public ActionSignal
 {
 public:
 	OptionsCancelSignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
-	virtual void actionPerformed(Panel* panel)
-	{
-		_dlg->setVisible(false);
-	}
+	virtual void actionPerformed(Panel* panel) { _dlg->setVisible(false); }
 private:
 	VguiOptionsDialog* _dlg;
 };
 
-// ====================================================================
-// Action signal for Apply button (apply all but keep dialog open)
-// ====================================================================
 class OptionsApplySignal : public ActionSignal
 {
 public:
 	OptionsApplySignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
-	virtual void actionPerformed(Panel* panel)
-	{
-		_dlg->applyAll();
-	}
+	virtual void actionPerformed(Panel* panel) { _dlg->applyAll(); }
+private:
+	VguiOptionsDialog* _dlg;
+};
+
+// Listener that flips the dialog's dirty flag whenever a cvar widget changes.
+class MarkDirtyActionSignal : public ActionSignal
+{
+public:
+	MarkDirtyActionSignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
+	virtual void actionPerformed(Panel* panel) { _dlg->setDirty(true); }
+private:
+	VguiOptionsDialog* _dlg;
+};
+
+class MarkDirtyIntSignal : public IntChangeSignal
+{
+public:
+	MarkDirtyIntSignal(VguiOptionsDialog* dlg) : _dlg(dlg) {}
+	virtual void intChanged(int value, Panel* panel) { _dlg->setDirty(true); }
 private:
 	VguiOptionsDialog* _dlg;
 };
@@ -66,24 +74,24 @@ private:
 // ====================================================================
 
 VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
-	: Frame(0, 0, 480, 380)
+	: Frame(0, 0, VS(480), VS(380))
 {
-	// Compute dialog size proportionally to screen
+	_applyBtn = null;
+	_dirty = false;
+
+	// Compute dialog size proportionally to screen, no upper cap so it
+	// stays large on HD/4K. Keeps a sensible minimum for tiny devices.
 	int dialogW = (screenW * 4) / 5;    // 80%
-	int dialogH = (screenH * 80) / 100; // 80%
+	int dialogH = (screenH * 75) / 100; // 75% (CS 1.6 PC ratio)
+	int minW = VS(500);
+	int minH = VS(320);
+	if (dialogW < minW) dialogW = minW;
+	if (dialogH < minH) dialogH = minH;
+	if (dialogW > screenW - VS(8)) dialogW = screenW - VS(8);
+	if (dialogH > screenH - VS(8)) dialogH = screenH - VS(8);
 
-	// Cap to reasonable limits (CS 1.6 PC reference is ~1100x650)
-	if (dialogW > 1100) dialogW = 1100;
-	if (dialogH > 650) dialogH = 650;
-	if (dialogW < 500) dialogW = 500;
-	if (dialogH < 320) dialogH = 320;
-
-	// Center on screen
-	int posX = (screenW - dialogW) / 2;
-	int posY = (screenH - dialogH) / 2;
-
-	setPos(posX, posY);
-	setSize(dialogW, dialogH);  // Frame::setSize relayouts client/caption/closeBtn
+	setPos((screenW - dialogW) / 2, (screenH - dialogH) / 2);
+	setSize(dialogW, dialogH);
 	setTitle("Options");
 	setVisible(false);
 
@@ -96,34 +104,36 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
 
-	// Reserve space for buttons at bottom (36 px)
-	int tabH = clientH - 36;
-	if (tabH < 100) tabH = 100;
+	// Reserve space for the OK/Cancel/Apply row at the bottom
+	int btnH      = VS(22);
+	int btnRowH   = btnH + VS(16);
+	int tabH      = clientH - btnRowH;
+	int minTabH   = VS(120);
+	if (tabH < minTabH) tabH = minTabH;
 
-	// Create tab panel filling client area (use addChild, not setParent)
 	_tabPanel = new TabPanel(0, 0, clientW, tabH);
 	client->addChild(_tabPanel);
 
-	// Create pages for each tab
-	Panel* mpPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* kbPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* mousePage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* audioPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* videoPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* hudPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* accountPage = new Panel(0, 0, clientW, tabH - 28);
-	Panel* systemPage = new Panel(0, 0, clientW, tabH - 28);
+	// Pages live below the 24-unit (scaled) tab strip
+	int pageH = tabH - VS(28);
+	Panel* mpPage      = new Panel(0, 0, clientW, pageH);
+	Panel* kbPage      = new Panel(0, 0, clientW, pageH);
+	Panel* mousePage   = new Panel(0, 0, clientW, pageH);
+	Panel* audioPage   = new Panel(0, 0, clientW, pageH);
+	Panel* videoPage   = new Panel(0, 0, clientW, pageH);
+	Panel* hudPage     = new Panel(0, 0, clientW, pageH);
+	Panel* accountPage = new Panel(0, 0, clientW, pageH);
+	Panel* systemPage  = new Panel(0, 0, clientW, pageH);
 
 	_tabPanel->addTab("Multiplayer", mpPage);
-	_tabPanel->addTab("Keyboard", kbPage);
-	_tabPanel->addTab("Mouse", mousePage);
-	_tabPanel->addTab("Audio", audioPage);
-	_tabPanel->addTab("Video", videoPage);
-	_tabPanel->addTab("HUD", hudPage);
-	_tabPanel->addTab("Account", accountPage);
-	_tabPanel->addTab("System", systemPage);
+	_tabPanel->addTab("Keyboard",    kbPage);
+	_tabPanel->addTab("Mouse",       mousePage);
+	_tabPanel->addTab("Audio",       audioPage);
+	_tabPanel->addTab("Video",       videoPage);
+	_tabPanel->addTab("HUD",         hudPage);
+	_tabPanel->addTab("Account",     accountPage);
+	_tabPanel->addTab("System",      systemPage);
 
-	// Populate tabs
 	buildMultiplayerTab(mpPage);
 	buildKeyboardTab(kbPage);
 	buildMouseTab(mousePage);
@@ -133,15 +143,11 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	buildAccountTab(accountPage);
 	buildSystemTab(systemPage);
 
-	// Bottom button row: OK | Cancel | Apply, anchored to bottom-right of client area
-	int btnW = 80;
-	int btnH = 22;
-	int btnGap = 6;
-	int btnY = clientH - btnH - 8;
-	int btnRight = clientW - 8;
-
-	// Apply (right-most), Cancel, OK (left-most of the trio)
-	int applyX  = btnRight - btnW;
+	// Bottom button row: OK | Cancel | Apply, anchored to bottom-right
+	int btnW    = VS(80);
+	int btnGap  = VS(6);
+	int btnY    = clientH - btnH - VS(8);
+	int applyX  = clientW - VS(8) - btnW;
 	int cancelX = applyX  - btnGap - btnW;
 	int okX     = cancelX - btnGap - btnW;
 
@@ -153,9 +159,25 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	client->addChild(cancelBtn);
 	cancelBtn->addActionSignal(new OptionsCancelSignal(this));
 
-	Button* applyBtn = new Button("Apply", applyX, btnY, btnW, btnH);
-	client->addChild(applyBtn);
-	applyBtn->addActionSignal(new OptionsApplySignal(this));
+	_applyBtn = new Button("Apply", applyX, btnY, btnW, btnH);
+	client->addChild(_applyBtn);
+	_applyBtn->addActionSignal(new OptionsApplySignal(this));
+	_applyBtn->setEnabled(false); // becomes enabled when something changes
+
+	// Wire dirty-tracking signals on every cvar widget so Apply lights up
+	for (int i = 0; i < _checkButtons.getCount(); i++)
+		_checkButtons[i]->addActionSignal(new MarkDirtyActionSignal(this));
+	for (int i = 0; i < _sliders.getCount(); i++)
+		_sliders[i]->addIntChangeSignal(new MarkDirtyIntSignal(this));
+	for (int i = 0; i < _textEntries.getCount(); i++)
+		_textEntries[i]->addActionSignal(new MarkDirtyActionSignal(this));
+}
+
+void VguiOptionsDialog::setDirty(bool dirty)
+{
+	_dirty = dirty;
+	if (_applyBtn)
+		_applyBtn->setEnabled(dirty);
 }
 
 void VguiOptionsDialog::applyAll()
@@ -167,6 +189,7 @@ void VguiOptionsDialog::applyAll()
 		_sliders[i]->apply();
 	for (i = 0; i < _textEntries.getCount(); i++)
 		_textEntries[i]->apply();
+	setDirty(false);
 }
 
 void VguiOptionsDialog::resetAll()
@@ -178,168 +201,141 @@ void VguiOptionsDialog::resetAll()
 		_sliders[i]->reset();
 	for (i = 0; i < _textEntries.getCount(); i++)
 		_textEntries[i]->reset();
+	setDirty(false);
 }
 
 // ====================================================================
-// Tab builders
+// Tab builders -- coordinates scaled via VS()
 // ====================================================================
+
+// Common form metrics
+static inline int LblX()    { return VS(12); }
+static inline int LblW()    { return VS(110); }
+static inline int InpX()    { return VS(130); }
+static inline int InpW()    { return VS(220); }
+static inline int RowH()    { return VS(28); }
+static inline int RowGap()  { return VS(6); }
+static inline int FldH()    { return VS(20); }
+static inline int FirstY()  { return VS(14); }
 
 void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 {
-	int y = 8;
+	int y = FirstY();
 
-	Label* nameLabel = new Label("Player name:", 8, y, 100, 20);
-	page->addChild(nameLabel);
-
-	CvarTextEntry* nameEntry = new CvarTextEntry("name", 112, y, 180, 20);
+	page->addChild(new Label("Player name:", LblX(), y, LblW(), FldH()));
+	CvarTextEntry* nameEntry = new CvarTextEntry("name", InpX(), y, InpW(), FldH());
 	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
-	y += 30;
+	y += RowH() + RowGap();
 
-	Label* topLabel = new Label("Top color:", 8, y, 100, 20);
-	page->addChild(topLabel);
-
-	CvarSlider* topSlider = new CvarSlider("topcolor", 112, y, 180, 20, 0, 255);
+	page->addChild(new Label("Top color:", LblX(), y, LblW(), FldH()));
+	CvarSlider* topSlider = new CvarSlider("topcolor", InpX(), y, InpW(), FldH(), 0, 255);
 	page->addChild(topSlider);
 	_sliders.addElement(topSlider);
-	y += 30;
+	y += RowH() + RowGap();
 
-	Label* botLabel = new Label("Bottom color:", 8, y, 100, 20);
-	page->addChild(botLabel);
-
-	CvarSlider* botSlider = new CvarSlider("bottomcolor", 112, y, 180, 20, 0, 255);
+	page->addChild(new Label("Bottom color:", LblX(), y, LblW(), FldH()));
+	CvarSlider* botSlider = new CvarSlider("bottomcolor", InpX(), y, InpW(), FldH(), 0, 255);
 	page->addChild(botSlider);
 	_sliders.addElement(botSlider);
 }
 
 void VguiOptionsDialog::buildKeyboardTab(Panel* page)
 {
-	Label* lbl = new Label("Key bindings", 8, 8, 200, 20);
-	page->addChild(lbl);
+	page->addChild(new Label("Key bindings", LblX(), FirstY(), VS(200), FldH()));
 }
 
 void VguiOptionsDialog::buildMouseTab(Panel* page)
 {
-	int y = 8;
+	int y = FirstY();
 
-	CvarCheckButton* filter = new CvarCheckButton("m_filter", "Mouse filter", 8, y, 200, 20);
-	page->addChild(filter);
-	_checkButtons.addElement(filter);
-	y += 28;
+	CvarCheckButton* filter = new CvarCheckButton("m_filter", "Mouse filter", LblX(), y, VS(220), FldH());
+	page->addChild(filter); _checkButtons.addElement(filter);
+	y += RowH();
 
-	Label* sensLabel = new Label("Sensitivity:", 8, y, 100, 20);
-	page->addChild(sensLabel);
+	page->addChild(new Label("Sensitivity:", LblX(), y, LblW(), FldH()));
+	CvarSlider* sensSlider = new CvarSlider("sensitivity", InpX(), y, InpW(), FldH(), 1, 20);
+	page->addChild(sensSlider); _sliders.addElement(sensSlider);
+	y += RowH() + RowGap();
 
-	CvarSlider* sensSlider = new CvarSlider("sensitivity", 112, y, 180, 20, 1, 20);
-	page->addChild(sensSlider);
-	_sliders.addElement(sensSlider);
-	y += 30;
+	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput", "Raw input", LblX(), y, VS(220), FldH());
+	page->addChild(rawinput); _checkButtons.addElement(rawinput);
+	y += RowH();
 
-	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput", "Raw input", 8, y, 200, 20);
-	page->addChild(rawinput);
-	_checkButtons.addElement(rawinput);
-	y += 28;
-
-	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel", "Custom acceleration", 8, y, 200, 20);
-	page->addChild(customaccel);
-	_checkButtons.addElement(customaccel);
+	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel", "Custom acceleration", LblX(), y, VS(220), FldH());
+	page->addChild(customaccel); _checkButtons.addElement(customaccel);
 }
 
 void VguiOptionsDialog::buildAudioTab(Panel* page)
 {
-	int y = 8;
+	int y = FirstY();
 
-	Label* volLabel = new Label("Volume:", 8, y, 100, 20);
-	page->addChild(volLabel);
+	page->addChild(new Label("Volume:", LblX(), y, LblW(), FldH()));
+	CvarSlider* volSlider = new CvarSlider("volume", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 1.0f);
+	page->addChild(volSlider); _sliders.addElement(volSlider);
+	y += RowH() + RowGap();
 
-	CvarSlider* volSlider = new CvarSlider("volume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
-	page->addChild(volSlider);
-	_sliders.addElement(volSlider);
-	y += 30;
+	page->addChild(new Label("Suit volume:", LblX(), y, LblW(), FldH()));
+	CvarSlider* suitSlider = new CvarSlider("suitvolume", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 1.0f);
+	page->addChild(suitSlider); _sliders.addElement(suitSlider);
+	y += RowH() + RowGap();
 
-	Label* suitLabel = new Label("Suit volume:", 8, y, 100, 20);
-	page->addChild(suitLabel);
+	CvarCheckButton* a3d = new CvarCheckButton("s_a3d", "A3D Audio", LblX(), y, VS(220), FldH());
+	page->addChild(a3d); _checkButtons.addElement(a3d);
+	y += RowH();
 
-	CvarSlider* suitSlider = new CvarSlider("suitvolume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
-	page->addChild(suitSlider);
-	_sliders.addElement(suitSlider);
-	y += 30;
-
-	CvarCheckButton* a3d = new CvarCheckButton("s_a3d", "A3D Audio", 8, y, 200, 20);
-	page->addChild(a3d);
-	_checkButtons.addElement(a3d);
-	y += 28;
-
-	CvarCheckButton* eax = new CvarCheckButton("s_eax", "EAX effects", 8, y, 200, 20);
-	page->addChild(eax);
-	_checkButtons.addElement(eax);
+	CvarCheckButton* eax = new CvarCheckButton("s_eax", "EAX effects", LblX(), y, VS(220), FldH());
+	page->addChild(eax); _checkButtons.addElement(eax);
 }
 
 void VguiOptionsDialog::buildVideoTab(Panel* page)
 {
-	int y = 8;
+	int y = FirstY();
 
-	Label* gammaLabel = new Label("Gamma:", 8, y, 100, 20);
-	page->addChild(gammaLabel);
+	page->addChild(new Label("Gamma:", LblX(), y, LblW(), FldH()));
+	CvarSlider* gammaSlider = new CvarSlider("gamma", InpX(), y, InpW(), FldH(), 0, 100, 1.8f, 3.0f);
+	page->addChild(gammaSlider); _sliders.addElement(gammaSlider);
+	y += RowH() + RowGap();
 
-	CvarSlider* gammaSlider = new CvarSlider("gamma", 112, y, 180, 20, 0, 100, 1.8f, 3.0f);
-	page->addChild(gammaSlider);
-	_sliders.addElement(gammaSlider);
-	y += 30;
+	page->addChild(new Label("Brightness:", LblX(), y, LblW(), FldH()));
+	CvarSlider* brightSlider = new CvarSlider("brightness", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 2.0f);
+	page->addChild(brightSlider); _sliders.addElement(brightSlider);
+	y += RowH() + RowGap();
 
-	Label* brightLabel = new Label("Brightness:", 8, y, 100, 20);
-	page->addChild(brightLabel);
-
-	CvarSlider* brightSlider = new CvarSlider("brightness", 112, y, 180, 20, 0, 100, 0.0f, 2.0f);
-	page->addChild(brightSlider);
-	_sliders.addElement(brightSlider);
-	y += 30;
-
-	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync", "VSync", 8, y, 200, 20);
-	page->addChild(vsync);
-	_checkButtons.addElement(vsync);
+	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync", "VSync", LblX(), y, VS(220), FldH());
+	page->addChild(vsync); _checkButtons.addElement(vsync);
 }
 
 void VguiOptionsDialog::buildHudTab(Panel* page)
 {
-	int y = 8;
+	int y = FirstY();
 
-	CvarCheckButton* hudDraw = new CvarCheckButton("hud_draw", "Draw HUD", 8, y, 200, 20);
-	page->addChild(hudDraw);
-	_checkButtons.addElement(hudDraw);
-	y += 28;
+	CvarCheckButton* hudDraw = new CvarCheckButton("hud_draw", "Draw HUD", LblX(), y, VS(220), FldH());
+	page->addChild(hudDraw); _checkButtons.addElement(hudDraw);
+	y += RowH();
 
-	CvarCheckButton* showFps = new CvarCheckButton("cl_showfps", "Show FPS", 8, y, 200, 20);
-	page->addChild(showFps);
-	_checkButtons.addElement(showFps);
-	y += 28;
+	CvarCheckButton* showFps = new CvarCheckButton("cl_showfps", "Show FPS", LblX(), y, VS(220), FldH());
+	page->addChild(showFps); _checkButtons.addElement(showFps);
+	y += RowH();
 
-	Label* scaleLabel = new Label("HUD scale:", 8, y, 100, 20);
-	page->addChild(scaleLabel);
+	page->addChild(new Label("HUD scale:", LblX(), y, LblW(), FldH()));
+	CvarSlider* scaleSlider = new CvarSlider("hud_scale", InpX(), y, InpW(), FldH(), 0, 10, 0.0f, 2.0f);
+	page->addChild(scaleSlider); _sliders.addElement(scaleSlider);
+	y += RowH() + RowGap();
 
-	CvarSlider* scaleSlider = new CvarSlider("hud_scale", 112, y, 180, 20, 0, 10, 0.0f, 2.0f);
-	page->addChild(scaleSlider);
-	_sliders.addElement(scaleSlider);
-	y += 30;
-
-	CvarCheckButton* crosshair = new CvarCheckButton("crosshair", "Show crosshair", 8, y, 200, 20);
-	page->addChild(crosshair);
-	_checkButtons.addElement(crosshair);
+	CvarCheckButton* crosshair = new CvarCheckButton("crosshair", "Show crosshair", LblX(), y, VS(220), FldH());
+	page->addChild(crosshair); _checkButtons.addElement(crosshair);
 }
 
 void VguiOptionsDialog::buildAccountTab(Panel* page)
 {
-	Label* lbl = new Label("Account settings", 8, 8, 200, 20);
-	page->addChild(lbl);
+	page->addChild(new Label("Account settings", LblX(), FirstY(), VS(200), FldH()));
 }
 
 void VguiOptionsDialog::buildSystemTab(Panel* page)
 {
-	int y = 8;
-
-	CvarCheckButton* dev = new CvarCheckButton("developer", "Developer mode", 8, y, 200, 20);
-	page->addChild(dev);
-	_checkButtons.addElement(dev);
+	CvarCheckButton* dev = new CvarCheckButton("developer", "Developer mode", LblX(), FirstY(), VS(220), FldH());
+	page->addChild(dev); _checkButtons.addElement(dev);
 }
 
 // ====================================================================
@@ -365,12 +361,10 @@ extern "C"
 #define OPTDLG_EXPORT __attribute__((visibility("default")))
 #endif
 
-// Forward: ensure VGUI1 core is initialized (defined in vgui_main.cpp)
 extern "C" void VGUI_EnsureInitialized(int screenW, int screenH);
 
 OPTDLG_EXPORT void VGUI_ShowOptions(void)
 {
-	// Get screen size from caller or use defaults
 	int sw = 0, sh = 0;
 	vgui::VGUI_GetScreenSize(&sw, &sh);
 
