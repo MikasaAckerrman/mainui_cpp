@@ -16,7 +16,8 @@ namespace vgui
 // CS 1.6 PC tab metrics. Scaled at runtime via VS().
 static const int TAB_HEIGHT_BASE   = 24;
 static const int TAB_TEXT_HEIGHT_B = 12;
-static const int TAB_TEXT_PAD_B    = 12;
+static const int TAB_TEXT_PAD_LEFT_B  = 8;   // text begins ~8px from tab's left edge (PC look)
+static const int TAB_TEXT_PAD_RIGHT_B = 14;  // more space on the right -> text appears left-aligned
 static const int TAB_GAP           = 0;
 
 // Compute width of tab i based on text length (using mainui FontManager).
@@ -28,7 +29,7 @@ static int ComputeTabWidth( const char *text )
 		textW = g_FontMgr->GetTextWideScaled( font, text, VS(TAB_TEXT_HEIGHT_B) );
 	else if ( text )
 		textW = (int)strlen( text ) * (VS(TAB_TEXT_HEIGHT_B) * 6 / 10);
-	return textW + VS(TAB_TEXT_PAD_B) * 2;
+	return textW + VS(TAB_TEXT_PAD_LEFT_B) + VS(TAB_TEXT_PAD_RIGHT_B);
 }
 
 TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
@@ -192,14 +193,14 @@ void TabPanel::paint()
 			drawFilledRect(x, VS(TAB_HEIGHT_BASE) - 1, x + width, VS(TAB_HEIGHT_BASE));
 		}
 
-		// Tab label (vertically centered in the strip)
+		// Tab label - left-aligned with PC-style asymmetric padding
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
 			int textY = (VS(TAB_HEIGHT_BASE) - VS(TAB_TEXT_HEIGHT_B)) / 2;
-			drawPrintText(x + VS(TAB_TEXT_PAD_B), textY, tab->text, textLen);
+			drawPrintText(x + VS(TAB_TEXT_PAD_LEFT_B), textY, tab->text, textLen);
 		}
 
 		x += width + TAB_GAP;
