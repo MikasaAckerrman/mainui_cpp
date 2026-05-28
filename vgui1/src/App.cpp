@@ -425,6 +425,15 @@ void App::run()
 
 void App::internalCursorMoved(int x, int y, SurfaceBase* surfaceBase)
 {
+	// Mouse capture overrides hit-testing during drag/resize so the captured
+	// panel keeps receiving cursor updates even when the cursor leaves its
+	// bounds. Without this, dragging a Frame would "teleport" because the
+	// Frame stopped getting cursorMoved as soon as the cursor moved off it.
+	if (_mouseCapture)
+	{
+		_mouseCapture->internalCursorMoved(x, y);
+		return;
+	}
 	updateMouseFocus(x, y, surfaceBase);
 	if (_mouseFocus)
 	{
@@ -439,9 +448,10 @@ void App::internalMousePressed(MouseCode code, SurfaceBase* surfaceBase)
 		_mousePressed[code] = true;
 		_mouseDown[code] = true;
 	}
-	if (_mouseFocus)
+	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
+	if (target)
 	{
-		_mouseFocus->internalMousePressed(code);
+		target->internalMousePressed(code);
 	}
 }
 
@@ -452,9 +462,10 @@ void App::internalMouseDoublePressed(MouseCode code, SurfaceBase* surfaceBase)
 		_mouseDoublePressed[code] = true;
 		_mouseDown[code] = true;
 	}
-	if (_mouseFocus)
+	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
+	if (target)
 	{
-		_mouseFocus->internalMouseDoublePressed(code);
+		target->internalMouseDoublePressed(code);
 	}
 }
 
@@ -465,9 +476,13 @@ void App::internalMouseReleased(MouseCode code, SurfaceBase* surfaceBase)
 		_mouseReleased[code] = true;
 		_mouseDown[code] = false;
 	}
-	if (_mouseFocus)
+	// Release MUST go to capture target so drag/resize state is cleared even
+	// if the finger is lifted outside the Frame. Otherwise _dragging stays
+	// true and the next tap would resume dragging.
+	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
+	if (target)
 	{
-		_mouseFocus->internalMouseReleased(code);
+		target->internalMouseReleased(code);
 	}
 }
 
