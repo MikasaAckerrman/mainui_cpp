@@ -192,15 +192,17 @@ void Frame::internalMousePressed(MouseCode code)
 {
 	if (code == MOUSE_LEFT && _moveable)
 	{
-		// Check if click is in title bar area
-		int mx, my;
 		App* app = App::getInstance();
 		if (app)
 		{
+			int mx, my;
 			app->getCursorPos(mx, my);
-			int ax, ay;
-			getPos(ax, ay);
-			// Convert to local coords
+
+			// Get absolute position of this frame
+			int ax = 0, ay = 0;
+			localToScreen(ax, ay);
+
+			// Convert cursor to local frame coords
 			int lx = mx - ax;
 			int ly = my - ay;
 
@@ -210,8 +212,8 @@ void Frame::internalMousePressed(MouseCode code)
 			if (ly >= border && ly < border + captionH && lx >= border && lx < getWide() - border)
 			{
 				_dragging = true;
-				_dragOrgPos[0] = ax;
-				_dragOrgPos[1] = ay;
+				_dragOrgPos[0] = _pos[0];
+				_dragOrgPos[1] = _pos[1];
 				_dragOrgCursor[0] = mx;
 				_dragOrgCursor[1] = my;
 				setAsMouseCapture(true);

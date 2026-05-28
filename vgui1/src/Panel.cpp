@@ -878,10 +878,15 @@ void Panel::paintTraverse(bool repaint)
 				child->paintTraverse(repaint);
 		}
 
-		if (_border && _paintBorderEnabled)
-			_border->doPaint(this);
-
 		_surfaceBase->popMakeCurrent(this);
+
+		// Border paints at full panel extent (not inset)
+		if (_border && _paintBorderEnabled)
+		{
+			_surfaceBase->pushMakeCurrent(this, false);
+			_border->doPaint(this);
+			_surfaceBase->popMakeCurrent(this);
+		}
 	}
 
 	_needsRepaint = false;
