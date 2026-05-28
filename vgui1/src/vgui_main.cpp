@@ -293,6 +293,18 @@ void VGUI_GetScreenSize(int* w, int* h)
 }
 
 // ====================================================================
+// Root panel accessor for other modules
+// ====================================================================
+
+namespace vgui
+{
+Panel* VGUI_GetRootPanel()
+{
+	return s_rootPanel;
+}
+}
+
+// ====================================================================
 // Export: called by engine to initialize vgui_support
 // ====================================================================
 extern "C"
