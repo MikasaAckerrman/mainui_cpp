@@ -15,9 +15,6 @@
 namespace vgui
 {
 
-// Forward declaration for root panel accessor
-Panel* VGUI_GetRootPanel();
-
 // ====================================================================
 // Action signal for OK button (apply all and hide)
 // ====================================================================
@@ -232,7 +229,7 @@ void VguiOptionsDialog::buildAudioTab(Panel* page)
 	Label* volLabel = new Label("Volume:", 8, y, 100, 20);
 	volLabel->setParent(page);
 
-	CvarSlider* volSlider = new CvarSlider("volume", 112, y, 180, 20, 0, 100);
+	CvarSlider* volSlider = new CvarSlider("volume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
 	volSlider->setParent(page);
 	_sliders.addElement(volSlider);
 	y += 30;
@@ -240,7 +237,7 @@ void VguiOptionsDialog::buildAudioTab(Panel* page)
 	Label* suitLabel = new Label("Suit volume:", 8, y, 100, 20);
 	suitLabel->setParent(page);
 
-	CvarSlider* suitSlider = new CvarSlider("suitvolume", 112, y, 180, 20, 0, 100);
+	CvarSlider* suitSlider = new CvarSlider("suitvolume", 112, y, 180, 20, 0, 100, 0.0f, 1.0f);
 	suitSlider->setParent(page);
 	_sliders.addElement(suitSlider);
 	y += 30;
@@ -262,7 +259,7 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 	Label* gammaLabel = new Label("Gamma:", 8, y, 100, 20);
 	gammaLabel->setParent(page);
 
-	CvarSlider* gammaSlider = new CvarSlider("gamma", 112, y, 180, 20, 0, 100);
+	CvarSlider* gammaSlider = new CvarSlider("gamma", 112, y, 180, 20, 0, 100, 1.8f, 3.0f);
 	gammaSlider->setParent(page);
 	_sliders.addElement(gammaSlider);
 	y += 30;
@@ -270,7 +267,7 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 	Label* brightLabel = new Label("Brightness:", 8, y, 100, 20);
 	brightLabel->setParent(page);
 
-	CvarSlider* brightSlider = new CvarSlider("brightness", 112, y, 180, 20, 0, 100);
+	CvarSlider* brightSlider = new CvarSlider("brightness", 112, y, 180, 20, 0, 100, 0.0f, 2.0f);
 	brightSlider->setParent(page);
 	_sliders.addElement(brightSlider);
 	y += 30;
@@ -297,7 +294,7 @@ void VguiOptionsDialog::buildHudTab(Panel* page)
 	Label* scaleLabel = new Label("HUD scale:", 8, y, 100, 20);
 	scaleLabel->setParent(page);
 
-	CvarSlider* scaleSlider = new CvarSlider("hud_scale", 112, y, 180, 20, 0, 2);
+	CvarSlider* scaleSlider = new CvarSlider("hud_scale", 112, y, 180, 20, 0, 10, 0.0f, 2.0f);
 	scaleSlider->setParent(page);
 	_sliders.addElement(scaleSlider);
 	y += 30;
@@ -329,6 +326,12 @@ void VguiOptionsDialog::buildSystemTab(Panel* page)
 static VguiOptionsDialog* g_pOptionsDialog = null;
 
 } // namespace vgui
+
+// Called from VGUI_Shutdown to prevent dangling pointer after panel tree deletion
+void VGUI_OptionsShutdown(void)
+{
+	vgui::g_pOptionsDialog = null;
+}
 
 extern "C"
 {
