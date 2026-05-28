@@ -276,54 +276,54 @@ void UI_LoadTrackerScheme( void )
 	{
 		Con_Printf( "TrackerScheme: not found, applying built-in CS 1.6 defaults\n" );
 
-		// Apply CS 1.6 GoldSrc VGUI palette (pixel-perfect reference)
-		g_Scheme.frameBgColor        = 0xE65F684E; // 95,104,78, alpha 230
-		g_Scheme.frameTitleBarBg     = 0xE65F684F; // NOTE: not used by DrawTitleBar, kept for API compatibility
-		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF; // 255,255,255,255
-		g_Scheme.frameBorderColor    = 0xC8282C24; // dark border, semi-transparent
-		g_Scheme.frameTitleBarTop    = 0xFF697259; // subtle top edge
-		g_Scheme.frameTitleBarBottom = 0xFF4B543B; // subtle bottom separator
+		// Apply CS 1.6 GoldSrc VGUI palette - warm olive/gray-green (pixel-perfect)
+		g_Scheme.frameBgColor        = 0xE6646E50; // warm olive body (100,110,80)
+		g_Scheme.frameTitleBarBg     = 0xE6586248; // slightly darker titlebar
+		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF;
+		g_Scheme.frameBorderColor    = 0xC8282C24;
+		g_Scheme.frameTitleBarTop    = 0xFF7A8268; // top highlight
+		g_Scheme.frameTitleBarBottom = 0xFF3A4030; // bottom separator
 
-		g_Scheme.borderBright        = 0xC85F6558; // 95,101,88, alpha 200
-		g_Scheme.borderDark          = 0xC8282C24; // 40,44,36, alpha 200
-		g_Scheme.borderSelection     = 0xFF000000; // 0,0,0,255
+		g_Scheme.borderBright        = 0xC87A8070; // brighter bevel (122,128,112)
+		g_Scheme.borderDark          = 0xC8282C24; // dark bevel (40,44,36)
+		g_Scheme.borderSelection     = 0xFF000000;
 
-		g_Scheme.buttonTextColor     = 0xFFFFFFFF; // white
-		g_Scheme.buttonBgColor       = 0xFF5B6350; // 91,99,80
-		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF; // white on hover
-		g_Scheme.buttonArmedBgColor  = 0xFF6B7360; // 107,115,96
-		g_Scheme.buttonDepressedTextColor = 0xFFA0A0A0; // dimmed grey
+		g_Scheme.buttonTextColor     = 0xFFE8E8E8; // slightly off-white (pixel font look)
+		g_Scheme.buttonBgColor       = 0xFF5C6450; // button body olive
+		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF;
+		g_Scheme.buttonArmedBgColor  = 0xFF6C7460; // armed = brighter
+		g_Scheme.buttonDepressedTextColor = 0xFF909090;
 
-		g_Scheme.labelTextColor      = 0xFFC8C8C8; // 200,200,200 light grey
-		g_Scheme.labelBrightColor    = 0xFFFFFFFF; // white
-		g_Scheme.labelDimColor       = 0xFFA0A0A0; // 160,160,160
-		g_Scheme.labelDisabledFg1    = 0xFF373A23; // 55,58,35
-		g_Scheme.labelDisabledFg2    = 0xFF232616; // 35,38,22
+		g_Scheme.labelTextColor      = 0xFFD0D0C8; // warm light grey (not pure white)
+		g_Scheme.labelBrightColor    = 0xFFFFFFFF;
+		g_Scheme.labelDimColor       = 0xFF808080; // dimmer for disabled
+		g_Scheme.labelDisabledFg1    = 0xFF373A23;
+		g_Scheme.labelDisabledFg2    = 0xFF232616;
 
 		g_Scheme.listTextColor       = 0xFFFFFFFF;
-		g_Scheme.listBgColor         = 0xE62D3223; // 45,50,35,230
+		g_Scheme.listBgColor         = 0xE6303828;
 		g_Scheme.listSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.listSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
+		g_Scheme.listSelectedBgColor = 0xFF5A5A32;
 		g_Scheme.listHeaderTextColor = 0xFFA0A0A0;
 
 		g_Scheme.fieldTextColor      = 0xFFFFFFFF;
-		g_Scheme.fieldBgColor        = 0xE655604B; // 85,96,75, alpha 230
+		g_Scheme.fieldBgColor        = 0xE64A5440; // darker recessed field
 		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32; // 90,90,50,255
+		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32;
 
-		g_Scheme.tabTextColor        = 0xFFA0A0A0; // DullWhite (160,160,160) - dim inactive tab fg
-		g_Scheme.tabSelectedTextColor= 0xFFFFFFFF; // White - active tab fg matches PC CS 1.6
-		g_Scheme.tabActiveBgColor    = 0xE65D664D; // NOTE: not used by DrawTabs (reads frameBgColor), kept for API compatibility
-		g_Scheme.tabInactiveBgColor  = 0xE6373E2B; // (55,62,43) - clearly darker than frame
+		g_Scheme.tabTextColor        = 0xFF909090; // dim inactive tab text
+		g_Scheme.tabSelectedTextColor= 0xFFE8E0A0; // warm yellow-white active tab (GoldSrc look)
+		g_Scheme.tabActiveBgColor    = 0xE6646E50; // same as frame
+		g_Scheme.tabInactiveBgColor  = 0xE6404830; // clearly darker inactive
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
-		g_Scheme.menuBgColor         = 0xE65F684F; // 95,104,79,230
+		g_Scheme.menuBgColor         = 0xE6646E50;
 		g_Scheme.menuArmedTextColor  = 0xFFFFFFFF;
-		g_Scheme.menuArmedBgColor    = 0xFF5A5A32; // 90,90,50,255
+		g_Scheme.menuArmedBgColor    = 0xFF5A5A32;
 
-		g_Scheme.bgColor             = 0xE65F684F; // 95,104,79,230
+		g_Scheme.bgColor             = 0xE6646E50;
 		g_Scheme.fgColor             = 0xFFFFFFFF;
-		g_Scheme.windowBgColor       = 0xE62D3223; // 45,50,35,230
+		g_Scheme.windowBgColor       = 0xE6303828;
 		g_Scheme.windowFgColor       = 0xFFFFFFFF;
 
 		// Also update legacy mainui globals

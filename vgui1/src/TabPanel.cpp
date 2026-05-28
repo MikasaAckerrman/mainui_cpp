@@ -13,14 +13,14 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 namespace vgui
 {
 
-// CS 1.6 PC tab metrics. Scaled at runtime via VS().
-static const int TAB_HEIGHT_BASE   = 24;
-static const int TAB_TEXT_HEIGHT_B = 12;
-static const int TAB_TEXT_PAD_LEFT_B  = 8;   // text begins ~8px from tab's left edge (PC look)
-static const int TAB_TEXT_PAD_RIGHT_B = 14;  // more space on the right -> text appears left-aligned
-static const int TAB_GAP           = 0;
+// GoldSrc CS 1.6 tab metrics (pixel-perfect @ 640x480, scaled via VS).
+static const int TAB_HEIGHT_BASE      = 20;  // active tab height
+static const int TAB_INACTIVE_SHRINK  = 2;   // inactive tabs 2px shorter at top
+static const int TAB_TEXT_HEIGHT_B    = 11;   // text glyph height (pixel font look)
+static const int TAB_TEXT_PAD_LEFT_B  = 6;    // left padding (GoldSrc: text slightly left-shifted)
+static const int TAB_TEXT_PAD_RIGHT_B = 12;   // right padding (asymmetric = left-aligned appearance)
+static const int TAB_OVERLAP          = 1;    // overlapping borders between adjacent tabs
 
-// Compute width of tab i based on text length (using mainui FontManager).
 static int ComputeTabWidth( const char *text )
 {
 	HFont font = uiStatic.hDefaultFont;
@@ -35,18 +35,14 @@ static int ComputeTabWidth( const char *text )
 TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
 	_selectedTab = 0;
-	// Visual colors driven by g_Scheme at draw time
 }
 
 TabPanel::~TabPanel()
 {
-	// Free heap-allocated Tab structs (Dar only stores pointers).
-	// Page panels themselves are children -- Panel::~Panel deletes them.
 	for (int i = 0; i < _tabDar.getCount(); i++)
 	{
 		Tab* t = _tabDar[i];
-		if (t)
-			delete t;
+		if (t) delete t;
 	}
 	_tabDar.removeAll();
 }
@@ -112,21 +108,19 @@ void TabPanel::performLayout()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Page panels live below the tab strip, filling remaining space.
-	// +1 in y so the active tab's "merge" overlap (1px into page area)
-	// doesn't get over-drawn by the page's etched-border top edge.
+	// Pages start below tab strip + 1px merge zone
+	int pageY = VS(TAB_HEIGHT_BASE) + 2;
 	for (int i = 0; i < _tabDar.getCount(); i++)
 	{
 		Tab* tab = _tabDar[i];
 		if (tab && tab->panel)
-			tab->panel->setBounds(0, VS(TAB_HEIGHT_BASE) + 1, wide, tall - VS(TAB_HEIGHT_BASE) - 1);
+			tab->panel->setBounds(0, pageY, wide, tall - pageY);
 	}
 }
 
 void TabPanel::paintBackground()
 {
-	// Background is drawn by the parent dialog (frameBgColor); TabPanel itself
-	// is transparent. Drawing nothing avoids a visible seam under the tabs.
+	// Transparent - parent dialog draws the background
 }
 
 void TabPanel::paint()
@@ -138,14 +132,17 @@ void TabPanel::paint()
 	if (tabCount <= 0)
 		return;
 
-	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xE65F684E;
-	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE64E5643;
-	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFFDCDCDC;
-	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFBFB85E;
-	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xC85F6558;
+	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xE6646E50;
+	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6404830;
+	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFF909090;
+	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFE8E0A0;
+	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xC87A8070;
 	unsigned int dark        = g_Scheme.borderDark         ? g_Scheme.borderDark         : 0xC8282C24;
 
-	// Track the active tab's x range so we can draw the strip-bottom line around it
+	int tabH   = VS(TAB_HEIGHT_BASE);
+	int shrink = VS(TAB_INACTIVE_SHRINK);
+
+	// Track active tab x-range for the bottom separator gap
 	int activeX = 0, activeW = 0;
 
 	int x = 0;
@@ -154,64 +151,88 @@ void TabPanel::paint()
 		Tab* tab = _tabDar[i];
 		if (!tab) continue;
 
-		int width = ComputeTabWidth(tab->text);
+		int w = ComputeTabWidth(tab->text);
 		bool selected = (i == _selectedTab);
 
 		if (selected)
 		{
 			activeX = x;
-			activeW = width;
+			activeW = w;
 
-			// Active tab: same olive as panel below, taller by 1px so it
-			// "merges" into the panel with no horizontal seam underneath.
+			// Active tab: full height, merges into page area below (+2px overlap)
 			schemeBgColor(this, frameBg);
-			drawFilledRect(x + 1, 0, x + width - 1, VS(TAB_HEIGHT_BASE) + 1);
+			drawFilledRect(x + 2, 0, x + w - 2, tabH + 2);
 
-			// Top + left bright edge
+			// Double-bevel on active tab:
+			// Outer bright top + left
 			schemeBgColor(this, bright);
-			drawFilledRect(x, 0, x + width, 1);
-			drawFilledRect(x, 0, x + 1, VS(TAB_HEIGHT_BASE) + 1);
+			drawFilledRect(x, 0, x + w - 1, 1);      // top
+			drawFilledRect(x, 0, x + 1, tabH + 2);   // left
 
-			// Right dark edge
+			// Inner highlight (1px inset from outer)
+			schemeBgColor(this, 0xC8909880);
+			drawFilledRect(x + 1, 1, x + w - 2, 2);  // inner top
+			drawFilledRect(x + 1, 1, x + 2, tabH + 1); // inner left
+
+			// Outer dark right edge
 			schemeBgColor(this, dark);
-			drawFilledRect(x + width - 1, 0, x + width, VS(TAB_HEIGHT_BASE) + 1);
+			drawFilledRect(x + w - 1, 0, x + w, tabH + 2);
+
+			// Inner shadow right
+			schemeBgColor(this, 0xC83A3E30);
+			drawFilledRect(x + w - 2, 1, x + w - 1, tabH + 1);
 		}
 		else
 		{
-			// Inactive tab: 2px shorter at the top, all 4 bevels + bottom edge
-			int yTop = 2;
+			// Inactive tab: shorter by 'shrink' at top
+			int yTop = shrink;
 
 			schemeBgColor(this, inactiveBg);
-			drawFilledRect(x + 1, yTop, x + width - 1, VS(TAB_HEIGHT_BASE) - 1);
+			drawFilledRect(x + 2, yTop + 1, x + w - 2, tabH - 1);
 
+			// Outer bevel
 			schemeBgColor(this, bright);
-			drawFilledRect(x, yTop, x + width, yTop + 1);
-			drawFilledRect(x, yTop, x + 1, VS(TAB_HEIGHT_BASE) - 1);
+			drawFilledRect(x, yTop, x + w - 1, yTop + 1);  // top
+			drawFilledRect(x, yTop, x + 1, tabH - 1);      // left
 
 			schemeBgColor(this, dark);
-			drawFilledRect(x + width - 1, yTop, x + width, VS(TAB_HEIGHT_BASE) - 1);
-			drawFilledRect(x, VS(TAB_HEIGHT_BASE) - 1, x + width, VS(TAB_HEIGHT_BASE));
+			drawFilledRect(x + w - 1, yTop, x + w, tabH);  // right
+			drawFilledRect(x, tabH - 1, x + w, tabH);      // bottom
+
+			// Inner bevel (subtle)
+			schemeBgColor(this, 0xC8686E58);
+			drawFilledRect(x + 1, yTop + 1, x + w - 1, yTop + 2); // inner top highlight
 		}
 
-		// Tab label - left-aligned with PC-style asymmetric padding
+		// Tab label text - left-aligned, shifted 1px up from center for GoldSrc look
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
-			int textY = (VS(TAB_HEIGHT_BASE) - VS(TAB_TEXT_HEIGHT_B)) / 2;
-			drawPrintText(x + VS(TAB_TEXT_PAD_LEFT_B), textY, tab->text, textLen);
+			int textY = (tabH - VS(TAB_TEXT_HEIGHT_B)) / 2 - 1;
+			if (!selected) textY += shrink / 2;
+			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
+			drawPrintText(textX, textY, tab->text, textLen);
 		}
 
-		x += width + TAB_GAP;
+		x += w - VS(TAB_OVERLAP); // overlapping borders
 	}
 
-	// Strip-bottom dark line everywhere except under the active tab
+	// Separator line below tab strip (everywhere except under active tab)
+	// Double line: dark + bright (GoldSrc separation look)
 	schemeBgColor(this, dark);
 	if (activeX > 0)
-		drawFilledRect(0, VS(TAB_HEIGHT_BASE), activeX, VS(TAB_HEIGHT_BASE) + 1);
+		drawFilledRect(0, tabH, activeX + 1, tabH + 1);
 	if (activeX + activeW < wide)
-		drawFilledRect(activeX + activeW, VS(TAB_HEIGHT_BASE), wide, VS(TAB_HEIGHT_BASE) + 1);
+		drawFilledRect(activeX + activeW - 1, tabH, wide, tabH + 1);
+
+	// Bright line just below dark line
+	schemeBgColor(this, bright);
+	if (activeX > 0)
+		drawFilledRect(0, tabH + 1, activeX + 1, tabH + 2);
+	if (activeX + activeW < wide)
+		drawFilledRect(activeX + activeW - 1, tabH + 1, wide, tabH + 2);
 }
 
 void TabPanel::internalMousePressed(MouseCode code)
@@ -239,7 +260,7 @@ void TabPanel::internalMousePressed(MouseCode code)
 						setSelectedTab(i);
 						break;
 					}
-					x += w + TAB_GAP;
+					x += w - VS(TAB_OVERLAP);
 				}
 			}
 		}
