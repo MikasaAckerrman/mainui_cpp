@@ -6,6 +6,7 @@
 // `null` as a macro which clashes with parameter names in mainui headers.
 #include "BaseMenu.h"
 #include "FontManager.h"
+#include "utflib.h"          // Q_DecodeUTF8 - turn raw UTF-8 bytes into Unicode code points
 
 #include <VGUI_SurfaceBase.h>
 #include <VGUI_Panel.h>
@@ -234,10 +235,24 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 	int x = _textPos[0];
 	int y = _textPos[1];
 
+	// Decode UTF-8 byte stream into Unicode code points before glyph lookup.
+	// Without this, each byte of a multibyte sequence (e.g. Cyrillic 'Н' =
+	// D0 9D) is drawn as a separate Latin-1 glyph, producing the mojibake
+	// 'Ð', 'Ñ' garbage seen previously. Q_DecodeUTF8 returns 0 while still
+	// accumulating a multibyte sequence and the full code point on the last
+	// byte; we only invoke DrawCharacter when a full code point arrives.
+	utfstate_t utf;
+	utf.uc = 0;
+	utf.len = 0;
+	utf.k = 0;
+
 	for (int i = 0; i < textLen && text[i]; i++)
 	{
-		unsigned char ch = (unsigned char)text[i];
-		// Simple clip: skip glyphs entirely outside the current clip rect
+		uint32_t ch = Q_DecodeUTF8(&utf, (unsigned char)text[i]);
+		if (ch == 0)
+			continue; // mid-sequence; need more bytes
+
+		// Simple clip: stop drawing once we run off the right edge or below
 		if (x >= _clipRect[2] || y + charH < _clipRect[1] || y > _clipRect[3])
 			break;
 
