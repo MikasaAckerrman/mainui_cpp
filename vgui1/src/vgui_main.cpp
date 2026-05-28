@@ -78,6 +78,13 @@ typedef struct vguiapi_s
 // Global engine API pointer
 vguiapi_t *g_api = 0;
 
+// Cvar bridge function pointers
+static float (*g_pfnGetCvarFloat)(const char* name) = 0;
+static void (*g_pfnSetCvarFloat)(const char* name, float value) = 0;
+static const char* (*g_pfnGetCvarString)(const char* name) = 0;
+static void (*g_pfnSetCvarString)(const char* name, const char* value) = 0;
+static void (*g_pfnClientCmd)(const char* cmd) = 0;
+
 // VGUI state
 static vgui::App *s_app = 0;
 static vgui::Panel *s_rootPanel = 0;
@@ -239,6 +246,53 @@ static void VGUI_TextInput(const char *text)
 }
 
 // ====================================================================
+// Cvar bridge accessors
+// ====================================================================
+
+namespace vgui
+{
+
+float VGUI_GetCvarFloat(const char* name)
+{
+	if (g_pfnGetCvarFloat)
+		return g_pfnGetCvarFloat(name);
+	return 0.0f;
+}
+
+void VGUI_SetCvarFloat(const char* name, float value)
+{
+	if (g_pfnSetCvarFloat)
+		g_pfnSetCvarFloat(name, value);
+}
+
+const char* VGUI_GetCvarString(const char* name)
+{
+	if (g_pfnGetCvarString)
+		return g_pfnGetCvarString(name);
+	return "";
+}
+
+void VGUI_SetCvarString(const char* name, const char* value)
+{
+	if (g_pfnSetCvarString)
+		g_pfnSetCvarString(name, value);
+}
+
+void VGUI_ClientCmd(const char* cmd)
+{
+	if (g_pfnClientCmd)
+		g_pfnClientCmd(cmd);
+}
+
+void VGUI_GetScreenSize(int* w, int* h)
+{
+	if (w) *w = s_screenWidth;
+	if (h) *h = s_screenHeight;
+}
+
+}
+
+// ====================================================================
 // Export: called by engine to initialize vgui_support
 // ====================================================================
 extern "C"
@@ -249,6 +303,20 @@ extern "C"
 #else
 #define EXPORT __attribute__((visibility("default")))
 #endif
+
+EXPORT void VGUI_SetCvarFuncs(
+	float (*pfnGetCvarFloat)(const char*),
+	void (*pfnSetCvarFloat)(const char*, float),
+	const char* (*pfnGetCvarString)(const char*),
+	void (*pfnSetCvarString)(const char*, const char*),
+	void (*pfnClientCmd)(const char*))
+{
+	g_pfnGetCvarFloat = pfnGetCvarFloat;
+	g_pfnSetCvarFloat = pfnSetCvarFloat;
+	g_pfnGetCvarString = pfnGetCvarString;
+	g_pfnSetCvarString = pfnSetCvarString;
+	g_pfnClientCmd = pfnClientCmd;
+}
 
 EXPORT void InitAPI(vguiapi_t *api)
 {
