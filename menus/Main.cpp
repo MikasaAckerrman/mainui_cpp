@@ -38,6 +38,15 @@ extern void WndCreateGame_Show( void );
 
 // VGUI1 Options dialog - loaded from libvgui_support.so
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+// Wrapper for ClientCmd to match VGUI1 bridge signature (single arg)
+static void UI_VguiClientCmd( const char *cmd )
+{
+	EngFuncs::ClientCmd( false, cmd );
+}
+
 static void UI_ShowVguiOptions( void )
 {
 	static void *s_vguiLib = NULL;
@@ -46,10 +55,44 @@ static void UI_ShowVguiOptions( void )
 	if( !s_pfnShowOptions )
 	{
 		if( !s_vguiLib )
-			s_vguiLib = dlopen( "libvgui_support.so", RTLD_NOW );
+		{
+			// On Android, libs are in XASH3D_GAMELIBDIR (nativeLibraryDir)
+			const char *libdir = getenv( "XASH3D_GAMELIBDIR" );
+			if( libdir && libdir[0] )
+			{
+				char fullpath[512];
+				snprintf( fullpath, sizeof( fullpath ), "%s/libvgui_support.so", libdir );
+				s_vguiLib = dlopen( fullpath, RTLD_NOW );
+			}
+
+			// Fallback: try without path
+			if( !s_vguiLib )
+				s_vguiLib = dlopen( "libvgui_support.so", RTLD_NOW );
+		}
 
 		if( s_vguiLib )
+		{
 			s_pfnShowOptions = (void(*)())dlsym( s_vguiLib, "VGUI_ShowOptions" );
+
+			// Set up cvar bridge
+			typedef void (*SetCvarFuncsType)(
+				float(*)(const char*),
+				void(*)(const char*, float),
+				const char*(*)(const char*),
+				void(*)(const char*, const char*),
+				void(*)(const char*) );
+			SetCvarFuncsType SetCvarFuncs = (SetCvarFuncsType)dlsym( s_vguiLib, "VGUI_SetCvarFuncs" );
+			if( SetCvarFuncs )
+			{
+				SetCvarFuncs(
+					EngFuncs::engfuncs.pfnGetCvarFloat,
+					EngFuncs::engfuncs.pfnCvarSetValue,
+					EngFuncs::engfuncs.pfnGetCvarString,
+					EngFuncs::engfuncs.pfnCvarSetString,
+					UI_VguiClientCmd
+				);
+			}
+		}
 	}
 
 	if( s_pfnShowOptions )
