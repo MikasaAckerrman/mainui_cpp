@@ -40,3 +40,5 @@ nonfree_translations
 .vs
 x64/
 x86/
+vgui1/.build/
+.agents/
