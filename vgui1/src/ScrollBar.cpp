@@ -21,7 +21,6 @@ ScrollBar::ScrollBar(int x, int y, int wide, int tall, bool vertical) : Panel(x,
 	else
 		_slider = new Slider(btnSize, 0, wide - btnSize * 2, tall, false);
 
-	_slider->setParent(this);
 	addChild(_slider);
 }
 
@@ -82,10 +81,7 @@ void ScrollBar::setButton(Button* button, int index)
 	{
 		_button[index] = button;
 		if (button)
-		{
-			button->setParent(this);
 			addChild(button);
-		}
 	}
 }
 
@@ -100,10 +96,7 @@ void ScrollBar::setSlider(Slider* slider)
 {
 	_slider = slider;
 	if (_slider)
-	{
-		_slider->setParent(this);
 		addChild(_slider);
-	}
 }
 
 Slider* ScrollBar::getSlider()

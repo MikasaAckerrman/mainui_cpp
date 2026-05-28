@@ -9,15 +9,12 @@ ScrollPanel::ScrollPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, t
 	int sbSize = 16;
 
 	_client = new Panel(0, 0, wide - sbSize, tall - sbSize);
-	_client->setParent(this);
 	addChild(_client);
 
 	_verticalScrollBar = new ScrollBar(wide - sbSize, 0, sbSize, tall - sbSize, true);
-	_verticalScrollBar->setParent(this);
 	addChild(_verticalScrollBar);
 
 	_horizontalScrollBar = new ScrollBar(0, tall - sbSize, wide - sbSize, sbSize, false);
-	_horizontalScrollBar->setParent(this);
 	addChild(_horizontalScrollBar);
 
 	_autoVisible[0] = true;
