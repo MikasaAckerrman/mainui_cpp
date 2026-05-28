@@ -24,6 +24,7 @@ public:
 	virtual Panel* getClient();
 	virtual void setInternal(bool state);
 	virtual void setSmallCaption(bool state);
+	virtual void setSize(int wide, int tall); // override - relayout child panels
 protected:
 	virtual void paintBackground();
 	virtual void paint();

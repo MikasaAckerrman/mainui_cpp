@@ -68,21 +68,15 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	int posY = (screenH - dialogH) / 2;
 
 	setPos(posX, posY);
-	setSize(dialogW, dialogH);
+	setSize(dialogW, dialogH);  // Frame::setSize relayouts client/caption/closeBtn
 	setTitle("Options");
 	setVisible(false);
 
 	_tabPanel = null;
 
-	// Recalculate client area after setSize (Frame creates client based on initial size)
 	Panel* client = getClient();
 	if (!client)
 		return;
-
-	// Update client size to match new dialog dimensions
-	int border = 3;
-	int captionH = 20;
-	client->setBounds(border, captionH + border, dialogW - border * 2, dialogH - captionH - border * 2);
 
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
