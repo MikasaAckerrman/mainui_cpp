@@ -1,5 +1,6 @@
 // Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+extern void UI_EnableTextInput( bool enable );  // mainui bridge -> EngFuncs::EnableTextInput
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
@@ -50,7 +51,19 @@ void TextEntry::setText(const char* text, int textLen)
 		_textLen = copyLen;
 	}
 	_cursorPos = _textLen;
+	_scrollOffset = 0;     // reset horizontal scroll so old offset doesn't bleed across opens
+	_selectStart = -1;
+	_selectEnd = -1;
 	repaint();
+}
+
+// Override: when this entry gains keyboard focus, ask the engine to bring up
+// the Android soft keyboard. When focus is lost, hide it. Without this the
+// IME never appears on touch-only devices.
+void TextEntry::internalFocusChanged(bool lost)
+{
+	UI_EnableTextInput(!lost);
+	Panel::internalFocusChanged(lost);
 }
 
 void TextEntry::getText(int offset, char* buf, int bufLen)
