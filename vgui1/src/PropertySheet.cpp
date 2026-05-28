@@ -18,14 +18,11 @@ void PropertySheet::addPage(Panel* page, const char* title)
 
 void PropertySheet::setActivePage(Panel* page)
 {
-	if (!_tabPanel)
+	if (!_tabPanel || !page)
 		return;
 
 	for (int i = 0; i < _tabPanel->getTabCount(); i++)
 	{
-		if (_tabPanel->getSelectedPanel() == page)
-			return;
-		// Find the page
 		_tabPanel->setSelectedTab(i);
 		if (_tabPanel->getSelectedPanel() == page)
 			return;
