@@ -258,7 +258,27 @@ void Frame::internalCursorMoved(int x, int y)
 	{
 		int dx = x - _dragOrgCursor[0];
 		int dy = y - _dragOrgCursor[1];
-		setPos(_dragOrgPos[0] + dx, _dragOrgPos[1] + dy);
+		int newX = _dragOrgPos[0] + dx;
+		int newY = _dragOrgPos[1] + dy;
+
+		// Clamp so the title bar stays grabbable: never let the dialog leave
+		// the screen entirely. Allows partial off-screen on left/right/bottom
+		// for monitor-edge use, but keeps the caption row visible at top.
+		int wide, tall;
+		getSize(wide, tall);
+		Panel* p = getParent();
+		int rootW = 0, rootH = 0;
+		if (p) p->getSize(rootW, rootH);
+		if (rootW > 0 && rootH > 0)
+		{
+			int margin = 24; // keep at least this many px of caption visible
+			if (newX < -wide + margin) newX = -wide + margin;
+			if (newX > rootW - margin) newX = rootW - margin;
+			if (newY < 0) newY = 0;                    // never above top
+			if (newY > rootH - margin) newY = rootH - margin;
+		}
+
+		setPos(newX, newY);
 	}
 	else if (_resizing && _sizeable)
 	{
