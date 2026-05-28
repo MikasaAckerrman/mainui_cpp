@@ -347,19 +347,25 @@ extern "C"
 #define OPTDLG_EXPORT __attribute__((visibility("default")))
 #endif
 
+// Forward: ensure VGUI1 core is initialized (defined in vgui_main.cpp)
+extern "C" void VGUI_EnsureInitialized(int screenW, int screenH);
+
 OPTDLG_EXPORT void VGUI_ShowOptions(void)
 {
+	// Get screen size from caller or use defaults
+	int sw = 0, sh = 0;
+	vgui::VGUI_GetScreenSize(&sw, &sh);
+
+	VGUI_EnsureInitialized(sw, sh);
+
 	vgui::Panel* root = vgui::VGUI_GetRootPanel();
 	if (!root)
 		return;
 
 	if (!vgui::g_pOptionsDialog)
 	{
-		int sw = 0, sh = 0;
-		vgui::VGUI_GetScreenSize(&sw, &sh);
 		if (sw <= 0) sw = 640;
 		if (sh <= 0) sh = 480;
-
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
 		root->addChild(vgui::g_pOptionsDialog);
 	}
