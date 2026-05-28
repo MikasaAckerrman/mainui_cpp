@@ -1185,11 +1185,10 @@ void UI_Init( void )
 		if( entry->m_szCommand && entry->m_pfnShow )
 		{
 			EngFuncs::Cmd_AddCommand( entry->m_szCommand, entry->m_pfnShow );
-			Con_Printf( "Slayer: registered menu cmd \"%s\"\n", entry->m_szCommand );
 			cmdCount++;
 		}
 	}
-	Con_Printf( "Slayer: total menu commands registered: %d\n", cmdCount );
+	(void)cmdCount;
 
 	g_FontMgr = new CFontManager();
 

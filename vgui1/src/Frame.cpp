@@ -141,6 +141,26 @@ void Frame::setSmallCaption(bool state)
 		_captionBar->setBounds(border, border, wide - border * 2, captionH);
 }
 
+void Frame::setSize(int wide, int tall)
+{
+	Panel::setSize(wide, tall);
+
+	// Reposition/resize internal child panels for the new dialog size
+	int captionH = _smallCaption ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
+	int border = FRAME_BORDER;
+
+	if (_client)
+		_client->setBounds(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
+	if (_captionBar)
+		_captionBar->setBounds(border, border, wide - border * 2, captionH);
+	if (_closeButton)
+	{
+		int btnSize = FRAME_BUTTON_SIZE;
+		_closeButton->setBounds(wide - border - btnSize - FRAME_BUTTON_INSET,
+			border + FRAME_BUTTON_INSET, btnSize, btnSize);
+	}
+}
+
 void Frame::paintBackground()
 {
 	int wide, tall;

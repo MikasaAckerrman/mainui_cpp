@@ -150,6 +150,11 @@ void CEngineSurface::drawSetColor(int r, int g, int b, int a)
 
 void CEngineSurface::drawFilledRect(int x0, int y0, int x1, int y1)
 {
+	// VGUI1 uses INVERTED alpha: 0 = opaque, 255 = fully transparent.
+	// Skip drawing if fully transparent in VGUI's convention.
+	if (_drawColor[3] >= 255)
+		return;
+
 	// Apply translation
 	x0 += _translateX;
 	y0 += _translateY;
@@ -164,12 +169,17 @@ void CEngineSurface::drawFilledRect(int x0, int y0, int x1, int y1)
 	if (x0 >= x1 || y0 >= y1)
 		return;
 
+	// Convert VGUI inverted alpha to engine standard alpha (255 = opaque)
+	int engineAlpha = 255 - _drawColor[3];
 	EngFuncs::FillRGBA(x0, y0, x1 - x0, y1 - y0,
-		_drawColor[0], _drawColor[1], _drawColor[2], _drawColor[3]);
+		_drawColor[0], _drawColor[1], _drawColor[2], engineAlpha);
 }
 
 void CEngineSurface::drawOutlinedRect(int x0, int y0, int x1, int y1)
 {
+	if (_drawColor[3] >= 255)
+		return;
+
 	drawFilledRect(x0, y0, x1, y0 + 1);       // top
 	drawFilledRect(x0, y1 - 1, x1, y1);       // bottom
 	drawFilledRect(x0, y0 + 1, x0 + 1, y1 - 1); // left
@@ -200,36 +210,31 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 	if (!text || textLen <= 0)
 		return;
 
+	// VGUI1 inverted alpha: skip if fully transparent
+	if (_textColor[3] >= 255)
+		return;
+
+	// Build a null-terminated copy for the engine API
+	char buf[512];
+	int copyLen = textLen;
+	if (copyLen >= (int)sizeof(buf))
+		copyLen = (int)sizeof(buf) - 1;
+	memcpy(buf, text, copyLen);
+	buf[copyLen] = 0;
+
 	int x = _textPos[0];
 	int y = _textPos[1];
-	int charH = (_currentFont && _currentFont->getTall() > 0) ? _currentFont->getTall() : 14;
-	unsigned int color = PackRGBA_local(_textColor[0], _textColor[1], _textColor[2], _textColor[3]);
 
-	for (int i = 0; i < textLen && text[i]; i++)
-	{
-		int a, b, c;
-		if (_currentFont)
-			_currentFont->getCharABCwide((unsigned char)text[i], a, b, c);
-		else
-		{
-			a = 0; b = 8; c = 0;
-		}
+	// Convert VGUI inverted alpha to engine standard alpha (255 = opaque).
+	// Use mainui's font manager via DrawConsoleString instead of the raw
+	// pfnDrawCharacter, because pfnDrawCharacter requires a valid HIMAGE
+	// font texture (hFont=0 renders nothing on Android).
+	int engineAlpha = 255 - _textColor[3];
+	EngFuncs::DrawSetTextColor(_textColor[0], _textColor[1], _textColor[2], engineAlpha);
+	int endX = EngFuncs::DrawConsoleString(x, y, buf);
 
-		int charW = a + b + c;
-		if (charW <= 0) charW = 8;
-
-		x += a; // leading space
-
-		if (x >= _clipRect[0] && x + b <= _clipRect[2] &&
-			y >= _clipRect[1] && y + charH <= _clipRect[3])
-		{
-			EngFuncs::DrawCharacter(x, y, b, charH, (unsigned char)text[i], color, 0);
-		}
-
-		x += b + c; // char body + trailing space
-	}
-
-	_textPos[0] = x;
+	// Advance the text cursor (engine returns absolute end-X in screen coords)
+	_textPos[0] = endX;
 }
 
 void CEngineSurface::drawSetTextureRGBA(int id, const char* rgba, int wide, int tall)
