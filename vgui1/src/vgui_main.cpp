@@ -187,12 +187,8 @@ static void *VGUI_GetPanel(void)
 
 static void VGUI_Paint(void)
 {
-	if (!s_rootPanel || !s_app)
-		return;
-
-	s_app->externalTick();
-	s_rootPanel->solveTraverse();
-	s_rootPanel->paintTraverse();
+	// No-op: painting is now handled by VGUI_PaintAll called from BaseMenu.cpp.
+	// This avoids double-traversal if the engine ever calls Paint via InitAPI.
 }
 
 void VGUI_Mouse(enum VGUI_MouseAction action, int code)
@@ -390,6 +386,21 @@ extern "C"
 #endif
 #endif
 
+EXPORT int VGUI_IsVisible(void)
+{
+	if (!s_rootPanel)
+		return 0;
+
+	int count = s_rootPanel->getChildCount();
+	for (int i = 0; i < count; i++)
+	{
+		vgui::Panel* child = s_rootPanel->getChild(i);
+		if (child && child->isVisible())
+			return 1;
+	}
+	return 0;
+}
+
 EXPORT void VGUI_PaintAll(void)
 {
 	if (!s_rootPanel || !s_app)
@@ -422,14 +433,6 @@ EXPORT void VGUI_ForwardMouseMove(int x, int y)
 // ====================================================================
 extern "C"
 {
-
-#ifndef EXPORT
-#ifdef _WIN32
-#define EXPORT __declspec(dllexport)
-#else
-#define EXPORT __attribute__((visibility("default")))
-#endif
-#endif
 
 EXPORT void VGUI_SetCvarFuncs(
 	float (*pfnGetCvarFloat)(const char*),
