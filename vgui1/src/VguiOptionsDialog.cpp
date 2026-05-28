@@ -335,15 +335,24 @@ protected:
 	}
 };
 
-// TextEntry that renders '*' for every character. Inherits all editing,
-// cursor, focus, IME and dirty-signal logic from CvarTextEntry; only the
-// visual paint is replaced. Cursor metric is approximate (8px monospace)
-// because the real cursor X is computed from private members of TextEntry.
+// TextEntry that masks input with '*' by default. Right edge has a clickable
+// eye-icon (gfx/vgui2/eye_lock.tga / eye_unlock.tga) that toggles between
+// hidden and visible text -- matches PC CS 1.6 VIP-password field.
+//
+// All editing/focus/IME/dirty logic is inherited from CvarTextEntry; only
+// paint and the eye-area mouse hit-test are overridden. Cursor X is an
+// 8px monospace approximation because TextEntry::_text is private.
 class PasswordTextEntry : public CvarTextEntry
 {
 public:
 	PasswordTextEntry(const char* cvarName, int x, int y, int w, int h)
-		: CvarTextEntry(cvarName, x, y, w, h) {}
+		: CvarTextEntry(cvarName, x, y, w, h), _showText(false) {}
+
+	virtual void reset()
+	{
+		CvarTextEntry::reset();
+		_showText = false; // re-mask each time the dialog reopens
+	}
 protected:
 	virtual void paint()
 	{
@@ -351,29 +360,93 @@ protected:
 		getPaintSize(pwide, ptall);
 
 		int len = getTextLength();
-		if (len == 0 && !hasFocus())
-			return;
-
-		char stars[256];
-		int n = (len < 255) ? len : 255;
-		for (int i = 0; i < n; i++) stars[i] = '*';
-		stars[n] = 0;
-
-		unsigned int textCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
-		schemeFgColor(this, textCol);
-		drawSetTextFont(Scheme::sf_primary1);
-
-		int textX = 4;
-		int textY = 3;
-		drawPrintText(textX, textY, stars, n);
-
-		if (hasFocus())
+		if (len > 0 || hasFocus())
 		{
-			int cursorX = textX + n * 8;
-			schemeBgColor(this, textCol);
-			drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
+			char buf[256];
+			int n;
+			if (_showText)
+			{
+				getText(0, buf, sizeof(buf));
+				n = (int)strlen(buf);
+				if (n > 255) n = 255;
+			}
+			else
+			{
+				n = (len < 255) ? len : 255;
+				for (int i = 0; i < n; i++) buf[i] = '*';
+				buf[n] = 0;
+			}
+
+			unsigned int textCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
+			schemeFgColor(this, textCol);
+			drawSetTextFont(Scheme::sf_primary1);
+
+			int textX = 4;
+			int textY = 3;
+			drawPrintText(textX, textY, buf, n);
+
+			if (hasFocus())
+			{
+				int cursorX = textX + n * 8;
+				schemeBgColor(this, textCol);
+				drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
+			}
+		}
+
+		// Eye-icon toggle on the right edge
+		HIMAGE icon = getEyeIcon();
+		if (icon)
+		{
+			int iconBox = ptall - VS(4);
+			int iconX = pwide - iconBox - VS(2);
+			int iconY = (ptall - iconBox) / 2;
+			int sx = iconX, sy = iconY;
+			localToScreen(sx, sy);
+			EngFuncs::PIC_Set(icon, 255, 255, 255, 255);
+			EngFuncs::PIC_DrawTrans(sx, sy, iconBox, iconBox);
 		}
 	}
+
+	virtual void internalMousePressed(MouseCode code)
+	{
+		// Hit-test eye area BEFORE forwarding to TextEntry so a click on the
+		// eye toggles masking instead of moving the text caret.
+		if (code == MOUSE_LEFT && getEyeIcon())
+		{
+			App* app = App::getInstance();
+			if (app)
+			{
+				int mx, my;
+				app->getCursorPos(mx, my);
+				screenToLocal(mx, my);
+
+				int pwide, ptall;
+				getPaintSize(pwide, ptall);
+				int iconBox = ptall - VS(4);
+				int iconX = pwide - iconBox - VS(2);
+				if (mx >= iconX && mx < pwide && my >= 0 && my < ptall)
+				{
+					_showText = !_showText;
+					repaint();
+					return; // consumed
+				}
+			}
+		}
+		CvarTextEntry::internalMousePressed(code);
+	}
+private:
+	HIMAGE getEyeIcon()
+	{
+		// Two textures cached separately; missing TGAs return 0 and we just
+		// don't render the eye (field still works, just no toggle UI).
+		static HIMAGE s_lock   = (HIMAGE)-1;
+		static HIMAGE s_unlock = (HIMAGE)-1;
+		if (s_lock   == (HIMAGE)-1) s_lock   = EngFuncs::PIC_Load("gfx/vgui2/eye_lock.tga");
+		if (s_unlock == (HIMAGE)-1) s_unlock = EngFuncs::PIC_Load("gfx/vgui2/eye_unlock.tga");
+		return _showText ? s_unlock : s_lock;
+	}
+
+	bool _showText;
 };
 
 // Stub combo-box: button that cycles through a fixed list of options on
@@ -425,18 +498,44 @@ protected:
 		Button::paint();
 		int wide, tall;
 		getSize(wide, tall);
+
+		// Prefer the PC arrow TGA; fall back to a vector chevron if absent.
+		static HIMAGE s_arrowDown = (HIMAGE)-1;
+		if (s_arrowDown == (HIMAGE)-1)
+			s_arrowDown = EngFuncs::PIC_Load("gfx/vgui/640_arrowdown.tga");
+
 		unsigned int col = isEnabled()
 			? (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFFFFFFF)
 			: (g_Scheme.labelDimColor   ? g_Scheme.labelDimColor   : 0xFFA0A0A0);
-		schemeBgColor(this, col);
-		// 5x3 px filled triangle pointing down, right-aligned with 6px margin
-		int cx = wide - VS(8);
-		int cy = tall / 2 - VS(1);
-		int t  = VS(1) > 0 ? VS(1) : 1;
-		drawFilledRect(cx - VS(4), cy,           cx + VS(4), cy + t);
-		drawFilledRect(cx - VS(3), cy + t,       cx + VS(3), cy + 2*t);
-		drawFilledRect(cx - VS(2), cy + 2*t,     cx + VS(2), cy + 3*t);
-		drawFilledRect(cx - VS(1), cy + 3*t,     cx + VS(1), cy + 4*t);
+
+		if (s_arrowDown)
+		{
+			int iconH = tall - VS(8);
+			if (iconH < VS(8)) iconH = VS(8);
+			int iconW = iconH;
+			int iconX = wide - iconW - VS(6);
+			int iconY = (tall - iconH) / 2;
+			int sx = iconX, sy = iconY;
+			localToScreen(sx, sy);
+			int r = (col >> 16) & 0xFF;
+			int g = (col >> 8) & 0xFF;
+			int b = col & 0xFF;
+			int a = (col >> 24) & 0xFF;
+			EngFuncs::PIC_Set(s_arrowDown, r, g, b, a);
+			EngFuncs::PIC_DrawTrans(sx, sy, iconW, iconH);
+		}
+		else
+		{
+			// Vector fallback: 4-row pixel triangle pointing down
+			schemeBgColor(this, col);
+			int cx = wide - VS(8);
+			int cy = tall / 2 - VS(1);
+			int t  = VS(1) > 0 ? VS(1) : 1;
+			drawFilledRect(cx - VS(4), cy,           cx + VS(4), cy + t);
+			drawFilledRect(cx - VS(3), cy + t,       cx + VS(3), cy + 2*t);
+			drawFilledRect(cx - VS(2), cy + 2*t,     cx + VS(2), cy + 3*t);
+			drawFilledRect(cx - VS(1), cy + 3*t,     cx + VS(1), cy + 4*t);
+		}
 	}
 private:
 	void refreshLabel()
