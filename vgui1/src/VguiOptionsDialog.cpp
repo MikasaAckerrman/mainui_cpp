@@ -16,6 +16,7 @@
 #include <VGUI_CvarSlider.h>
 #include <VGUI_CvarTextEntry.h>
 #include <VGUI_App.h>
+#include <VGUI_EtchedBorder.h>
 #include <VGUI_UIScale.h>
 #include <string.h>
 
@@ -135,6 +136,19 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	Panel* hudPage     = new Panel(0, 0, clientW, pageH);
 	Panel* accountPage = new Panel(0, 0, clientW, pageH);
 	Panel* systemPage  = new Panel(0, 0, clientW, pageH);
+
+	// "Sticker" effect: 2px etched groove around each page area, drawn after
+	// children so it sits on top of the content perimeter. One static border
+	// instance reused by all 8 pages -- it is stateless.
+	static EtchedBorder s_pageBorder;
+	mpPage     ->setBorder(&s_pageBorder);
+	kbPage     ->setBorder(&s_pageBorder);
+	mousePage  ->setBorder(&s_pageBorder);
+	audioPage  ->setBorder(&s_pageBorder);
+	videoPage  ->setBorder(&s_pageBorder);
+	hudPage    ->setBorder(&s_pageBorder);
+	accountPage->setBorder(&s_pageBorder);
+	systemPage ->setBorder(&s_pageBorder);
 
 	_tabPanel->addTab("\xD0\x9C\xD1\x83\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB8\xD0\xBF\xD0\xBB\xD0\xB5\xD0\xB5\xD1\x80",   mpPage);      // Мультиплеер
 	_tabPanel->addTab("\xD0\x9A\xD0\xBB\xD0\xB0\xD0\xB2\xD0\xB8\xD0\xB0\xD1\x82\xD1\x83\xD1\x80\xD0\xB0",          kbPage);      // Клавиатура

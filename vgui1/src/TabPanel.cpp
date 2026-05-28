@@ -111,12 +111,14 @@ void TabPanel::performLayout()
 	int wide, tall;
 	getSize(wide, tall);
 
-	// Page panels live below the tab strip, filling remaining space
+	// Page panels live below the tab strip, filling remaining space.
+	// +1 in y so the active tab's "merge" overlap (1px into page area)
+	// doesn't get over-drawn by the page's etched-border top edge.
 	for (int i = 0; i < _tabDar.getCount(); i++)
 	{
 		Tab* tab = _tabDar[i];
 		if (tab && tab->panel)
-			tab->panel->setBounds(0, VS(TAB_HEIGHT_BASE), wide, tall - VS(TAB_HEIGHT_BASE));
+			tab->panel->setBounds(0, VS(TAB_HEIGHT_BASE) + 1, wide, tall - VS(TAB_HEIGHT_BASE) - 1);
 	}
 }
 
