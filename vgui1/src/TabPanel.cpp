@@ -14,13 +14,16 @@ namespace vgui
 {
 
 // GoldSrc CS 1.6 tab metrics (pixel-perfect @ 640x480, scaled via VS).
-static const int TAB_HEIGHT_BASE      = 24;  // active tab height (GoldSrc: 24px)
-static const int TAB_INACTIVE_SHRINK  = 2;   // inactive tabs 2px shorter at top
-static const int TAB_TEXT_HEIGHT_B    = 13;  // text glyph height (bigger for readability)
-static const int TAB_TEXT_PAD_LEFT_B  = 8;
-static const int TAB_TEXT_PAD_RIGHT_B = 8;
+static const int TAB_HEIGHT_BASE      = 24;
+static const int TAB_INACTIVE_SHRINK  = 2;
+static const int TAB_TEXT_HEIGHT_B    = 12;  // text glyph height
+static const int TAB_TEXT_PAD_LEFT_B  = 6;
+static const int TAB_TEXT_PAD_RIGHT_B = 6;
 static const int TAB_OVERLAP          = 1;
+static const int TAB_MIN_WIDTH        = 40;  // never thinner than this
 
+// Each tab is sized to its text + symmetric padding (GoldSrc behavior).
+// Tabs may overflow the strip on very narrow dialogs; user can resize.
 static int NaturalTabWidth( const char *text )
 {
 	HFont font = uiStatic.hDefaultFont;
@@ -29,7 +32,10 @@ static int NaturalTabWidth( const char *text )
 		textW = g_FontMgr->GetTextWideScaled( font, text, VS(TAB_TEXT_HEIGHT_B) );
 	else if ( text )
 		textW = (int)strlen( text ) * (VS(TAB_TEXT_HEIGHT_B) * 6 / 10);
-	return textW + VS(TAB_TEXT_PAD_LEFT_B) + VS(TAB_TEXT_PAD_RIGHT_B);
+	int w = textW + VS(TAB_TEXT_PAD_LEFT_B) + VS(TAB_TEXT_PAD_RIGHT_B);
+	int minW = VS(TAB_MIN_WIDTH);
+	if (w < minW) w = minW;
+	return w;
 }
 
 TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
@@ -142,19 +148,7 @@ void TabPanel::paint()
 	int tabH   = VS(TAB_HEIGHT_BASE);
 	int shrink = VS(TAB_INACTIVE_SHRINK);
 
-	// Compute uniform tab width: max of natural widths across all tabs.
-	// All tabs render at this width (GoldSrc PC: equal-width tabs).
-	int uniformW = 0;
-	for (int i = 0; i < tabCount; i++)
-	{
-		Tab* t = _tabDar[i];
-		if (!t) continue;
-		int nw = NaturalTabWidth(t->text);
-		if (nw > uniformW) uniformW = nw;
-	}
-	if (uniformW < VS(48)) uniformW = VS(48);
-
-	// Track active tab x-range for the bottom separator gap
+	// Per-tab natural width (text + padding). GoldSrc canonical behavior.
 	int activeX = 0, activeW = 0;
 
 	int x = 0;
@@ -163,7 +157,7 @@ void TabPanel::paint()
 		Tab* tab = _tabDar[i];
 		if (!tab) continue;
 
-		int w = uniformW;
+		int w = NaturalTabWidth(tab->text);
 		bool selected = (i == _selectedTab);
 
 		if (selected)
@@ -264,27 +258,18 @@ void TabPanel::internalMousePressed(MouseCode code)
 			if (my >= 0 && my < VS(TAB_HEIGHT_BASE))
 			{
 				int tabCount = _tabDar.getCount();
-				int uniformW = 0;
-				for (int i = 0; i < tabCount; i++)
-				{
-					Tab* t = _tabDar[i];
-					if (!t) continue;
-					int nw = NaturalTabWidth(t->text);
-					if (nw > uniformW) uniformW = nw;
-				}
-				if (uniformW < VS(48)) uniformW = VS(48);
-
 				int x = 0;
 				for (int i = 0; i < tabCount; i++)
 				{
 					Tab* tab = _tabDar[i];
 					if (!tab) continue;
-					if (mx >= x && mx < x + uniformW)
+					int w = NaturalTabWidth(tab->text);
+					if (mx >= x && mx < x + w)
 					{
 						setSelectedTab(i);
 						break;
 					}
-					x += uniformW - VS(TAB_OVERLAP);
+					x += w - VS(TAB_OVERLAP);
 				}
 			}
 		}
