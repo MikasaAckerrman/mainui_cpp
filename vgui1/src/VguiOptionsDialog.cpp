@@ -78,6 +78,10 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	: Frame(0, 0, VS(480), VS(380))
 {
 	VLOG("VguiOptionsDialog ctor: screenW=%d screenH=%d scale=%.2f", screenW, screenH, vgui::g_vguiScale);
+	// CRITICAL: zero ALL pointers BEFORE the virtual setSize() below, since
+	// VguiOptionsDialog::setSize reads _tabPanel/_okBtn/_cancelBtn/_applyBtn
+	// to relayout, and the most-derived dispatch happens during ctor body.
+	_tabPanel = null;
 	_applyBtn = null;
 	_okBtn = null;
 	_cancelBtn = null;
@@ -98,8 +102,6 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	setSize(dialogW, dialogH);
 	setTitle("Options");
 	setVisible(false);
-
-	_tabPanel = null;
 
 	Panel* client = getClient();
 	if (!client)

@@ -117,14 +117,14 @@ void Slider::recomputeNobPosFromValue()
 	if (_vertical)
 	{
 		int trackLen = tall - _buttonOffset * 2 - _nobSize;
-		if (trackLen < 0) trackLen = 0; // safety: tiny slider
+		if (trackLen <= 0) trackLen = 1; // safety: tiny slider
 		_nobPos[1] = _buttonOffset + (int)((float)(_value - _range[0]) / (float)range * (float)trackLen);
 		_nobPos[0] = 0;
 	}
 	else
 	{
 		int trackLen = wide - _buttonOffset * 2 - _nobSize;
-		if (trackLen < 0) trackLen = 0; // safety: tiny slider
+		if (trackLen <= 0) trackLen = 1; // safety: tiny slider
 		_nobPos[0] = _buttonOffset + (int)((float)(_value - _range[0]) / (float)range * (float)trackLen);
 		_nobPos[1] = 0;
 	}

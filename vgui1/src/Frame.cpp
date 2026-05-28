@@ -273,7 +273,7 @@ void Frame::internalCursorMoved(int x, int y)
 		if (p) p->getSize(rootW, rootH);
 		if (rootW > 0 && rootH > 0)
 		{
-			int margin = 24; // keep at least this many px of caption visible
+			int margin = VS(24); // keep at least this many px of caption visible (scaled for HD)
 			if (newX < -wide + margin) newX = -wide + margin;
 			if (newX > rootW - margin) newX = rootW - margin;
 			if (newY < 0) newY = 0;                    // never above top

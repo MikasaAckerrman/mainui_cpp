@@ -236,7 +236,9 @@ void Panel::removeChild(Panel* child)
 	{
 		_childDar.removeElement(child);
 		child->_parent = null;
-		child->_surfaceBase = null;
+		// Clear surfaceBase recursively so descendants don't keep a dangling
+		// pointer to a SurfaceBase that may be destroyed before they are.
+		child->setSurfaceBaseTraverse(null);
 	}
 }
 
@@ -564,7 +566,8 @@ void Panel::removeAllChildren()
 		if (child)
 		{
 			child->_parent = null;
-			child->_surfaceBase = null;
+			// Recursive clear so grandchildren don't keep a dangling SurfaceBase*.
+			child->setSurfaceBaseTraverse(null);
 		}
 	}
 	_childDar.removeAll();

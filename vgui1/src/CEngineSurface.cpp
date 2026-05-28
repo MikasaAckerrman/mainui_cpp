@@ -291,17 +291,20 @@ void CEngineSurface::pushMakeCurrent(Panel* panel, bool useInsets)
 	if (!panel)
 		return;
 
+	// If the state stack would overflow, do NOT mutate the current
+	// translate/clip either -- otherwise popMakeCurrent will desync
+	// because the matching pop will restore stale state.
+	if (_stateStackCount >= 64)
+		return;
+
 	// Save current state
-	if (_stateStackCount < 64)
-	{
-		PanelState& s = _stateStack[_stateStackCount++];
-		s.translateX = _translateX;
-		s.translateY = _translateY;
-		s.clipRect[0] = _clipRect[0];
-		s.clipRect[1] = _clipRect[1];
-		s.clipRect[2] = _clipRect[2];
-		s.clipRect[3] = _clipRect[3];
-	}
+	PanelState& s = _stateStack[_stateStackCount++];
+	s.translateX = _translateX;
+	s.translateY = _translateY;
+	s.clipRect[0] = _clipRect[0];
+	s.clipRect[1] = _clipRect[1];
+	s.clipRect[2] = _clipRect[2];
+	s.clipRect[3] = _clipRect[3];
 
 	int x, y, wide, tall;
 	panel->getPos(x, y);
