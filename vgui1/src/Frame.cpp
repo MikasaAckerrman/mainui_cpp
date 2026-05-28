@@ -3,6 +3,7 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
+#include <VGUI_UIScale.h>
 #include <VGUI_Frame.h>
 #include <VGUI_App.h>
 #include <VGUI_Button.h>
@@ -12,15 +13,22 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 namespace vgui
 {
 
-// GoldSrc Frame layout constants
+// Base GoldSrc Frame layout constants. Scaled at runtime via VS() so the
+// dialog stays readable on HD/4K Android screens.
 enum
 {
-	FRAME_CAPTION_HEIGHT = 20,
-	FRAME_CAPTION_HEIGHT_SMALL = 16,
+	FRAME_CAPTION_HEIGHT = 22,
+	FRAME_CAPTION_HEIGHT_SMALL = 18,
 	FRAME_BORDER = 3,
 	FRAME_BUTTON_SIZE = 16,
-	FRAME_BUTTON_INSET = 2
+	FRAME_BUTTON_INSET = 3
 };
+
+static inline int Fcap()      { return VS(FRAME_CAPTION_HEIGHT); }
+static inline int FcapSmall() { return VS(FRAME_CAPTION_HEIGHT_SMALL); }
+static inline int Fborder()   { return VS(FRAME_BORDER); }
+static inline int FbtnSz()    { return VS(FRAME_BUTTON_SIZE); }
+static inline int FbtnIns()   { return VS(FRAME_BUTTON_INSET); }
 
 // Private close action signal
 class FrameCloseSignal : public ActionSignal
@@ -62,8 +70,8 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_maximizeButton = null;
 
 	// Create client area panel
-	int captionH = FRAME_CAPTION_HEIGHT;
-	int border = FRAME_BORDER;
+	int captionH = Fcap();
+	int border = Fborder();
 	_client = new Panel(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
 	addChild(_client);
 
@@ -71,9 +79,11 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_captionBar = new Panel(border, border, wide - border * 2, captionH);
 	addChild(_captionBar);
 
-	// Close button
-	int btnSize = FRAME_BUTTON_SIZE;
-	_closeButton = new Button("X", wide - border - btnSize - FRAME_BUTTON_INSET, border + FRAME_BUTTON_INSET, btnSize, btnSize);
+	// Close button (flat style: no raised bevel, see Button::paintBackground)
+	int btnSize = FbtnSz();
+	int btnInset = FbtnIns();
+	_closeButton = new Button("X", wide - border - btnSize - btnInset,
+		border + btnInset, btnSize, btnSize);
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
 
@@ -133,9 +143,8 @@ void Frame::setInternal(bool state)
 void Frame::setSmallCaption(bool state)
 {
 	_smallCaption = state;
-	// Relayout client
-	int captionH = state ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
-	int border = FRAME_BORDER;
+	int captionH = state ? FcapSmall() : Fcap();
+	int border = Fborder();
 	int wide, tall;
 	getSize(wide, tall);
 	if (_client)
@@ -148,9 +157,8 @@ void Frame::setSize(int wide, int tall)
 {
 	Panel::setSize(wide, tall);
 
-	// Reposition/resize internal child panels for the new dialog size
-	int captionH = _smallCaption ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
-	int border = FRAME_BORDER;
+	int captionH = _smallCaption ? FcapSmall() : Fcap();
+	int border = Fborder();
 
 	if (_client)
 		_client->setBounds(border, captionH + border, wide - border * 2, tall - captionH - border * 2);
@@ -158,9 +166,10 @@ void Frame::setSize(int wide, int tall)
 		_captionBar->setBounds(border, border, wide - border * 2, captionH);
 	if (_closeButton)
 	{
-		int btnSize = FRAME_BUTTON_SIZE;
-		_closeButton->setBounds(wide - border - btnSize - FRAME_BUTTON_INSET,
-			border + FRAME_BUTTON_INSET, btnSize, btnSize);
+		int btnSize = FbtnSz();
+		int btnInset = FbtnIns();
+		_closeButton->setBounds(wide - border - btnSize - btnInset,
+			border + btnInset, btnSize, btnSize);
 	}
 }
 
@@ -190,8 +199,8 @@ void Frame::paint()
 
 void Frame::drawTitleBar(int wide)
 {
-	int captionH = _smallCaption ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
-	int border = FRAME_BORDER;
+	int captionH = _smallCaption ? FcapSmall() : Fcap();
+	int border = Fborder();
 
 	int barX = border;
 	int barY = border;
@@ -221,7 +230,7 @@ void Frame::drawTitleBar(int wide)
 	{
 		schemeFgColor(this, g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF);
 		drawSetTextFont(Scheme::sf_primary1);
-		drawPrintText(border + 6, border + 4, _title, (int)strlen(_title));
+		drawPrintText(border + VS(6), border + VS(4), _title, (int)strlen(_title));
 	}
 }
 
@@ -255,8 +264,8 @@ void Frame::internalMousePressed(MouseCode code)
 			int lx = mx - ax;
 			int ly = my - ay;
 
-			int captionH = _smallCaption ? FRAME_CAPTION_HEIGHT_SMALL : FRAME_CAPTION_HEIGHT;
-			int border = FRAME_BORDER;
+			int captionH = _smallCaption ? FcapSmall() : Fcap();
+			int border = Fborder();
 
 			if (ly >= border && ly < border + captionH && lx >= border && lx < getWide() - border)
 			{

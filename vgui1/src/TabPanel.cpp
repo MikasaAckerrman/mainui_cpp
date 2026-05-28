@@ -5,6 +5,7 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
+#include <VGUI_UIScale.h>
 #include <VGUI_TabPanel.h>
 #include <VGUI_App.h>
 #include <string.h>
@@ -12,11 +13,11 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 namespace vgui
 {
 
-// CS 1.6 PC tab metrics (matches the reference screenshot).
-static const int TAB_HEIGHT       = 24; // tab strip height
-static const int TAB_TEXT_HEIGHT  = 12; // Tahoma 12px
-static const int TAB_TEXT_PAD     = 12; // padding on each side of text
-static const int TAB_GAP          = 0;  // pixel gap between adjacent tabs
+// CS 1.6 PC tab metrics. Scaled at runtime via VS().
+static const int TAB_HEIGHT_BASE   = 24;
+static const int TAB_TEXT_HEIGHT_B = 12;
+static const int TAB_TEXT_PAD_B    = 12;
+static const int TAB_GAP           = 0;
 
 // Compute width of tab i based on text length (using mainui FontManager).
 static int ComputeTabWidth( const char *text )
@@ -24,10 +25,10 @@ static int ComputeTabWidth( const char *text )
 	HFont font = uiStatic.hDefaultFont;
 	int textW = 0;
 	if ( g_FontMgr && font && text && text[0] )
-		textW = g_FontMgr->GetTextWideScaled( font, text, TAB_TEXT_HEIGHT );
+		textW = g_FontMgr->GetTextWideScaled( font, text, VS(TAB_TEXT_HEIGHT_B) );
 	else if ( text )
-		textW = (int)strlen( text ) * (TAB_TEXT_HEIGHT * 6 / 10);
-	return textW + TAB_TEXT_PAD * 2;
+		textW = (int)strlen( text ) * (VS(TAB_TEXT_HEIGHT_B) * 6 / 10);
+	return textW + VS(TAB_TEXT_PAD_B) * 2;
 }
 
 TabPanel::TabPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
@@ -96,7 +97,7 @@ void TabPanel::performLayout()
 	{
 		Tab* tab = _tabDar[i];
 		if (tab && tab->panel)
-			tab->panel->setBounds(0, TAB_HEIGHT, wide, tall - TAB_HEIGHT);
+			tab->panel->setBounds(0, VS(TAB_HEIGHT_BASE), wide, tall - VS(TAB_HEIGHT_BASE));
 	}
 }
 
@@ -142,16 +143,16 @@ void TabPanel::paint()
 			// Active tab: same olive as panel below, taller by 1px so it
 			// "merges" into the panel with no horizontal seam underneath.
 			schemeBgColor(this, frameBg);
-			drawFilledRect(x + 1, 0, x + width - 1, TAB_HEIGHT + 1);
+			drawFilledRect(x + 1, 0, x + width - 1, VS(TAB_HEIGHT_BASE) + 1);
 
 			// Top + left bright edge
 			schemeBgColor(this, bright);
 			drawFilledRect(x, 0, x + width, 1);
-			drawFilledRect(x, 0, x + 1, TAB_HEIGHT + 1);
+			drawFilledRect(x, 0, x + 1, VS(TAB_HEIGHT_BASE) + 1);
 
 			// Right dark edge
 			schemeBgColor(this, dark);
-			drawFilledRect(x + width - 1, 0, x + width, TAB_HEIGHT + 1);
+			drawFilledRect(x + width - 1, 0, x + width, VS(TAB_HEIGHT_BASE) + 1);
 		}
 		else
 		{
@@ -159,15 +160,15 @@ void TabPanel::paint()
 			int yTop = 2;
 
 			schemeBgColor(this, inactiveBg);
-			drawFilledRect(x + 1, yTop, x + width - 1, TAB_HEIGHT - 1);
+			drawFilledRect(x + 1, yTop, x + width - 1, VS(TAB_HEIGHT_BASE) - 1);
 
 			schemeBgColor(this, bright);
 			drawFilledRect(x, yTop, x + width, yTop + 1);
-			drawFilledRect(x, yTop, x + 1, TAB_HEIGHT - 1);
+			drawFilledRect(x, yTop, x + 1, VS(TAB_HEIGHT_BASE) - 1);
 
 			schemeBgColor(this, dark);
-			drawFilledRect(x + width - 1, yTop, x + width, TAB_HEIGHT - 1);
-			drawFilledRect(x, TAB_HEIGHT - 1, x + width, TAB_HEIGHT);
+			drawFilledRect(x + width - 1, yTop, x + width, VS(TAB_HEIGHT_BASE) - 1);
+			drawFilledRect(x, VS(TAB_HEIGHT_BASE) - 1, x + width, VS(TAB_HEIGHT_BASE));
 		}
 
 		// Tab label (vertically centered in the strip)
@@ -176,8 +177,8 @@ void TabPanel::paint()
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
-			int textY = (TAB_HEIGHT - TAB_TEXT_HEIGHT) / 2;
-			drawPrintText(x + TAB_TEXT_PAD, textY, tab->text, textLen);
+			int textY = (VS(TAB_HEIGHT_BASE) - VS(TAB_TEXT_HEIGHT_B)) / 2;
+			drawPrintText(x + VS(TAB_TEXT_PAD_B), textY, tab->text, textLen);
 		}
 
 		x += width + TAB_GAP;
@@ -186,9 +187,9 @@ void TabPanel::paint()
 	// Strip-bottom dark line everywhere except under the active tab
 	schemeBgColor(this, dark);
 	if (activeX > 0)
-		drawFilledRect(0, TAB_HEIGHT, activeX, TAB_HEIGHT + 1);
+		drawFilledRect(0, VS(TAB_HEIGHT_BASE), activeX, VS(TAB_HEIGHT_BASE) + 1);
 	if (activeX + activeW < wide)
-		drawFilledRect(activeX + activeW, TAB_HEIGHT, wide, TAB_HEIGHT + 1);
+		drawFilledRect(activeX + activeW, VS(TAB_HEIGHT_BASE), wide, VS(TAB_HEIGHT_BASE) + 1);
 }
 
 void TabPanel::internalMousePressed(MouseCode code)
@@ -202,7 +203,7 @@ void TabPanel::internalMousePressed(MouseCode code)
 			app->getCursorPos(mx, my);
 			screenToLocal(mx, my);
 
-			if (my >= 0 && my < TAB_HEIGHT)
+			if (my >= 0 && my < VS(TAB_HEIGHT_BASE))
 			{
 				int x = 0;
 				int tabCount = _tabDar.getCount();
