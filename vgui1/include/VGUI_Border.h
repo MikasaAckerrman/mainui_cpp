@@ -17,7 +17,6 @@ public:
 public:
 	virtual void setInset(int left, int top, int right, int bottom);
 	virtual void getInset(int& left, int& top, int& right, int& bottom);
-	virtual void doPaint(Panel* panel);
 protected:
 	virtual void drawFilledRect(int x0, int y0, int x1, int y1);
 	virtual void drawOutlinedRect(int x0, int y0, int x1, int y1);
