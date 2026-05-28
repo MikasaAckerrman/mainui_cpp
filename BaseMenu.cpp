@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // VGUI1 forwarding functions (defined in vgui1/src/vgui_main.cpp)
 extern "C" void VGUI_PaintAll(void);
+extern "C" int VGUI_IsVisible(void);
 extern "C" void VGUI_ForwardKey(int action, int code);
 extern "C" void VGUI_ForwardMouse(int action, int code);
 extern "C" void VGUI_ForwardMouseMove(int x, int y);
@@ -723,14 +724,17 @@ void UI_KeyEvent( int key, int down )
 		down ? uiStatic.menu.KeyDownEvent( key ) :
 			uiStatic.menu.KeyUpEvent( key );
 
-	// Forward to VGUI1 panels
-	if( key >= K_MOUSE1 && key <= K_MOUSE5 )
+	// Forward to VGUI1 panels only when a VGUI1 panel is visible
+	if( VGUI_IsVisible() )
 	{
-		VGUI_ForwardMouse(down ? 0 : 1, key - K_MOUSE1);
-	}
-	else
-	{
-		VGUI_ForwardKey(down ? 1 : 2, key);
+		if( key >= K_MOUSE1 && key <= K_MOUSE5 )
+		{
+			VGUI_ForwardMouse(down ? 0 : 1, key - K_MOUSE1);
+		}
+		else
+		{
+			VGUI_ForwardKey(down ? 1 : 2, key);
+		}
 	}
 }
 
@@ -813,8 +817,9 @@ void UI_MouseMove( int x, int y )
 	if( menuActive )
 		uiStatic.menu.MouseEvent( x, y );
 
-	// Forward to VGUI1 panels
-	VGUI_ForwardMouseMove(x, y);
+	// Forward to VGUI1 panels only when a VGUI1 panel is visible
+	if( VGUI_IsVisible() )
+		VGUI_ForwardMouseMove(x, y);
 }
 
 
