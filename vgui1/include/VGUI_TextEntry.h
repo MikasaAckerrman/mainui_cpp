@@ -33,6 +33,7 @@ protected:
 	virtual void internalMouseReleased(MouseCode code);
 	virtual void internalKeyPressed(KeyCode code);
 	virtual void internalKeyTyped(KeyCode code);
+	virtual void internalFocusChanged(bool lost); // toggle Android IME on focus
 private:
 	char _text[256];
 	int _textLen;

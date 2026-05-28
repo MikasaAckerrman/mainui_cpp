@@ -23,7 +23,8 @@ public:
 	void applyAll();
 	void resetAll();
 	void setDirty(bool dirty);
-	virtual void setSize(int wide, int tall); // override - reposition buttons & tabs
+	virtual void setSize(int wide, int tall);   // override - reposition buttons & tabs
+	virtual void setVisible(bool state);        // override - cleanup text input on hide
 private:
 	void buildMultiplayerTab(Panel* page);
 	void buildKeyboardTab(Panel* page);

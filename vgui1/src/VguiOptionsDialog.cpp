@@ -15,8 +15,13 @@
 #include <VGUI_CvarCheckButton.h>
 #include <VGUI_CvarSlider.h>
 #include <VGUI_CvarTextEntry.h>
+#include <VGUI_App.h>
 #include <VGUI_UIScale.h>
 #include <string.h>
+
+// mainui bridge - declared at global scope to avoid namespace mangling and
+// to skip pulling Utils.h (which would cause the `null` macro clash).
+extern void UI_EnableTextInput( bool enable );
 
 namespace vgui
 {
@@ -87,20 +92,16 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	_cancelBtn = null;
 	_dirty = false;
 
-	// Compute dialog size proportionally to screen, no upper cap so it
-	// stays large on HD/4K. Keeps a sensible minimum for tiny devices.
-	int dialogW = (screenW * 4) / 5;    // 80%
-	int dialogH = (screenH * 75) / 100; // 75% (CS 1.6 PC ratio)
-	int minW = VS(500);
-	int minH = VS(320);
-	if (dialogW < minW) dialogW = minW;
-	if (dialogH < minH) dialogH = minH;
+	// Dialog uses CS 1.6 PC fixed proportions, scaled by VS() so it stays
+	// readable on HD/4K screens. NOT proportional to screen size.
+	int dialogW = VS(640);
+	int dialogH = VS(440);
 	if (dialogW > screenW - VS(8)) dialogW = screenW - VS(8);
 	if (dialogH > screenH - VS(8)) dialogH = screenH - VS(8);
 
 	setPos((screenW - dialogW) / 2, (screenH - dialogH) / 2);
 	setSize(dialogW, dialogH);
-	setTitle("Options");
+	setTitle("\xD0\x9D\xD0\xB0\xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xB9\xD0\xBA\xD0\xB8"); // "Настройки"
 	setVisible(false);
 
 	Panel* client = getClient();
@@ -135,14 +136,14 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	Panel* accountPage = new Panel(0, 0, clientW, pageH);
 	Panel* systemPage  = new Panel(0, 0, clientW, pageH);
 
-	_tabPanel->addTab("Multiplayer", mpPage);
-	_tabPanel->addTab("Keyboard",    kbPage);
-	_tabPanel->addTab("Mouse",       mousePage);
-	_tabPanel->addTab("Audio",       audioPage);
-	_tabPanel->addTab("Video",       videoPage);
-	_tabPanel->addTab("HUD",         hudPage);
-	_tabPanel->addTab("Account",     accountPage);
-	_tabPanel->addTab("System",      systemPage);
+	_tabPanel->addTab("\xD0\x9C\xD1\x83\xD0\xBB\xD1\x8C\xD1\x82\xD0\xB8\xD0\xBF\xD0\xBB\xD0\xB5\xD0\xB5\xD1\x80",   mpPage);      // Мультиплеер
+	_tabPanel->addTab("\xD0\x9A\xD0\xBB\xD0\xB0\xD0\xB2\xD0\xB8\xD0\xB0\xD1\x82\xD1\x83\xD1\x80\xD0\xB0",          kbPage);      // Клавиатура
+	_tabPanel->addTab("\xD0\x9C\xD1\x8B\xD1\x88\xD1\x8C",                                                          mousePage);   // Мышь
+	_tabPanel->addTab("\xD0\x97\xD0\xB2\xD1\x83\xD0\xBA",                                                          audioPage);   // Звук
+	_tabPanel->addTab("\xD0\x92\xD0\xB8\xD0\xB4\xD0\xB5\xD0\xBE",                                                  videoPage);   // Видео
+	_tabPanel->addTab("HUD",                                                                                       hudPage);
+	_tabPanel->addTab("\xD0\x90\xD0\xBA\xD0\xBA\xD0\xB0\xD1\x83\xD0\xBD\xD1\x82",                                  accountPage); // Аккаунт
+	_tabPanel->addTab("\xD0\xA1\xD0\xB8\xD1\x81\xD1\x82\xD0\xB5\xD0\xBC\xD0\xB0",                                  systemPage);  // Система
 
 	VLOG("ctor: building tabs");
 	buildMultiplayerTab(mpPage);  VLOG("ctor: mp tab built");
@@ -169,12 +170,12 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	okBtn->addActionSignal(new OptionsOKSignal(this));
 	_okBtn = okBtn;
 
-	Button* cancelBtn = new Button("Cancel", cancelX, btnY, btnW, btnH);
+	Button* cancelBtn = new Button("\xD0\x9E\xD1\x82\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB0", cancelX, btnY, btnW, btnH); // Отмена
 	client->addChild(cancelBtn);
 	cancelBtn->addActionSignal(new OptionsCancelSignal(this));
 	_cancelBtn = cancelBtn;
 
-	_applyBtn = new Button("Apply", applyX, btnY, btnW, btnH);
+	_applyBtn = new Button("\xD0\x9F\xD1\x80\xD0\xB8\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C", applyX, btnY, btnW, btnH); // Применить
 	client->addChild(_applyBtn);
 	_applyBtn->addActionSignal(new OptionsApplySignal(this));
 	_applyBtn->setEnabled(false); // becomes enabled when something changes
@@ -230,6 +231,21 @@ void VguiOptionsDialog::setSize(int wide, int tall)
 	if (_applyBtn)  _applyBtn->setBounds(applyX,  btnY, btnW, btnH);
 }
 
+// Override: when the dialog is hidden, drop keyboard focus from any inner
+// TextEntry and tell the engine to hide the soft keyboard. Otherwise the
+// blinking cursor and Android IME stay active after closing the menu.
+void VguiOptionsDialog::setVisible(bool state)
+{
+	if (!state)
+	{
+		App* app = App::getInstance();
+		if (app)
+			app->requestFocus(null); // dispatches internalFocusChanged(true) on prev focus
+		UI_EnableTextInput(false);
+	}
+	Frame::setVisible(state);
+}
+
 void VguiOptionsDialog::applyAll()
 {
 	int i;
@@ -272,19 +288,22 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 {
 	int y = FirstY();
 
-	page->addChild(new Label("Player name:", LblX(), y, LblW(), FldH()));
+	// "Имя игрока:"
+	page->addChild(new Label("\xD0\x98\xD0\xBC\xD1\x8F \xD0\xB8\xD0\xB3\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0:", LblX(), y, LblW(), FldH()));
 	CvarTextEntry* nameEntry = new CvarTextEntry("name", InpX(), y, InpW(), FldH());
 	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
 	y += RowH() + RowGap();
 
-	page->addChild(new Label("Top color:", LblX(), y, LblW(), FldH()));
+	// "Верхний цвет:"
+	page->addChild(new Label("\xD0\x92\xD0\xB5\xD1\x80\xD1\x85\xD0\xBD\xD0\xB8\xD0\xB9 \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82:", LblX(), y, LblW(), FldH()));
 	CvarSlider* topSlider = new CvarSlider("topcolor", InpX(), y, InpW(), FldH(), 0, 255);
 	page->addChild(topSlider);
 	_sliders.addElement(topSlider);
 	y += RowH() + RowGap();
 
-	page->addChild(new Label("Bottom color:", LblX(), y, LblW(), FldH()));
+	// "Нижний цвет:"
+	page->addChild(new Label("\xD0\x9D\xD0\xB8\xD0\xB6\xD0\xBD\xD0\xB8\xD0\xB9 \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82:", LblX(), y, LblW(), FldH()));
 	CvarSlider* botSlider = new CvarSlider("bottomcolor", InpX(), y, InpW(), FldH(), 0, 255);
 	page->addChild(botSlider);
 	_sliders.addElement(botSlider);
@@ -292,27 +311,32 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 
 void VguiOptionsDialog::buildKeyboardTab(Panel* page)
 {
-	page->addChild(new Label("Key bindings", LblX(), FirstY(), VS(200), FldH()));
+	// "Привязки клавиш"
+	page->addChild(new Label("\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD1\x8F\xD0\xB7\xD0\xBA\xD0\xB8 \xD0\xBA\xD0\xBB\xD0\xB0\xD0\xB2\xD0\xB8\xD1\x88", LblX(), FirstY(), VS(200), FldH()));
 }
 
 void VguiOptionsDialog::buildMouseTab(Panel* page)
 {
 	int y = FirstY();
 
-	CvarCheckButton* filter = new CvarCheckButton("m_filter", "Mouse filter", LblX(), y, VS(220), FldH());
+	// "Фильтр мыши"
+	CvarCheckButton* filter = new CvarCheckButton("m_filter", "\xD0\xA4\xD0\xB8\xD0\xBB\xD1\x8C\xD1\x82\xD1\x80 \xD0\xBC\xD1\x8B\xD1\x88\xD0\xB8", LblX(), y, VS(220), FldH());
 	page->addChild(filter); _checkButtons.addElement(filter);
 	y += RowH();
 
-	page->addChild(new Label("Sensitivity:", LblX(), y, LblW(), FldH()));
+	// "Чувствительность:"
+	page->addChild(new Label("\xD0\xA7\xD1\x83\xD0\xB2\xD1\x81\xD1\x82\xD0\xB2\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C:", LblX(), y, LblW(), FldH()));
 	CvarSlider* sensSlider = new CvarSlider("sensitivity", InpX(), y, InpW(), FldH(), 1, 20);
 	page->addChild(sensSlider); _sliders.addElement(sensSlider);
 	y += RowH() + RowGap();
 
-	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput", "Raw input", LblX(), y, VS(220), FldH());
+	// "Прямой ввод"
+	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput", "\xD0\x9F\xD1\x80\xD1\x8F\xD0\xBC\xD0\xBE\xD0\xB9 \xD0\xB2\xD0\xB2\xD0\xBE\xD0\xB4", LblX(), y, VS(220), FldH());
 	page->addChild(rawinput); _checkButtons.addElement(rawinput);
 	y += RowH();
 
-	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel", "Custom acceleration", LblX(), y, VS(220), FldH());
+	// "Своё ускорение"
+	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel", "\xD0\xA1\xD0\xB2\xD0\xBE\xD1\x91 \xD1\x83\xD1\x81\xD0\xBA\xD0\xBE\xD1\x80\xD0\xB5\xD0\xBD\xD0\xB8\xD0\xB5", LblX(), y, VS(220), FldH());
 	page->addChild(customaccel); _checkButtons.addElement(customaccel);
 }
 
@@ -320,12 +344,14 @@ void VguiOptionsDialog::buildAudioTab(Panel* page)
 {
 	int y = FirstY();
 
-	page->addChild(new Label("Volume:", LblX(), y, LblW(), FldH()));
+	// "Громкость:"
+	page->addChild(new Label("\xD0\x93\xD1\x80\xD0\xBE\xD0\xBC\xD0\xBA\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C:", LblX(), y, LblW(), FldH()));
 	CvarSlider* volSlider = new CvarSlider("volume", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 1.0f);
 	page->addChild(volSlider); _sliders.addElement(volSlider);
 	y += RowH() + RowGap();
 
-	page->addChild(new Label("Suit volume:", LblX(), y, LblW(), FldH()));
+	// "Громкость HEV:"
+	page->addChild(new Label("\xD0\x93\xD1\x80\xD0\xBE\xD0\xBC\xD0\xBA\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C HEV:", LblX(), y, LblW(), FldH()));
 	CvarSlider* suitSlider = new CvarSlider("suitvolume", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 1.0f);
 	page->addChild(suitSlider); _sliders.addElement(suitSlider);
 	y += RowH() + RowGap();
@@ -334,7 +360,8 @@ void VguiOptionsDialog::buildAudioTab(Panel* page)
 	page->addChild(a3d); _checkButtons.addElement(a3d);
 	y += RowH();
 
-	CvarCheckButton* eax = new CvarCheckButton("s_eax", "EAX effects", LblX(), y, VS(220), FldH());
+	// "Эффекты EAX"
+	CvarCheckButton* eax = new CvarCheckButton("s_eax", "\xD0\xAD\xD1\x84\xD1\x84\xD0\xB5\xD0\xBA\xD1\x82\xD1\x8B EAX", LblX(), y, VS(220), FldH());
 	page->addChild(eax); _checkButtons.addElement(eax);
 }
 
@@ -342,17 +369,20 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 {
 	int y = FirstY();
 
-	page->addChild(new Label("Gamma:", LblX(), y, LblW(), FldH()));
+	// "Гамма:"
+	page->addChild(new Label("\xD0\x93\xD0\xB0\xD0\xBC\xD0\xBC\xD0\xB0:", LblX(), y, LblW(), FldH()));
 	CvarSlider* gammaSlider = new CvarSlider("gamma", InpX(), y, InpW(), FldH(), 0, 100, 1.8f, 3.0f);
 	page->addChild(gammaSlider); _sliders.addElement(gammaSlider);
 	y += RowH() + RowGap();
 
-	page->addChild(new Label("Brightness:", LblX(), y, LblW(), FldH()));
+	// "Яркость:"
+	page->addChild(new Label("\xD0\xAF\xD1\x80\xD0\xBA\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C:", LblX(), y, LblW(), FldH()));
 	CvarSlider* brightSlider = new CvarSlider("brightness", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 2.0f);
 	page->addChild(brightSlider); _sliders.addElement(brightSlider);
 	y += RowH() + RowGap();
 
-	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync", "VSync", LblX(), y, VS(220), FldH());
+	// "Верт. синхронизация"
+	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync", "\xD0\x92\xD0\xB5\xD1\x80\xD1\x82. \xD1\x81\xD0\xB8\xD0\xBD\xD1\x85\xD1\x80\xD0\xBE\xD0\xBD\xD0\xB8\xD0\xB7\xD0\xB0\xD1\x86\xD0\xB8\xD1\x8F", LblX(), y, VS(220), FldH());
 	page->addChild(vsync); _checkButtons.addElement(vsync);
 }
 
@@ -360,31 +390,37 @@ void VguiOptionsDialog::buildHudTab(Panel* page)
 {
 	int y = FirstY();
 
-	CvarCheckButton* hudDraw = new CvarCheckButton("hud_draw", "Draw HUD", LblX(), y, VS(220), FldH());
+	// "Рисовать HUD"
+	CvarCheckButton* hudDraw = new CvarCheckButton("hud_draw", "\xD0\xA0\xD0\xB8\xD1\x81\xD0\xBE\xD0\xB2\xD0\xB0\xD1\x82\xD1\x8C HUD", LblX(), y, VS(220), FldH());
 	page->addChild(hudDraw); _checkButtons.addElement(hudDraw);
 	y += RowH();
 
-	CvarCheckButton* showFps = new CvarCheckButton("cl_showfps", "Show FPS", LblX(), y, VS(220), FldH());
+	// "Показывать FPS"
+	CvarCheckButton* showFps = new CvarCheckButton("cl_showfps", "\xD0\x9F\xD0\xBE\xD0\xBA\xD0\xB0\xD0\xB7\xD1\x8B\xD0\xB2\xD0\xB0\xD1\x82\xD1\x8C FPS", LblX(), y, VS(220), FldH());
 	page->addChild(showFps); _checkButtons.addElement(showFps);
 	y += RowH();
 
-	page->addChild(new Label("HUD scale:", LblX(), y, LblW(), FldH()));
+	// "Масштаб HUD:"
+	page->addChild(new Label("\xD0\x9C\xD0\xB0\xD1\x81\xD1\x88\xD1\x82\xD0\xB0\xD0\xB1 HUD:", LblX(), y, LblW(), FldH()));
 	CvarSlider* scaleSlider = new CvarSlider("hud_scale", InpX(), y, InpW(), FldH(), 0, 10, 0.0f, 2.0f);
 	page->addChild(scaleSlider); _sliders.addElement(scaleSlider);
 	y += RowH() + RowGap();
 
-	CvarCheckButton* crosshair = new CvarCheckButton("crosshair", "Show crosshair", LblX(), y, VS(220), FldH());
+	// "Показывать прицел"
+	CvarCheckButton* crosshair = new CvarCheckButton("crosshair", "\xD0\x9F\xD0\xBE\xD0\xBA\xD0\xB0\xD0\xB7\xD1\x8B\xD0\xB2\xD0\xB0\xD1\x82\xD1\x8C \xD0\xBF\xD1\x80\xD0\xB8\xD1\x86\xD0\xB5\xD0\xBB", LblX(), y, VS(220), FldH());
 	page->addChild(crosshair); _checkButtons.addElement(crosshair);
 }
 
 void VguiOptionsDialog::buildAccountTab(Panel* page)
 {
-	page->addChild(new Label("Account settings", LblX(), FirstY(), VS(200), FldH()));
+	// "Настройки аккаунта"
+	page->addChild(new Label("\xD0\x9D\xD0\xB0\xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xB9\xD0\xBA\xD0\xB8 \xD0\xB0\xD0\xBA\xD0\xBA\xD0\xB0\xD1\x83\xD0\xBD\xD1\x82\xD0\xB0", LblX(), FirstY(), VS(200), FldH()));
 }
 
 void VguiOptionsDialog::buildSystemTab(Panel* page)
 {
-	CvarCheckButton* dev = new CvarCheckButton("developer", "Developer mode", LblX(), FirstY(), VS(220), FldH());
+	// "Режим разработчика"
+	CvarCheckButton* dev = new CvarCheckButton("developer", "\xD0\xA0\xD0\xB5\xD0\xB6\xD0\xB8\xD0\xBC \xD1\x80\xD0\xB0\xD0\xB7\xD1\x80\xD0\xB0\xD0\xB1\xD0\xBE\xD1\x82\xD1\x87\xD0\xB8\xD0\xBA\xD0\xB0", LblX(), FirstY(), VS(220), FldH());
 	page->addChild(dev); _checkButtons.addElement(dev);
 }
 
