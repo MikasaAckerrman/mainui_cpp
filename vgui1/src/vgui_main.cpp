@@ -16,6 +16,9 @@ CEngineSurface* EngineSurface_Create(Panel* embeddedPanel);
 void EngineSurface_Destroy();
 }
 
+// Diagnostic logging
+#include <VGUI_Log.h>
+
 // Forward declaration from VguiOptionsDialog.cpp
 void VGUI_OptionsShutdown(void);
 
@@ -347,8 +350,12 @@ Panel* VGUI_GetRootPanel()
 // ====================================================================
 extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
 {
+	VLOG("VGUI_EnsureInitialized: %dx%d (rootPanel=%p, app=%p)", screenW, screenH, (void*)s_rootPanel, (void*)s_app);
 	if (s_rootPanel)
-		return; // already initialized
+	{
+		VLOG("EnsureInit: already initialized -- skip");
+		return;
+	}
 
 	if (screenW <= 0) screenW = 640;
 	if (screenH <= 0) screenH = 480;
@@ -356,11 +363,13 @@ extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
 	s_screenWidth = screenW;
 	s_screenHeight = screenH;
 	VGUI_ComputeScale(screenH);
+	VLOG("EnsureInit: computed scale=%.2f", vgui::g_vguiScale);
 
 	if (!s_app)
 	{
 		s_app = new vgui::App(true);
 		s_scheme = new vgui::Scheme();
+		VLOG("EnsureInit: app=%p scheme=%p created", (void*)s_app, (void*)s_scheme);
 
 		// Font sizes scale with screen height so HD devices get readable text
 		int fontMed   = (int)(12.0f * vgui::g_vguiScale + 0.5f);
@@ -385,10 +394,13 @@ extern "C" void VGUI_EnsureInitialized(int screenW, int screenH)
 		s_scheme->setColor(vgui::Scheme::sc_black, 0, 0, 0, 0);
 
 		s_app->setScheme(s_scheme);
+		VLOG("EnsureInit: scheme attached");
 	}
 
 	s_rootPanel = new vgui::Panel(0, 0, screenW, screenH);
+	VLOG("EnsureInit: root panel created %p (%dx%d)", (void*)s_rootPanel, screenW, screenH);
 	vgui::EngineSurface_Create(s_rootPanel);
+	VLOG("EnsureInit: engine surface created");
 }
 
 // ====================================================================

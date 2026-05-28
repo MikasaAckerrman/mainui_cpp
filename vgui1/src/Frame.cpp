@@ -2,6 +2,7 @@
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 #include "TrackerScheme.h"
 
+#include <VGUI_Log.h>
 #include <VGUI_SchemeColors.h>
 #include <VGUI_UIScale.h>
 #include <VGUI_Frame.h>
@@ -46,6 +47,7 @@ private:
 
 Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
+	VLOG("Frame ctor: pos(%d,%d) size(%dx%d)", x, y, wide, tall);
 	_title[0] = 0;
 	_moveable = true;
 	_sizeable = true;

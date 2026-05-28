@@ -54,6 +54,7 @@ static void UI_ShowVguiOptions( void )
 {
 	if( !s_vguiInitDone )
 	{
+		Con_Printf( "[VGUI] init: ScreenWidth=%g ScreenHeight=%g\n", ScreenWidth, ScreenHeight );
 		VGUI_SetScreenSize( ScreenWidth, ScreenHeight );
 		VGUI_SetCvarFuncs(
 			EngFuncs::engfuncs.pfnGetCvarFloat,
@@ -63,8 +64,10 @@ static void UI_ShowVguiOptions( void )
 			UI_VguiClientCmd
 		);
 		s_vguiInitDone = true;
+		Con_Printf( "[VGUI] init done, calling VGUI_ShowOptions\n" );
 	}
 	VGUI_ShowOptions();
+	Con_Printf( "[VGUI] returned from VGUI_ShowOptions\n" );
 }
 
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
