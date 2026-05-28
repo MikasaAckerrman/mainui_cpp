@@ -3,7 +3,16 @@
 // All pixel coordinates are passed through VS() so the dialog scales with
 // screen size (mainui's logical 768-unit reference => physical pixels).
 
+// Heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+// mainui bridge - declared at global scope to avoid namespace mangling and
+// to skip pulling Utils.h (which would cause the `null` macro clash).
+extern void UI_EnableTextInput( bool enable );
+#include "TrackerScheme.h"
+
 #include <VGUI_Log.h>
+#include <VGUI_SchemeColors.h>
+#include <VGUI_Scheme.h>
 #include <VGUI_OptionsDialog.h>
 #include <VGUI_TabPanel.h>
 #include <VGUI_Panel.h>
@@ -19,10 +28,6 @@
 #include <VGUI_EtchedBorder.h>
 #include <VGUI_UIScale.h>
 #include <string.h>
-
-// mainui bridge - declared at global scope to avoid namespace mangling and
-// to skip pulling Utils.h (which would cause the `null` macro clash).
-extern void UI_EnableTextInput( bool enable );
 
 namespace vgui
 {
@@ -298,29 +303,218 @@ static inline int RowGap()  { return VS(6); }
 static inline int FldH()    { return VS(20); }
 static inline int FirstY()  { return VS(14); }
 
+// ====================================================================
+// Lightweight inline widgets used by the Multiplayer tab.
+// Real implementations (image upload, popup combo, password masking
+// with cursor metrics) come in later PRs; this is the visual layout
+// pass so the tab matches PC CS 1.6 reference at a glance.
+// ====================================================================
+
+// Recessed olive square -- avatar / logo preview slot. No image yet.
+class PreviewBox : public Panel
+{
+public:
+	PreviewBox(int x, int y, int w, int h) : Panel(x, y, w, h) {}
+protected:
+	virtual void paintBackground()
+	{
+		int wide, tall;
+		getSize(wide, tall);
+		unsigned int bg     = g_Scheme.fieldBgColor    ? g_Scheme.fieldBgColor    : 0xE6555F4B;
+		unsigned int dark   = g_Scheme.borderDark      ? g_Scheme.borderDark      : 0xC8282C24;
+		unsigned int bright = g_Scheme.borderBright    ? g_Scheme.borderBright    : 0xC85F6558;
+		schemeBgColor(this, bg);
+		drawFilledRect(0, 0, wide, tall);
+		// Lowered look: dark on top+left, bright on bottom+right
+		schemeBgColor(this, dark);
+		drawFilledRect(0, 0, wide, 1);
+		drawFilledRect(0, 0, 1, tall);
+		schemeBgColor(this, bright);
+		drawFilledRect(0, tall - 1, wide, tall);
+		drawFilledRect(wide - 1, 0, wide, tall);
+	}
+};
+
+// TextEntry that renders '*' for every character. Inherits all editing,
+// cursor, focus, IME and dirty-signal logic from CvarTextEntry; only the
+// visual paint is replaced. Cursor metric is approximate (8px monospace)
+// because the real cursor X is computed from private members of TextEntry.
+class PasswordTextEntry : public CvarTextEntry
+{
+public:
+	PasswordTextEntry(const char* cvarName, int x, int y, int w, int h)
+		: CvarTextEntry(cvarName, x, y, w, h) {}
+protected:
+	virtual void paint()
+	{
+		int pwide, ptall;
+		getPaintSize(pwide, ptall);
+
+		int len = getTextLength();
+		if (len == 0 && !hasFocus())
+			return;
+
+		char stars[256];
+		int n = (len < 255) ? len : 255;
+		for (int i = 0; i < n; i++) stars[i] = '*';
+		stars[n] = 0;
+
+		unsigned int textCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
+		schemeFgColor(this, textCol);
+		drawSetTextFont(Scheme::sf_primary1);
+
+		int textX = 4;
+		int textY = 3;
+		drawPrintText(textX, textY, stars, n);
+
+		if (hasFocus())
+		{
+			int cursorX = textX + n * 8;
+			schemeBgColor(this, textCol);
+			drawFilledRect(cursorX, 2, cursorX + 1, ptall - 2);
+		}
+	}
+};
+
+// Stub combo-box: button that cycles through a fixed list of options on
+// click and writes the current option to a cvar. No popup yet -- popup
+// menu widget is a separate PR. Visually shows "value [v]" so user sees
+// the text and the dropdown affordance.
+class StubComboButton;
+class StubCombo_CycleSignal : public ActionSignal
+{
+public:
+	StubCombo_CycleSignal(StubComboButton* c) : _c(c) {}
+	virtual void actionPerformed(Panel* p);
+private:
+	StubComboButton* _c;
+};
+
+class StubComboButton : public Button
+{
+public:
+	StubComboButton(const char* cvarName, const char* const* opts, int optCount,
+	                int x, int y, int w, int h)
+		: Button("", x, y, w, h),
+		  _opts(opts), _optCount(optCount)
+	{
+		_cvar[0] = 0;
+		if (cvarName) vgui_strcpy(_cvar, sizeof(_cvar), cvarName);
+		_idx = 0;
+		const char* cur = VGUI_GetCvarString(_cvar);
+		for (int i = 0; i < _optCount; i++)
+		{
+			if (cur && opts[i] && strcmp(cur, opts[i]) == 0) { _idx = i; break; }
+		}
+		_buf[0] = 0;
+		refreshLabel();
+		addActionSignal(new StubCombo_CycleSignal(this));
+	}
+
+	void cycle()
+	{
+		if (_optCount <= 0) return;
+		_idx = (_idx + 1) % _optCount;
+		if (_opts[_idx])
+			VGUI_SetCvarString(_cvar, _opts[_idx]);
+		refreshLabel();
+	}
+private:
+	void refreshLabel()
+	{
+		const char* v = (_idx >= 0 && _idx < _optCount && _opts[_idx]) ? _opts[_idx] : "";
+		int n = 0;
+		while (v[n] && n < 60) { _buf[n] = v[n]; n++; }
+		const char* tail = "  [v]";
+		for (int i = 0; tail[i] && n < 63; i++) _buf[n++] = tail[i];
+		_buf[n] = 0;
+		setText("%s", _buf);
+	}
+	char _cvar[64];
+	const char* const* _opts;
+	int _optCount;
+	int _idx;
+	char _buf[64];
+};
+
+inline void StubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
+{
+	if (_c) _c->cycle();
+}
+
 void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 {
-	int y = FirstY();
+	// Two-column layout matching PC CS 1.6:
+	//   Left  column: Avatar slot + "Загрузить..." + cts_team combo,
+	//                 Logo slot   + lambda combo  + "Изменить цвет",
+	//                 hint label, "Дополнительно..."
+	//   Right column: Имя игрока field, Пароль для VIP/Admin field
+	int leftX  = VS(14);
+	int rightX = VS(280);
+	int colW   = VS(240);
+	int y = VS(10);
 
-	// "Имя игрока:"
-	page->addChild(new Label("\xD0\x98\xD0\xBC\xD1\x8F \xD0\xB8\xD0\xB3\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0:", LblX(), y, LblW(), FldH()));
-	CvarTextEntry* nameEntry = new CvarTextEntry("name", InpX(), y, InpW(), FldH());
+	// ---- Left column: Avatar group -------------------------------------
+	// "Аватар"
+	page->addChild(new Label("\xD0\x90\xD0\xB2\xD0\xB0\xD1\x82\xD0\xB0\xD1\x80",
+		leftX, y, VS(80), FldH()));
+	y += VS(16);
+	int slotSize = VS(64);
+	page->addChild(new PreviewBox(leftX, y, slotSize, slotSize));
+	// "Загрузить..."
+	page->addChild(new Button("\xD0\x97\xD0\xB0\xD0\xB3\xD1\x80\xD1\x83\xD0\xB7\xD0\xB8\xD1\x82\xD1\x8C...",
+		leftX + slotSize + VS(8), y, VS(120), VS(22)));
+	// cts_team combo placed below the load button
+	static const char* k_teams[] = { "cts_team", "ts_team", "vip_team", "admin_team" };
+	page->addChild(new StubComboButton("logo_team", k_teams, 4,
+		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22)));
+	y += slotSize + VS(12);
+
+	// ---- Left column: Logo group ---------------------------------------
+	// "Логотип"
+	page->addChild(new Label("\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF",
+		leftX, y, VS(80), FldH()));
+	y += VS(16);
+	page->addChild(new PreviewBox(leftX, y, slotSize, slotSize));
+	// lambda combo (cl_logofile cvar in CS 1.6)
+	static const char* k_logos[] = { "lambda", "skull", "ts_team", "cts_team", "n0!se" };
+	page->addChild(new StubComboButton("cl_logofile", k_logos, 5,
+		leftX + slotSize + VS(8), y, VS(120), VS(22)));
+	// "Изменить цвет"
+	page->addChild(new Button("\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
+		leftX + slotSize + VS(8), y + VS(28), VS(120), VS(22)));
+	y += slotSize + VS(12);
+
+	// "Логотип изменится после соединения с сервером." -- dim hint
+	Label* hint = new Label(
+		"\xD0\x9B\xD0\xBE\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB8\xD0\xBF \xD0\xB8\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x81\xD1\x8F \xD0\xBF\xD0\xBE\xD1\x81\xD0\xBB\xD0\xB5 \xD1\x81\xD0\xBE\xD0\xB5\xD0\xB4\xD0\xB8\xD0\xBD\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x8F \xD1\x81 \xD1\x81\xD0\xB5\xD1\x80\xD0\xB2\xD0\xB5\xD1\x80\xD0\xBE\xD0\xBC.",
+		leftX, y, colW, FldH() * 2);
+	page->addChild(hint);
+	y += VS(28);
+
+	// "Дополнительно..."
+	page->addChild(new Button("\xD0\x94\xD0\xBE\xD0\xBF\xD0\xBE\xD0\xBB\xD0\xBD\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE...",
+		leftX, y, VS(120), VS(22)));
+
+	// ---- Right column: Имя игрока + Пароль -----------------------------
+	int ry = VS(10);
+	// "Имя игрока"
+	page->addChild(new Label("\xD0\x98\xD0\xBC\xD1\x8F \xD0\xB8\xD0\xB3\xD1\x80\xD0\xBE\xD0\xBA\xD0\xB0",
+		rightX, ry, VS(120), FldH()));
+	ry += VS(16);
+	CvarTextEntry* nameEntry = new CvarTextEntry("name", rightX, ry, colW, FldH());
 	page->addChild(nameEntry);
 	_textEntries.addElement(nameEntry);
-	y += RowH() + RowGap();
+	ry += VS(36);
 
-	// "Верхний цвет:"
-	page->addChild(new Label("\xD0\x92\xD0\xB5\xD1\x80\xD1\x85\xD0\xBD\xD0\xB8\xD0\xB9 \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82:", LblX(), y, LblW(), FldH()));
-	CvarSlider* topSlider = new CvarSlider("topcolor", InpX(), y, InpW(), FldH(), 0, 255);
-	page->addChild(topSlider);
-	_sliders.addElement(topSlider);
-	y += RowH() + RowGap();
-
-	// "Нижний цвет:"
-	page->addChild(new Label("\xD0\x9D\xD0\xB8\xD0\xB6\xD0\xBD\xD0\xB8\xD0\xB9 \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82:", LblX(), y, LblW(), FldH()));
-	CvarSlider* botSlider = new CvarSlider("bottomcolor", InpX(), y, InpW(), FldH(), 0, 255);
-	page->addChild(botSlider);
-	_sliders.addElement(botSlider);
+	// "Пароль для VIP/Admin доступа"
+	page->addChild(new Label(
+		"\xD0\x9F\xD0\xB0\xD1\x80\xD0\xBE\xD0\xBB\xD1\x8C \xD0\xB4\xD0\xBB\xD1\x8F VIP/Admin \xD0\xB4\xD0\xBE\xD1\x81\xD1\x82\xD1\x83\xD0\xBF\xD0\xB0",
+		rightX, ry, VS(220), FldH()));
+	ry += VS(16);
+	PasswordTextEntry* pwdEntry = new PasswordTextEntry("vip_password", rightX, ry, colW, FldH());
+	page->addChild(pwdEntry);
+	_textEntries.addElement(pwdEntry);
 }
 
 void VguiOptionsDialog::buildKeyboardTab(Panel* page)
