@@ -95,6 +95,8 @@ protected:
 
 		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+		unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
+		unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
 
 		if (sunken)
 		{
@@ -104,7 +106,7 @@ protected:
 			schemeBgColor(this, bright);
 			drawFilledRect(0, tall - 1, wide, tall);
 			drawFilledRect(wide - 1, 0, wide, tall);
-			schemeBgColor(this, 0xC83A3E30);
+			schemeBgColor(this, innerDark);
 			drawFilledRect(1, 1, wide - 1, 2);
 			drawFilledRect(1, 1, 2, tall - 1);
 		}
@@ -116,10 +118,10 @@ protected:
 			schemeBgColor(this, dark);
 			drawFilledRect(0, tall - 1, wide, tall);
 			drawFilledRect(wide - 1, 0, wide, tall);
-			schemeBgColor(this, 0xC8909880);
+			schemeBgColor(this, innerBright);
 			drawFilledRect(1, 1, wide - 1, 2);
 			drawFilledRect(1, 1, 2, tall - 1);
-			schemeBgColor(this, 0xC83A3E30);
+			schemeBgColor(this, innerDark);
 			drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 			drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 		}
@@ -308,13 +310,17 @@ void Frame::paintBackground()
 	}
 
 	// Subtle gradient bands
-	schemeBgColor(this, 0x40FFFFFF);
+	unsigned int hiBand = g_Scheme.frameHighlightBand ? g_Scheme.frameHighlightBand : 0x40FFFFFF;
+	unsigned int loBand = g_Scheme.frameShadowBand    ? g_Scheme.frameShadowBand    : 0x40000000;
+	schemeBgColor(this, hiBand);
 	drawFilledRect(border, captionH + border, wide - border, captionH + border + 1);
-	schemeBgColor(this, 0x40000000);
+	schemeBgColor(this, loBand);
 	drawFilledRect(border, tall - border - 1, wide - border, tall - border);
 
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
+	unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
 
 	// Outer bevel (raised)
 	schemeBgColor(this, bright);
@@ -325,10 +331,10 @@ void Frame::paintBackground()
 	drawFilledRect(wide - 1, 0, wide, tall);
 
 	// Inner bevel
-	schemeBgColor(this, 0xC8909880);
+	schemeBgColor(this, innerBright);
 	drawFilledRect(1, 1, wide - 1, 2);
 	drawFilledRect(1, 1, 2, tall - 1);
-	schemeBgColor(this, 0xC83A3E30);
+	schemeBgColor(this, innerDark);
 	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 

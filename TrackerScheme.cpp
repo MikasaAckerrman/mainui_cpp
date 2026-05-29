@@ -12,6 +12,102 @@ BaseSettings/Colors to mainui_cpp globals and the extended SchemeColors struct.
 
 SchemeColors g_Scheme;
 
+// Canonical built-in scheme. This is the SINGLE source of truth for the
+// CS 1.6 PC palette: it is parsed through the exact same path as an on-disk
+// resource/TrackerScheme.res, so there are no separate hardcoded ARGB
+// constants that can drift out of sync. The .res file shipped in
+// game_assets/resource/ MUST mirror this text; when present on the device it
+// simply overrides this built-in default. Kept as a mutable char[] because
+// COM_ParseFile takes a char* cursor.
+static char s_defaultScheme[] = R"SCHEME(
+"Scheme"
+{
+	"Colors"
+	{
+		"White"				"255 255 255 255"
+		"OffWhite"			"220 220 220 255"
+		"LightGray"			"200 200 200 255"
+		"DullWhite"			"160 160 160 255"
+		"MedOlive"			"75 80 50 255"
+		"DarkOlive"			"55 58 35 255"
+		"DarkerOlive"		"35 38 22 255"
+		"TitleOlive"		"95 104 79 230"
+		"TitleTopEdge"		"105 114 89 255"
+		"TitleBottomEdge"	"75 84 59 255"
+		"Black"				"0 0 0 255"
+		"TransBlack"		"0 0 0 128"
+		"ListBG"			"45 50 35 230"
+		"FieldBG"			"85 96 75 230"
+		"FrameBG"			"95 104 79 230"
+		"MainBG"			"95 104 79 255"
+		"SelectionBG"		"90 90 50 255"
+		"Highlight"			"80 85 50 64"
+		"ActiveTabGreen"	"93 102 77 230"
+		"TabInactive"		"55 62 43 230"
+		"TabActiveText"		"255 255 255 255"
+		"WindowBG"			"48 56 40 230"
+		"Blank"				"0 0 0 0"
+	}
+
+	"BaseSettings"
+	{
+		"Frame.BgColor"					"FrameBG"
+		"Frame.OutOfFocusBgColor"		"FrameBG"
+		"FrameTitleBar.BgColor"			"TitleOlive"
+		"FrameTitleBar.TextColor"		"White"
+		"FrameTitleBar.TopEdgeColor"	"TitleTopEdge"
+		"FrameTitleBar.BottomEdgeColor"	"TitleBottomEdge"
+
+		"Border.Bright"					"95 101 88 200"
+		"Border.Dark"					"40 44 36 200"
+		"Border.Selection"				"Black"
+		"Border.InnerBright"			"144 152 128 200"
+		"Border.InnerDark"				"58 62 48 200"
+
+		"Frame.HighlightBandColor"		"255 255 255 64"
+		"Frame.ShadowBandColor"			"0 0 0 64"
+
+		"Button.TextColor"				"White"
+		"Button.BgColor"				"91 99 80 255"
+		"Button.ArmedTextColor"			"White"
+		"Button.ArmedBgColor"			"107 115 96 255"
+		"Button.DepressedTextColor"		"DullWhite"
+
+		"Label.TextColor"				"LightGray"
+		"Label.TextBrightColor"			"White"
+		"Label.TextDullColor"			"DullWhite"
+		"Label.DisabledFgColor1"		"DarkOlive"
+		"Label.DisabledFgColor2"		"DarkerOlive"
+
+		"ListPanel.TextColor"			"White"
+		"ListPanel.BgColor"				"ListBG"
+		"ListPanel.SelectedTextColor"	"White"
+		"ListPanel.SelectedBgColor"		"SelectionBG"
+		"ListPanel.HeaderTextColor"		"DullWhite"
+		"SectionedListPanel.HeaderTextColor" "DullWhite"
+
+		"TextEntry.TextColor"			"White"
+		"TextEntry.BgColor"				"FieldBG"
+		"TextEntry.SelectedTextColor"	"White"
+		"TextEntry.SelectedBgColor"		"SelectionBG"
+
+		"PropertySheet.TextColor"		"DullWhite"
+		"PropertySheet.SelectedTextColor" "TabActiveText"
+		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
+		"PropertySheet.InactiveTabBgColor" "TabInactive"
+		"PropertySheet.BgColor"			"WindowBG"
+
+		"Menu.TextColor"				"White"
+		"Menu.BgColor"					"FrameBG"
+		"Menu.ArmedTextColor"			"White"
+		"Menu.ArmedBgColor"				"SelectionBG"
+
+		"Panel.FgColor"					"White"
+		"Panel.BgColor"					"FrameBG"
+	}
+}
+)SCHEME";
+
 // Simple KeyValues parser state
 struct KVParser
 {
@@ -160,6 +256,16 @@ static void BaseSettingsHandler( const char *key, const char *value )
 		g_Scheme.borderDark = color;
 	else if( !stricmp( key, "Border.Selection" ) || !stricmp( key, "BorderSelection" ) )
 		g_Scheme.borderSelection = color;
+	else if( !stricmp( key, "Border.InnerBright" ) )
+		g_Scheme.borderInnerBright = color;
+	else if( !stricmp( key, "Border.InnerDark" ) )
+		g_Scheme.borderInnerDark = color;
+
+	// Frame body gradient bands
+	else if( !stricmp( key, "Frame.HighlightBandColor" ) )
+		g_Scheme.frameHighlightBand = color;
+	else if( !stricmp( key, "Frame.ShadowBandColor" ) )
+		g_Scheme.frameShadowBand = color;
 
 	// Buttons
 	else if( !stricmp( key, "Button.TextColor" ) || !stricmp( key, "ControlFG" ) )
@@ -232,6 +338,9 @@ static void BaseSettingsHandler( const char *key, const char *value )
 		g_Scheme.bgColor = color;
 	else if( !stricmp( key, "Panel.FgColor" ) || !stricmp( key, "FgColor" ) )
 		g_Scheme.fgColor = color;
+	// Content area behind a PropertySheet/TabView (read by TabView.cpp)
+	else if( !stricmp( key, "PropertySheet.BgColor" ) )
+		g_Scheme.windowBgColor = color;
 
 	// Also apply to mainui global colors for legacy controls
 	if( !stricmp( key, "Label.TextColor" ) || !stricmp( key, "BaseText" ) )
@@ -248,13 +357,84 @@ static void BaseSettingsHandler( const char *key, const char *value )
 		uiColorHelp = color;
 }
 
+// Parse a scheme KeyValues buffer (on-disk file or built-in default) into
+// g_Scheme and mirror the relevant colors into the legacy mainui globals.
+// buffer must be a writable, null-terminated cursor for COM_ParseFile.
+static void ParseSchemeBuffer( char *buffer )
+{
+	KVParser kv;
+	kv.pFile = buffer;
+
+	// Top-level: optional root key (e.g. "Scheme") followed by opening brace.
+	if( !kv.NextToken() )
+		return;
+	if( kv.token[0] != '{' )
+	{
+		if( !kv.NextToken() || kv.token[0] != '{' )
+		{
+			Con_Printf( "TrackerScheme: parse error, expected '{' after root key\n" );
+			return;
+		}
+	}
+
+	while( kv.NextToken() )
+	{
+		if( kv.token[0] == '}' )
+			break;
+
+		if( !stricmp( kv.token, "Colors" ) )
+		{
+			ParseSection( kv, ColorsHandler );
+		}
+		else if( !stricmp( kv.token, "BaseSettings" ) )
+		{
+			ParseSection( kv, BaseSettingsHandler );
+		}
+		else if( !stricmp( kv.token, "Fonts" ) || !stricmp( kv.token, "Borders" ) || !stricmp( kv.token, "CustomFontFiles" ) )
+		{
+			// Handled elsewhere (FontManager / programmatic bevels) - skip.
+			ParseSection( kv, NULL );
+		}
+		else
+		{
+			// Unknown section or key at root level - try to skip its block.
+			if( kv.NextToken() && kv.token[0] == '{' )
+			{
+				int depth = 1;
+				while( depth > 0 && kv.NextToken() )
+				{
+					if( kv.token[0] == '{' ) depth++;
+					else if( kv.token[0] == '}' ) depth--;
+				}
+			}
+		}
+	}
+
+	// Mirror parsed colors into the legacy mainui globals used by older controls.
+	if( g_Scheme.labelTextColor )
+		uiPromptTextColor = g_Scheme.labelTextColor;
+	if( g_Scheme.buttonArmedTextColor )
+		uiPromptFocusColor = g_Scheme.buttonArmedTextColor;
+	if( g_Scheme.frameBgColor )
+		uiPromptBgColor = g_Scheme.frameBgColor;
+	if( g_Scheme.fieldTextColor )
+		uiInputTextColor = g_Scheme.fieldTextColor;
+	if( g_Scheme.fieldBgColor )
+		uiInputBgColor = g_Scheme.fieldBgColor;
+	if( g_Scheme.borderDark )
+		uiInputFgColor = g_Scheme.borderDark;
+	if( g_Scheme.labelDimColor )
+		uiColorHelp = g_Scheme.labelDimColor;
+}
+
 void UI_LoadTrackerScheme( void )
 {
 	// Reset
 	memset( &g_Scheme, 0, sizeof( g_Scheme ) );
 	s_numColorDefs = 0;
 
-	// Try loading from resource/TrackerScheme.res first, then gfx/shell/TrackerScheme.res
+	// Prefer an on-disk override, otherwise use the built-in canonical scheme.
+	// Both are parsed through the same path, so the result is identical.
 	const char *paths[] = {
 		"resource/TrackerScheme.res",
 		"gfx/shell/TrackerScheme.res",
@@ -272,145 +452,14 @@ void UI_LoadTrackerScheme( void )
 		}
 	}
 
-	if( !afile )
+	if( afile )
 	{
-		Con_Printf( "TrackerScheme: not found, applying built-in CS 1.6 defaults\n" );
-
-		// Apply CS 1.6 GoldSrc VGUI palette - warm olive/gray-green (pixel-perfect)
-		g_Scheme.frameBgColor        = 0xE6646E50; // warm olive body (100,110,80)
-		g_Scheme.frameTitleBarBg     = 0xE64A5440; // darker grey-green titlebar (74,84,64)
-		g_Scheme.frameTitleBarFg     = 0xFFFFFFFF;
-		g_Scheme.frameBorderColor    = 0xC8282C24;
-		g_Scheme.frameTitleBarTop    = 0xFF8E9678; // bright top highlight (1px line)
-		g_Scheme.frameTitleBarBottom = 0xFF2A3020; // dark bottom separator
-
-		g_Scheme.borderBright        = 0xC87A8070; // brighter bevel (122,128,112)
-		g_Scheme.borderDark          = 0xC8282C24; // dark bevel (40,44,36)
-		g_Scheme.borderSelection     = 0xFF000000;
-
-		g_Scheme.buttonTextColor     = 0xFFE8E8E8; // slightly off-white (pixel font look)
-		g_Scheme.buttonBgColor       = 0xFF5C6450; // button body olive
-		g_Scheme.buttonArmedTextColor= 0xFFFFFFFF;
-		g_Scheme.buttonArmedBgColor  = 0xFF6C7460; // armed = brighter
-		g_Scheme.buttonDepressedTextColor = 0xFF909090;
-
-		g_Scheme.labelTextColor      = 0xFFD0D0C8; // warm light grey (not pure white)
-		g_Scheme.labelBrightColor    = 0xFFFFFFFF;
-		g_Scheme.labelDimColor       = 0xFF808080; // dimmer for disabled
-		g_Scheme.labelDisabledFg1    = 0xFF373A23;
-		g_Scheme.labelDisabledFg2    = 0xFF232616;
-
-		g_Scheme.listTextColor       = 0xFFFFFFFF;
-		g_Scheme.listBgColor         = 0xE6303828;
-		g_Scheme.listSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.listSelectedBgColor = 0xFF5A5A32;
-		g_Scheme.listHeaderTextColor = 0xFFA0A0A0;
-
-		g_Scheme.fieldTextColor      = 0xFFFFFFFF;
-		g_Scheme.fieldBgColor        = 0xE64A5440; // darker recessed field
-		g_Scheme.fieldSelectedTextColor = 0xFFFFFFFF;
-		g_Scheme.fieldSelectedBgColor = 0xFF5A5A32;
-
-		g_Scheme.tabTextColor        = 0xFF909090; // dim inactive tab text
-		g_Scheme.tabSelectedTextColor= 0xFFE8E0A0; // warm yellow-white active tab (GoldSrc look)
-		g_Scheme.tabActiveBgColor    = 0xE6646E50; // same as frame
-		g_Scheme.tabInactiveBgColor  = 0xE6555E42; // (85,94,66) - darker than body but not jarring
-
-		g_Scheme.menuTextColor       = 0xFFFFFFFF;
-		g_Scheme.menuBgColor         = 0xE6646E50;
-		g_Scheme.menuArmedTextColor  = 0xFFFFFFFF;
-		g_Scheme.menuArmedBgColor    = 0xFF5A5A32;
-
-		g_Scheme.bgColor             = 0xE6646E50;
-		g_Scheme.fgColor             = 0xFFFFFFFF;
-		g_Scheme.windowBgColor       = 0xE6303828;
-		g_Scheme.windowFgColor       = 0xFFFFFFFF;
-
-		// Also update legacy mainui globals
-		uiPromptTextColor  = g_Scheme.labelTextColor;
-		uiPromptFocusColor = g_Scheme.buttonArmedTextColor;
-		uiPromptBgColor    = g_Scheme.frameBgColor;
-		uiInputTextColor   = g_Scheme.fieldTextColor;
-		uiInputBgColor     = g_Scheme.fieldBgColor;
-		uiInputFgColor     = g_Scheme.borderDark;
-		uiColorHelp        = g_Scheme.labelDimColor;
-
-		return;
-	}
-
-	// Parse the file
-	KVParser kv;
-	kv.pFile = afile;
-
-	// Top-level: expect "Scheme" or similar root key, then brace
-	// First token is the root key name (e.g. "Scheme"), skip it
-	// Then expect opening brace
-	if( !kv.NextToken() )
-	{
+		ParseSchemeBuffer( afile );
 		EngFuncs::COM_FreeFile( afile );
-		return;
 	}
-	// If first token is already '{', we're in a brace-only file
-	if( kv.token[0] != '{' )
+	else
 	{
-		// Read next token which should be '{'
-		if( !kv.NextToken() || kv.token[0] != '{' )
-		{
-			Con_Printf( "TrackerScheme: parse error, expected '{' after root key\n" );
-			EngFuncs::COM_FreeFile( afile );
-			return;
-		}
+		Con_Printf( "TrackerScheme: file not found, using built-in canonical scheme\n" );
+		ParseSchemeBuffer( s_defaultScheme );
 	}
-
-	// Now parse sections
-	while( kv.NextToken() )
-	{
-		if( kv.token[0] == '}' )
-			break;
-
-		if( !stricmp( kv.token, "Colors" ) )
-		{
-			ParseSection( kv, ColorsHandler );
-		}
-		else if( !stricmp( kv.token, "BaseSettings" ) )
-		{
-			ParseSection( kv, BaseSettingsHandler );
-		}
-		else if( !stricmp( kv.token, "Fonts" ) || !stricmp( kv.token, "Borders" ) || !stricmp( kv.token, "CustomFontFiles" ) )
-		{
-			// Skip these sections for now (font sizes handled by FontManager)
-			ParseSection( kv, NULL );
-		}
-		else
-		{
-			// Unknown section or key at root level - try to skip
-			if( kv.NextToken() && kv.token[0] == '{' )
-			{
-				int depth = 1;
-				while( depth > 0 && kv.NextToken() )
-				{
-					if( kv.token[0] == '{' ) depth++;
-					else if( kv.token[0] == '}' ) depth--;
-				}
-			}
-		}
-	}
-
-	// Ensure legacy globals are updated from whatever we parsed
-	if( g_Scheme.labelTextColor )
-		uiPromptTextColor = g_Scheme.labelTextColor;
-	if( g_Scheme.buttonArmedTextColor )
-		uiPromptFocusColor = g_Scheme.buttonArmedTextColor;
-	if( g_Scheme.frameBgColor )
-		uiPromptBgColor = g_Scheme.frameBgColor;
-	if( g_Scheme.fieldTextColor )
-		uiInputTextColor = g_Scheme.fieldTextColor;
-	if( g_Scheme.fieldBgColor )
-		uiInputBgColor = g_Scheme.fieldBgColor;
-	if( g_Scheme.borderDark )
-		uiInputFgColor = g_Scheme.borderDark;
-	if( g_Scheme.labelDimColor )
-		uiColorHelp = g_Scheme.labelDimColor;
-
-	EngFuncs::COM_FreeFile( afile );
 }

@@ -100,6 +100,7 @@ void TextEntry::paintBackground()
 	unsigned int bg     = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE64A5440;
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int innerDark = g_Scheme.borderInnerDark ? g_Scheme.borderInnerDark : 0xC83A3E30;
 
 	// Field background (darker than frame for recessed look)
 	schemeBgColor(this, bg);
@@ -115,7 +116,7 @@ void TextEntry::paintBackground()
 	drawFilledRect(wide - 1, 0, wide, tall);
 
 	// Inner inset (1px inside outer)
-	schemeBgColor(this, 0xC83A3E30);
+	schemeBgColor(this, innerDark);
 	drawFilledRect(1, 1, wide - 1, 2);
 	drawFilledRect(1, 1, 2, tall - 1);
 	schemeBgColor(this, 0xC8606850);

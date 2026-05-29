@@ -144,6 +144,8 @@ void TabPanel::paint()
 	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFE8E0A0;
 	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xC87A8070;
 	unsigned int dark        = g_Scheme.borderDark         ? g_Scheme.borderDark         : 0xC8282C24;
+	unsigned int innerBright = g_Scheme.borderInnerBright  ? g_Scheme.borderInnerBright  : 0xC8909880;
+	unsigned int innerDark   = g_Scheme.borderInnerDark    ? g_Scheme.borderInnerDark    : 0xC83A3E30;
 
 	int tabH   = VS(TAB_HEIGHT_BASE);
 	int shrink = VS(TAB_INACTIVE_SHRINK);
@@ -175,7 +177,7 @@ void TabPanel::paint()
 			drawFilledRect(x, 0, x + 1, tabH + 2);
 
 			// Inner highlight (1px inset from outer)
-			schemeBgColor(this, 0xC8909880);
+			schemeBgColor(this, innerBright);
 			drawFilledRect(x + 1, 1, x + w - 2, 2);
 			drawFilledRect(x + 1, 1, x + 2, tabH + 1);
 
@@ -184,7 +186,7 @@ void TabPanel::paint()
 			drawFilledRect(x + w - 1, 0, x + w, tabH + 2);
 
 			// Inner shadow right
-			schemeBgColor(this, 0xC83A3E30);
+			schemeBgColor(this, innerDark);
 			drawFilledRect(x + w - 2, 1, x + w - 1, tabH + 1);
 		}
 		else

@@ -24,6 +24,7 @@
 		"ActiveTabGreen"	"93 102 77 230"
 		"TabInactive"		"55 62 43 230"
 		"TabActiveText"		"255 255 255 255"
+		"WindowBG"			"48 56 40 230"
 		"Blank"				"0 0 0 0"
 	}
 
@@ -43,6 +44,12 @@
 		"Border.Bright"					"95 101 88 200"
 		"Border.Dark"					"40 44 36 200"
 		"Border.Selection"				"Black"
+		"Border.InnerBright"			"144 152 128 200"
+		"Border.InnerDark"				"58 62 48 200"
+
+		// ===== Frame body gradient bands =====
+		"Frame.HighlightBandColor"		"255 255 255 64"
+		"Frame.ShadowBandColor"			"0 0 0 64"
 
 		// ===== Buttons =====
 		"Button.TextColor"				"White"
@@ -94,6 +101,7 @@
 		"PropertySheet.SelectedTextColor" "TabActiveText"
 		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
 		"PropertySheet.InactiveTabBgColor" "TabInactive"
+		"PropertySheet.BgColor"			"WindowBG"
 
 		// ===== Menu =====
 		"Menu.TextColor"				"White"

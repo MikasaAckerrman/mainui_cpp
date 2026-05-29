@@ -66,6 +66,14 @@ struct SchemeColors
 	unsigned int borderBright;
 	unsigned int borderDark;
 	unsigned int borderSelection;
+	// Inner (second) bevel highlight/shadow, drawn 1px inside the outer bevel.
+	unsigned int borderInnerBright;
+	unsigned int borderInnerDark;
+
+	// Frame body gradient bands (subtle highlight at top of client, shadow at
+	// bottom). White/black with low alpha - overlaid on the frame background.
+	unsigned int frameHighlightBand;
+	unsigned int frameShadowBand;
 
 	// Generic
 	unsigned int bgColor;
