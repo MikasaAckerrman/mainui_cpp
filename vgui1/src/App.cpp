@@ -430,6 +430,19 @@ void App::internalMousePressed(MouseCode code, SurfaceBase* surfaceBase)
 		_mousePressed[code] = true;
 		_mouseDown[code] = true;
 	}
+	// CRITICAL: refresh mouse focus from the CURRENT cursor position before
+	// dispatch. On Android touch the down event can arrive with the same
+	// coords as the previous move, and UI_MouseMove early-returns when coords
+	// are unchanged -> internalCursorMoved/updateMouseFocus never ran for this
+	// tap -> _mouseFocus is stale or null. Without this refresh the press would
+	// miss the panel under the finger (e.g. a Frame title bar), so drag/click
+	// silently fails. uiStatic.cursorX/Y is already the down position here.
+	if (!_mouseCapture)
+	{
+		int cx, cy;
+		getCursorPos(cx, cy);
+		updateMouseFocus(cx, cy, surfaceBase);
+	}
 	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
 	if (target)
 	{
@@ -443,6 +456,13 @@ void App::internalMouseDoublePressed(MouseCode code, SurfaceBase* surfaceBase)
 	{
 		_mouseDoublePressed[code] = true;
 		_mouseDown[code] = true;
+	}
+	// Same stale-focus guard as internalMousePressed (see comment there).
+	if (!_mouseCapture)
+	{
+		int cx, cy;
+		getCursorPos(cx, cy);
+		updateMouseFocus(cx, cy, surfaceBase);
 	}
 	Panel* target = _mouseCapture ? _mouseCapture : _mouseFocus;
 	if (target)
