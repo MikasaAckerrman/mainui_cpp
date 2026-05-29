@@ -25,6 +25,7 @@ public:
 	virtual void setInternal(bool state);
 	virtual void setSmallCaption(bool state);
 	virtual void setSize(int wide, int tall);
+	virtual Panel* isWithinTraverse(int x, int y); // resize/caption zones win over children
 protected:
 	virtual void paintBackground();
 	virtual void paint();
