@@ -314,7 +314,7 @@ void UI_LoadTrackerScheme( void )
 		g_Scheme.tabTextColor        = 0xFF909090; // dim inactive tab text
 		g_Scheme.tabSelectedTextColor= 0xFFE8E0A0; // warm yellow-white active tab (GoldSrc look)
 		g_Scheme.tabActiveBgColor    = 0xE6646E50; // same as frame
-		g_Scheme.tabInactiveBgColor  = 0xE6404830; // clearly darker inactive
+		g_Scheme.tabInactiveBgColor  = 0xE6555E42; // (85,94,66) - darker than body but not jarring
 
 		g_Scheme.menuTextColor       = 0xFFFFFFFF;
 		g_Scheme.menuBgColor         = 0xE6646E50;
