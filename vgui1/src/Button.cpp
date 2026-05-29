@@ -113,6 +113,8 @@ void Button::paintBackground()
 
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
+	unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
 
 	// Fill body (inside bevel)
 	schemeBgColor(this, bg);
@@ -129,7 +131,7 @@ void Button::paintBackground()
 		drawFilledRect(0, tall - 1, wide, tall);
 		drawFilledRect(wide - 1, 0, wide, tall);
 		// Inner shadow
-		schemeBgColor(this, 0xC83A3E30);
+		schemeBgColor(this, innerDark);
 		drawFilledRect(1, 1, wide - 1, 2);
 		drawFilledRect(1, 1, 2, tall - 1);
 	}
@@ -145,11 +147,11 @@ void Button::paintBackground()
 		drawFilledRect(0, tall - 1, wide, tall);
 		drawFilledRect(wide - 1, 0, wide, tall);
 		// Inner highlight
-		schemeBgColor(this, 0xC8909880);
+		schemeBgColor(this, innerBright);
 		drawFilledRect(1, 1, wide - 1, 2);
 		drawFilledRect(1, 1, 2, tall - 1);
 		// Inner shadow
-		schemeBgColor(this, 0xC83A3E30);
+		schemeBgColor(this, innerDark);
 		drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 		drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 	}
