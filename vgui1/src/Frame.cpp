@@ -500,6 +500,51 @@ void Frame::internalCursorMoved(int x, int y)
 	Panel::internalCursorMoved(x, y);
 }
 
+// Resize edges/corners and the caption bar must win the hit-test over inner
+// children (TabPanel, buttons), otherwise a press on a resize grip that
+// overlaps the client area would land on a child and Frame would never start
+// resizing. We claim those zones here; everywhere else, normal child
+// traversal applies (so buttons/tabs/fields stay clickable). The close
+// button is checked first so it keeps working.
+Panel* Frame::isWithinTraverse(int x, int y)
+{
+	if (!_visible)
+		return null;
+
+	// Close button (a child) keeps priority in its own rect.
+	if (_closeButton && _closeButton->isVisible())
+	{
+		Panel* hit = _closeButton->isWithinTraverse(x, y);
+		if (hit)
+			return hit;
+	}
+
+	int ax = 0, ay = 0;
+	localToScreen(ax, ay);
+	int lx = x - ax;
+	int ly = y - ay;
+	int wide = getWide();
+	int tall = getTall();
+
+	// Inside the frame at all?
+	if (lx >= 0 && lx < wide && ly >= 0 && ly < tall)
+	{
+		// Resize grips win over children.
+		if (_sizeable && HitTestResize(lx, ly, wide, tall) != 0)
+			return this;
+
+		// Caption bar (drag zone) wins over children.
+		int captionH = _smallCaption ? FcapSmall() : Fcap();
+		int border = Fborder();
+		if (_moveable && ly >= border && ly < border + captionH &&
+			lx >= border && lx < wide - border)
+			return this;
+	}
+
+	// Otherwise normal front-to-back child traversal.
+	return Panel::isWithinTraverse(x, y);
+}
+
 void Frame::internalMousePressed(MouseCode code)
 {
 	if (code == MOUSE_LEFT)
