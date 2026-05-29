@@ -197,6 +197,17 @@ Panel* App::getFocus()
 	return _keyFocus;
 }
 
+void App::panelDeleted(Panel* panel)
+{
+	// Drop every reference so a destroyed Panel is never dispatched to.
+	if (_keyFocus == panel)       _keyFocus = null;
+	if (_mouseFocus == panel)     _mouseFocus = null;
+	if (_oldMouseFocus == panel)  _oldMouseFocus = null;
+	if (_mouseCapture == panel)   _mouseCapture = null;
+	if (_wantedKeyFocus == panel) _wantedKeyFocus = null;
+	if (_mouseArenaPanel == panel) _mouseArenaPanel = null;
+}
+
 void App::repaintAll()
 {
 	for (int i = 0; i < _surfaceBaseDar.getCount(); i++)

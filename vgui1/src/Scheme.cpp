@@ -13,6 +13,25 @@ Scheme::Scheme()
 	memset(_cursor, 0, sizeof(_cursor));
 }
 
+// Scheme owns the Font objects assigned via setFont (created once in
+// vgui_main). Without this dtor they leaked on every menu shutdown/reinit.
+// Duplicate pointers across slots are nulled before delete to avoid a
+// double-free if two SchemeFont slots ever share one Font.
+Scheme::~Scheme()
+{
+	for (int i = 0; i < sf_last; i++)
+	{
+		Font* f = _font[i];
+		if (!f)
+			continue;
+		for (int j = i + 1; j < sf_last; j++)
+			if (_font[j] == f)
+				_font[j] = null;
+		delete f;
+		_font[i] = null;
+	}
+}
+
 void Scheme::setColor(SchemeColor sc, int r, int g, int b, int a)
 {
 	if (sc < 0 || sc >= sc_last)
