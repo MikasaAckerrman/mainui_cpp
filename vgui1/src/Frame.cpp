@@ -400,47 +400,43 @@ void Frame::drawTitleBar(int wide)
 	}
 }
 
-// Robust drag/resize via per-frame cursor polling.
+// Robust drag/resize via incremental delta in cursorMoved events.
 //
-// On Android touch, cursorMoved events fire infrequently and may not deliver
-// at all during a continuous drag (engine batches ACTION_MOVE). To get smooth
-// real-time feedback EVERY FRAME, we poll uiStatic.cursorX/Y inside
-// solveTraverse() (called by VGUI_PaintAll once per frame).
+// App routes cursorMoved to the mouse-capture target (set on press), so the
+// Frame keeps receiving moves even after the cursor leaves its bounds. The
+// delta is measured from the LAST cursor pos (re-synced every move), never
+// from a fixed press-time anchor - immune to the Android press/cursor desync
+// that made the dialog jump sideways, and it tracks the finger every frame
+// (move events fire continuously during a touch drag).
 //
-// Pattern:
-//   PRESS: set _dragging/_resizing flag, _lastCursorValid=false (defer capture)
-//   FRAME 1: poll cursor pos, capture as _lastCursor, return without moving.
-//            This avoids using a stale press-time cursor pos.
-//   FRAME N: poll cursor, compute delta from _lastCursor, apply, update.
-//   RELEASE: clear flags.
-//
-// Result: dialog moves continuously even if cursorMoved events never fire.
-// First-frame skip prevents the "jumps to right" artifact when the engine
-// updates cursor pos AFTER firing the down-key event.
-void Frame::pollDragResize()
+//   PRESS:    set flag, _lastCursorValid=false, capture mouse.
+//   1st move: seed _lastCursor (no movement).
+//   Nth move: delta = cur - _lastCursor; apply; re-sync _lastCursor.
+//   RELEASE:  clear flags, release capture.
+void Frame::internalCursorMoved(int x, int y)
 {
-	if (!_dragging && !_resizing) return;
-
-	App* app = App::getInstance();
-	if (!app) return;
-
-	int x, y;
-	app->getCursorPos(x, y);
+	if (!_dragging && !_resizing)
+	{
+		Panel::internalCursorMoved(x, y);
+		return;
+	}
 
 	if (!_lastCursorValid)
 	{
-		// First poll after press: just record cursor pos (no movement).
-		// Cursor may still be stale at this point, but it doesn't matter -
-		// any drift will be absorbed on the next frame's delta.
 		_lastCursor[0] = x;
 		_lastCursor[1] = y;
 		_lastCursorValid = true;
+		Panel::internalCursorMoved(x, y);
 		return;
 	}
 
 	int dx = x - _lastCursor[0];
 	int dy = y - _lastCursor[1];
-	if (dx == 0 && dy == 0) return;
+	if (dx == 0 && dy == 0)
+	{
+		Panel::internalCursorMoved(x, y);
+		return;
+	}
 	_lastCursor[0] = x;
 	_lastCursor[1] = y;
 
@@ -500,17 +496,7 @@ void Frame::pollDragResize()
 		if (newW != wide || newH != tall)
 			setSize(newW, newH);
 	}
-}
 
-void Frame::solveTraverse()
-{
-	pollDragResize();
-	Panel::solveTraverse();
-}
-
-// Kept for compatibility but does nothing during drag (polling handles it).
-void Frame::internalCursorMoved(int x, int y)
-{
 	Panel::internalCursorMoved(x, y);
 }
 
@@ -538,8 +524,8 @@ void Frame::internalMousePressed(MouseCode code)
 			{
 				_resizing = true;
 				_resizeZone = zone;
-				// Don't capture cursor pos here - polling will capture on
-				// the first frame to avoid stale-press-pos artifacts.
+				// First cursorMoved seeds _lastCursor; no movement happens
+				// until the finger actually moves -> no press-time jump.
 				_lastCursorValid = false;
 				setAsMouseCapture(true);
 			}

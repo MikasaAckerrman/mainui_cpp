@@ -25,7 +25,6 @@ public:
 	virtual void setInternal(bool state);
 	virtual void setSmallCaption(bool state);
 	virtual void setSize(int wide, int tall);
-	virtual void solveTraverse(); // override - poll cursor for live drag/resize
 protected:
 	virtual void paintBackground();
 	virtual void paint();
@@ -34,7 +33,6 @@ protected:
 	virtual void internalMouseReleased(MouseCode code);
 private:
 	void drawTitleBar(int wide);
-	void pollDragResize();
 private:
 	char _title[128];
 	Panel* _topGrip;
