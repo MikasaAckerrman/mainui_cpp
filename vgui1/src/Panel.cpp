@@ -28,6 +28,12 @@ Panel::Panel(int x, int y, int wide, int tall)
 
 Panel::~Panel()
 {
+	// Clear App's focus/capture/arena pointers so a freed Panel is never
+	// dispatched to on the next input event (use-after-free guard).
+	App* app = App::getInstance();
+	if (app)
+		app->panelDeleted(this);
+
 	// Remove from parent's child list without recursing back
 	if (_parent)
 		_parent->_childDar.removeElement(this);
@@ -424,6 +430,8 @@ int Panel::getChildCount()
 
 Panel* Panel::getChild(int index)
 {
+	if (index < 0 || index >= _childDar.getCount())
+		return null;
 	return _childDar[index];
 }
 

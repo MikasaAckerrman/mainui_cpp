@@ -1,4 +1,6 @@
 // Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+#include "BaseMenu.h"
+#include "FontManager.h"
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 extern void UI_EnableTextInput( bool enable );  // mainui bridge -> EngFuncs::EnableTextInput
 #include "TrackerScheme.h"
@@ -14,6 +16,25 @@ extern void UI_EnableTextInput( bool enable );  // mainui bridge -> EngFuncs::En
 
 namespace vgui
 {
+
+// Width (px) of the first n bytes of s as actually rendered by CEngineSurface
+// (mainui FontManager, sf_primary1 height). Used for caret placement and
+// click-to-position so they track the proportional glyphs instead of a fixed
+// 8px/char guess. Falls back to 8px/char only if the font manager is absent.
+static int TE_MeasureWidth(const char* s, int n)
+{
+	if (n <= 0)
+		return 0;
+	if (n > 255)
+		n = 255;
+	HFont hFont = uiStatic.hDefaultFont;
+	if (!g_FontMgr || !hFont)
+		return n * 8;
+	char tmp[256];
+	memcpy(tmp, s, n);
+	tmp[n] = 0;
+	return g_FontMgr->GetTextWideScaled(hFont, tmp, VS(12));
+}
 
 TextEntry::TextEntry(const char* text, int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
@@ -151,20 +172,8 @@ void TextEntry::paint()
 	// Cursor
 	if (hasFocus() && _editable)
 	{
-		int cursorX = textX;
-		if (_font)
-		{
-			for (int i = 0; i < _cursorPos && i < _textLen; i++)
-			{
-				int a, b, c;
-				_font->getCharABCwide((unsigned char)_text[i], a, b, c);
-				cursorX += a + b + c;
-			}
-		}
-		else
-		{
-			cursorX += _cursorPos * 8;
-		}
+		int prefix = (_cursorPos < _textLen) ? _cursorPos : _textLen;
+		int cursorX = textX + TE_MeasureWidth(_text, prefix);
 		schemeBgColor(this, textCol);
 		drawFilledRect(cursorX, 3, cursorX + 1, ptall - 3);
 	}
@@ -184,23 +193,15 @@ void TextEntry::internalMousePressed(MouseCode code)
 
 			int targetX = mx - VS(6) + _scrollOffset;
 			int charPos = 0;
-			int accum = 0;
-
-			if (_font)
+			// Walk character boundaries using real rendered widths; stop at the
+			// gap nearest the click (midpoint between glyph edges).
+			while (charPos < _textLen)
 			{
-				for (int i = 0; i < _textLen; i++)
-				{
-					int a, b, c;
-					_font->getCharABCwide((unsigned char)_text[i], a, b, c);
-					int cw = a + b + c;
-					if (accum + cw / 2 > targetX) break;
-					accum += cw;
-					charPos++;
-				}
-			}
-			else
-			{
-				charPos = targetX / 8;
+				int wHere = TE_MeasureWidth(_text, charPos);
+				int wNext = TE_MeasureWidth(_text, charPos + 1);
+				if (targetX < (wHere + wNext) / 2)
+					break;
+				charPos++;
 			}
 
 			if (charPos < 0) charPos = 0;

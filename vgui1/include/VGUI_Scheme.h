@@ -52,6 +52,7 @@ public:
 	};
 public:
 	Scheme();
+	virtual ~Scheme();
 public:
 	virtual void setColor(SchemeColor sc, int r, int g, int b, int a);
 	virtual void getColor(SchemeColor sc, int& r, int& g, int& b, int& a);

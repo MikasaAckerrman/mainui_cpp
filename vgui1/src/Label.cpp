@@ -1,8 +1,11 @@
 // Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+#include "BaseMenu.h"
+#include "FontManager.h"
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
+#include <VGUI_UIScale.h>
 #include <VGUI_Label.h>
 #include <VGUI_Panel.h>
 #include <VGUI_Image.h>
@@ -75,17 +78,18 @@ void Label::setFont(Font* font)
 
 void Label::getTextSize(int& wide, int& tall)
 {
-	if (_font)
-	{
-		_font->getTextSize(_text, wide, tall);
-	}
+	// Measure with mainui's FontManager - the SAME font/metrics CEngineSurface
+	// uses to actually render text. The VGUI Font object's metrics are not used
+	// by the engine surface, so the old "len*8" estimate left button text
+	// off-centre and label text mis-aligned. VS(12) matches the sf_primary1
+	// glyph height used in drawPrintText.
+	int h = VS(12);
+	HFont hFont = uiStatic.hDefaultFont;
+	if (_text[0] && g_FontMgr && hFont)
+		wide = g_FontMgr->GetTextWideScaled(hFont, _text, h);
 	else
-	{
-		// Estimate based on character count
-		int len = (int)strlen(_text);
-		wide = len * 8;
-		tall = 14;
-	}
+		wide = (int)strlen(_text) * 8;
+	tall = VS(14);
 }
 
 void Label::getContentSize(int& wide, int& tall)

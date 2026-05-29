@@ -34,6 +34,10 @@ public:
 	virtual bool wasKeyReleased(KeyCode code, Panel* panel);
 	virtual void requestFocus(Panel* panel);
 	virtual Panel* getFocus();
+	// Clear any focus/capture/arena pointer that references panel. MUST be
+	// called when a Panel is destroyed, otherwise the next input event
+	// dereferences a freed Panel and crashes.
+	virtual void panelDeleted(Panel* panel);
 	virtual void setMouseCapture(Panel* panel);
 	virtual void setMouseArena(Panel* panel);
 	virtual void setMouseArena(int x0, int y0, int x1, int y1, bool enabled);

@@ -528,22 +528,22 @@ void VguiOptionsDialog::setVisible(bool state)
 void VguiOptionsDialog::applyAll()
 {
 	for (int i = 0; i < _checkButtons.getCount(); i++)
-		_checkButtons[i]->apply();
+		if (_checkButtons[i]) _checkButtons[i]->apply();
 	for (int i = 0; i < _sliders.getCount(); i++)
-		_sliders[i]->apply();
+		if (_sliders[i]) _sliders[i]->apply();
 	for (int i = 0; i < _textEntries.getCount(); i++)
-		_textEntries[i]->apply();
+		if (_textEntries[i]) _textEntries[i]->apply();
 	setDirty(false);
 }
 
 void VguiOptionsDialog::resetAll()
 {
 	for (int i = 0; i < _checkButtons.getCount(); i++)
-		_checkButtons[i]->reset();
+		if (_checkButtons[i]) _checkButtons[i]->reset();
 	for (int i = 0; i < _sliders.getCount(); i++)
-		_sliders[i]->reset();
+		if (_sliders[i]) _sliders[i]->reset();
 	for (int i = 0; i < _textEntries.getCount(); i++)
-		_textEntries[i]->reset();
+		if (_textEntries[i]) _textEntries[i]->reset();
 	setDirty(false);
 }
 
