@@ -23,8 +23,8 @@ namespace vgui
 // GoldSrc VGUI Frame layout constants (CS 1.6 reference @ 640x480, scaled via VS).
 enum
 {
-	FRAME_CAPTION_HEIGHT       = 22,
-	FRAME_CAPTION_HEIGHT_SMALL = 18,
+	FRAME_CAPTION_HEIGHT       = 28,
+	FRAME_CAPTION_HEIGHT_SMALL = 22,
 	FRAME_BORDER               = 4,
 	FRAME_BUTTON_SIZE          = 16,
 	FRAME_BUTTON_INSET         = 3
@@ -261,6 +261,52 @@ void Frame::paintBackground()
 
 	int captionH = _smallCaption ? FcapSmall() : Fcap();
 	int border = Fborder();
+
+	// Subtle GoldSrc noise/grain over the body region (canonical look - the
+	// original CS 1.6 VGUI window is not a flat color). Position-based hash
+	// picks sparse pixels and nudges them brighter/darker. Sparse step keeps
+	// the per-frame cost bounded.
+	{
+		int bx0 = border;
+		int by0 = captionH + border;
+		int bx1 = wide - border;
+		int by1 = tall - border;
+		int areaW = bx1 - bx0;
+		int areaH = by1 - by0;
+		if (areaW > 16 && areaH > 16)
+		{
+			int step = VS(7);
+			if (step < 5) step = 5;
+			unsigned int br = (frameBg >> 16) & 0xFF;
+			unsigned int bg = (frameBg >> 8) & 0xFF;
+			unsigned int bb = frameBg & 0xFF;
+			unsigned int ba = (frameBg >> 24) & 0xFF;
+			for (int py = by0; py < by1; py += step)
+			{
+				for (int px = bx0; px < bx1; px += step)
+				{
+					unsigned int h = ((unsigned int)px * 2654435761u) ^ ((unsigned int)py * 340573321u);
+					if ((h & 0xF) < 2)
+					{
+						unsigned int nr = (br + 10 > 255) ? 255 : br + 10;
+						unsigned int ng = (bg + 10 > 255) ? 255 : bg + 10;
+						unsigned int nb = (bb + 10 > 255) ? 255 : bb + 10;
+						schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
+						drawFilledRect(px, py, px + 1, py + 1);
+					}
+					else if ((h & 0xF) == 15)
+					{
+						unsigned int nr = (br > 10) ? br - 10 : 0;
+						unsigned int ng = (bg > 10) ? bg - 10 : 0;
+						unsigned int nb = (bb > 10) ? bb - 10 : 0;
+						schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
+						drawFilledRect(px, py, px + 1, py + 1);
+					}
+				}
+			}
+		}
+	}
+
 	// Subtle gradient bands
 	schemeBgColor(this, 0x40FFFFFF);
 	drawFilledRect(border, captionH + border, wide - border, captionH + border + 1);
