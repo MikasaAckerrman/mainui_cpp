@@ -5,6 +5,7 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include <VGUI_SchemeColors.h>
 #include <VGUI_UIScale.h>
 #include <VGUI_Button.h>
+#include <VGUI_App.h>
 #include <VGUI_ActionSignal.h>
 #include <string.h>
 
@@ -250,8 +251,7 @@ void Button::internalMousePressed(MouseCode code)
 // (depressed when over the button, raised when dragged off).
 void Button::internalCursorMoved(int x, int y)
 {
-	App* app = App::getInstance();
-	if (app && app->isMouseDown(MOUSE_LEFT) && _mouseClickMask[MOUSE_LEFT] && isEnabled())
+	if (isMouseDown(MOUSE_LEFT) && _mouseClickMask[MOUSE_LEFT] && isEnabled())
 	{
 		bool inside = isWithin(x, y);
 		bool changed = false;
