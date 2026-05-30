@@ -98,21 +98,15 @@ protected:
 		unsigned int slotBg = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE63E4637;
 		schemeBgColor(this, slotBg);
 		drawFilledRect(0, 0, wide, tall);
-		// Double inset border (sunken look)
-		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282E22;
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC8889180;
-		unsigned int innerDark = g_Scheme.borderInnerDark ? g_Scheme.borderInnerDark : 0xC832382A;
-		// Outer inset
+		// Canonical 1px inset (sunken): TL=dark, BR=bright.
+		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xFF282E22;
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
 		schemeBgColor(this, dark);
 		drawFilledRect(0, 0, wide, 1);
 		drawFilledRect(0, 0, 1, tall);
 		schemeBgColor(this, bright);
 		drawFilledRect(0, tall - 1, wide, tall);
 		drawFilledRect(wide - 1, 0, wide, tall);
-		// Inner inset
-		schemeBgColor(this, innerDark);
-		drawFilledRect(1, 1, wide - 1, 2);
-		drawFilledRect(1, 1, 2, tall - 1);
 	}
 };
 

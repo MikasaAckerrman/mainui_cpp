@@ -138,14 +138,12 @@ void TabPanel::paint()
 	if (tabCount <= 0)
 		return;
 
-	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xE6646E50;
-	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6404830;
-	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFF909090;
-	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFE8E0A0;
-	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xC87A8070;
-	unsigned int dark        = g_Scheme.borderDark         ? g_Scheme.borderDark         : 0xC8282C24;
-	unsigned int innerBright = g_Scheme.borderInnerBright  ? g_Scheme.borderInnerBright  : 0xC8909880;
-	unsigned int innerDark   = g_Scheme.borderInnerDark    ? g_Scheme.borderInnerDark    : 0xC83A3E30;
+	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xFF4C5844;
+	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6373E2B;
+	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFFA0AA95;
+	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFC4B550;
+	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xFF889180;
+	unsigned int dark        = g_Scheme.borderDark         ? g_Scheme.borderDark         : 0xFF282E22;
 
 	int tabH   = VS(TAB_HEIGHT_BASE);
 	int shrink = VS(TAB_INACTIVE_SHRINK);
@@ -167,64 +165,46 @@ void TabPanel::paint()
 			activeX = x;
 			activeW = w;
 
-			// Active tab: full height, merges into page area below (+2px overlap)
+			// Active tab fills with body color and overlaps the page area
+			// by 2px so the bottom seam under the tab disappears (canon
+			// TabActiveBorder.Bottom = ControlBG offset 6 2).
 			schemeBgColor(this, frameBg);
-			drawFilledRect(x + 2, 0, x + w - 2, tabH + 2);
+			drawFilledRect(x + 1, 0, x + w - 1, tabH + 2);
 
-			// Outer bright top + left
+			// 1px raised border: Top + Left = bright, Right = dark.
+			// No inner second band - that was non-canonical.
 			schemeBgColor(this, bright);
 			drawFilledRect(x, 0, x + w - 1, 1);
 			drawFilledRect(x, 0, x + 1, tabH + 2);
-
-			// Inner highlight (1px inset from outer)
-			schemeBgColor(this, innerBright);
-			drawFilledRect(x + 1, 1, x + w - 2, 2);
-			drawFilledRect(x + 1, 1, x + 2, tabH + 1);
-
-			// Outer dark right
 			schemeBgColor(this, dark);
 			drawFilledRect(x + w - 1, 0, x + w, tabH + 2);
-
-			// Inner shadow right
-			schemeBgColor(this, innerDark);
-			drawFilledRect(x + w - 2, 1, x + w - 1, tabH + 1);
 		}
 		else
 		{
 			int yTop = shrink;
 
 			schemeBgColor(this, inactiveBg);
-			drawFilledRect(x + 2, yTop + 1, x + w - 2, tabH - 1);
+			drawFilledRect(x + 1, yTop + 1, x + w - 1, tabH);
 
-			// Outer bevel
+			// 1px raised: Top + Left = bright, Right + Bottom = dark.
 			schemeBgColor(this, bright);
 			drawFilledRect(x, yTop, x + w - 1, yTop + 1);
-			drawFilledRect(x, yTop, x + 1, tabH - 1);
-
+			drawFilledRect(x, yTop, x + 1, tabH);
 			schemeBgColor(this, dark);
 			drawFilledRect(x + w - 1, yTop, x + w, tabH);
 			drawFilledRect(x, tabH - 1, x + w, tabH);
-
-			// Inner highlight (top)
-			// Inner highlight (1px inset from outer) - use scheme bevel
-			schemeBgColor(this, innerBright);
-			drawFilledRect(x + 1, yTop + 1, x + w - 1, yTop + 2);
 		}
 
-		// Tab label - CENTERED horizontally within uniform tab width
+		// Tab label - LEFT-aligned (canon CS 1.6 puts tab text near the left
+		// edge with ~6px padding, NOT centred. The previous centering made
+		// short labels look detached from their tabs.)
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
-			HFont font = uiStatic.hDefaultFont;
 			int textH = VS(TAB_TEXT_HEIGHT_B);
-			int textW = 0;
-			if (g_FontMgr && font)
-				textW = g_FontMgr->GetTextWideScaled(font, tab->text, textH);
-			else
-				textW = textLen * (textH * 6 / 10);
-			int textX = x + (w - textW) / 2;
+			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			int textY = (tabH - textH) / 2 - 1;
 			if (!selected) textY += shrink / 2;
 			drawPrintText(textX, textY, tab->text, textLen);
@@ -233,18 +213,13 @@ void TabPanel::paint()
 		x += w - VS(TAB_OVERLAP);
 	}
 
-	// Bottom separator: dark + bright double line, gap under active tab
+	// Single 1px separator line between tab strip and body (canon InsetBorder
+	// top edge). Gap under the active tab so it visually joins the body.
 	schemeBgColor(this, dark);
 	if (activeX > 0)
 		drawFilledRect(0, tabH, activeX + 1, tabH + 1);
 	if (activeX + activeW < wide)
 		drawFilledRect(activeX + activeW - 1, tabH, wide, tabH + 1);
-
-	schemeBgColor(this, bright);
-	if (activeX > 0)
-		drawFilledRect(0, tabH + 1, activeX + 1, tabH + 2);
-	if (activeX + activeW < wide)
-		drawFilledRect(activeX + activeW - 1, tabH + 1, wide, tabH + 2);
 }
 
 void TabPanel::internalMousePressed(MouseCode code)

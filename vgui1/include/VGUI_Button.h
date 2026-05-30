@@ -35,6 +35,7 @@ protected:
 	virtual void internalCursorExited();
 	virtual void internalMousePressed(MouseCode code);
 	virtual void internalMouseReleased(MouseCode code);
+	virtual void internalCursorMoved(int x, int y);
 	virtual void internalKeyPressed(KeyCode code);
 private:
 	void init();

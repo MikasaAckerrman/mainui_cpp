@@ -118,32 +118,22 @@ void TextEntry::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int bg     = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE64A5440;
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
-	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-	unsigned int innerDark = g_Scheme.borderInnerDark ? g_Scheme.borderInnerDark : 0xC83A3E30;
+	unsigned int bg     = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE63E4637;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
 	// Field background (darker than frame for recessed look)
 	schemeBgColor(this, bg);
 	drawFilledRect(0, 0, wide, tall);
 
-	// GoldSrc double-inset border:
-	// Outer: dark top+left, bright bottom+right
+	// Canon CS 1.6 InsetBorder = 1px only:
+	// Top + Left = BorderDark; Bottom + Right = BorderBright (sunken look).
 	schemeBgColor(this, dark);
 	drawFilledRect(0, 0, wide, 1);
 	drawFilledRect(0, 0, 1, tall);
 	schemeBgColor(this, bright);
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
-
-	// Inner inset (1px inside outer)
-	schemeBgColor(this, innerDark);
-	drawFilledRect(1, 1, wide - 1, 2);
-	drawFilledRect(1, 1, 2, tall - 1);
-	// Inner inset bottom-right (1px inside outer) - reuse scheme borderBright
-	schemeBgColor(this, bright);
-	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
-	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 }
 
 void TextEntry::paint()

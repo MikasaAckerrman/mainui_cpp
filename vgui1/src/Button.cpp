@@ -111,54 +111,49 @@ void Button::paintBackground()
 	else
 		bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5C6450;
 
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
-	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-	unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
-	unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
-	// Fill body (inside bevel)
+	// Canonical CS 1.6: 1px border only.
+	// Raised  (default): TL=Bright, BR=Dark.
+	// Sunken (depressed): TL=Dark, BR=Bright (inset).
 	schemeBgColor(this, bg);
 	drawFilledRect(2, 2, wide - 2, tall - 2);
 
-	if (sunken)
-	{
-		// Depressed: double inset bevel (pushed-in feel)
-		// Outer
-		schemeBgColor(this, dark);
-		drawFilledRect(0, 0, wide, 1);
-		drawFilledRect(0, 0, 1, tall);
-		schemeBgColor(this, bright);
-		drawFilledRect(0, tall - 1, wide, tall);
-		drawFilledRect(wide - 1, 0, wide, tall);
-		// Inner shadow
-		schemeBgColor(this, innerDark);
-		drawFilledRect(1, 1, wide - 1, 2);
-		drawFilledRect(1, 1, 2, tall - 1);
-	}
-	else
-	{
-		// Raised: double raised bevel (GoldSrc 3D depth)
-		// Outer bright top+left
-		schemeBgColor(this, bright);
-		drawFilledRect(0, 0, wide, 1);
-		drawFilledRect(0, 0, 1, tall);
-		// Outer dark bottom+right
-		schemeBgColor(this, dark);
-		drawFilledRect(0, tall - 1, wide, tall);
-		drawFilledRect(wide - 1, 0, wide, tall);
-		// Inner highlight
-		schemeBgColor(this, innerBright);
-		drawFilledRect(1, 1, wide - 1, 2);
-		drawFilledRect(1, 1, 2, tall - 1);
-		// Inner shadow
-		schemeBgColor(this, innerDark);
-		drawFilledRect(1, tall - 2, wide - 1, tall - 1);
-		drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
-	}
+	unsigned int tl = sunken ? dark   : bright;
+	unsigned int br = sunken ? bright : dark;
+	schemeBgColor(this, tl);
+	drawFilledRect(0, 0, wide, 1);
+	drawFilledRect(0, 0, 1, tall);
+	schemeBgColor(this, br);
+	drawFilledRect(0, tall - 1, wide, tall);
+	drawFilledRect(wide - 1, 0, wide, tall);
 }
 
 void Button::paint()
 {
+	// CS 1.6 canon: depressed buttons shift text +1,+1 px (TitleButtonDepressedBorder
+	// inset "1 1 1 1" vs normal "0 0 1 1"). We replicate the visual shift here
+	// without changing borders. Drawing manually instead of Label::paint() so
+	// we control the offset.
+	int pwide, ptall;
+	getPaintSize(pwide, ptall);
+
+	int textLen = (int)strlen(_text);
+	if (textLen == 0)
+		return;
+
+	int twide, ttall;
+	getContentSize(twide, ttall);
+
+	int tx, ty;
+	computeAlignment(tx, ty, twide, ttall, pwide, ptall);
+	if (_depressed)
+	{
+		tx += 1;
+		ty += 1;
+	}
+
 	unsigned int argb;
 	if (!isEnabled())
 		argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFF808080;
@@ -171,8 +166,12 @@ void Button::paint()
 	int r = (argb >> 16) & 0xFF;
 	int g = (argb >> 8) & 0xFF;
 	int b = argb & 0xFF;
-	setFgColor(r, g, b, 255 - a); // VGUI inverted alpha
-	Label::paint();
+	drawSetTextColor(r, g, b, 255 - a); // VGUI inverted alpha
+	if (_font)
+		drawSetTextFont(_font);
+	else
+		drawSetTextFont(_schemeFont);
+	drawPrintText(tx, ty, _text, textLen);
 }
 
 void Button::internalCursorEntered()
@@ -197,7 +196,21 @@ void Button::internalMouseReleased(MouseCode code)
 {
 	if (code >= 0 && code < MOUSE_LAST && _mouseClickMask[code])
 	{
-		if (_armed && isEnabled())
+		// Release with mouse capture: fire signal ONLY if cursor is still
+		// inside this button. Without this, press A -> drag finger to B ->
+		// release would fire B (wrong) because B would receive the up event.
+		// With capture, A always receives the up event; we gate firing on
+		// the actual cursor position at release time.
+		bool inside = false;
+		App* app = App::getInstance();
+		if (app && isEnabled())
+		{
+			int mx, my;
+			app->getCursorPos(mx, my);
+			inside = isWithin(mx, my);
+		}
+		setAsMouseCapture(false);
+		if (inside)
 		{
 			fireActionSignal();
 			if (_buttonGroup)
@@ -224,9 +237,29 @@ void Button::internalMousePressed(MouseCode code)
 	{
 		setArmed(true);
 		_depressed = true;
+		// Grab the mouse so the matching release ALWAYS comes back to this
+		// button (see internalMouseReleased for the inside-check).
+		setAsMouseCapture(true);
 		repaint();
 	}
 	Panel::internalMousePressed(code);
+}
+
+// While the mouse is captured by this button, refresh armed/depressed state
+// from the live cursor position so the bevel and text-shift track the finger
+// (depressed when over the button, raised when dragged off).
+void Button::internalCursorMoved(int x, int y)
+{
+	App* app = App::getInstance();
+	if (app && app->isMouseDown(MOUSE_LEFT) && _mouseClickMask[MOUSE_LEFT] && isEnabled())
+	{
+		bool inside = isWithin(x, y);
+		bool changed = false;
+		if (_armed != inside)     { _armed = inside; changed = true; }
+		if (_depressed != inside) { _depressed = inside; changed = true; }
+		if (changed) repaint();
+	}
+	Panel::internalCursorMoved(x, y);
 }
 
 void Button::internalKeyPressed(KeyCode code)
