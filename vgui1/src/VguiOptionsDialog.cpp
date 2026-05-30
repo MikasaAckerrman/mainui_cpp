@@ -795,6 +795,12 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 	vgui::Panel* root = vgui::VGUI_GetRootPanel();
 	if (!root) return;
 
+	// Keep the root canvas matched to the CURRENT screen size. The root panel
+	// is created once and would otherwise keep its initial dimensions forever;
+	// after a resolution change that stale size desyncs drawing, hit-testing
+	// and the drag/resize clamps from the real screen. One coordinate space.
+	root->setSize(sw, sh);
+
 	if (!vgui::g_pOptionsDialog)
 	{
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
