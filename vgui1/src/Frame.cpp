@@ -418,6 +418,7 @@ void Frame::internalCursorMoved(int x, int y)
 		_lastCursor[0] = x;
 		_lastCursor[1] = y;
 		_lastCursorValid = true;
+		VLOG("Frame move: seed cursor (%d,%d), no delta applied yet", x, y);
 		Panel::internalCursorMoved(x, y);
 		return;
 	}
@@ -431,6 +432,8 @@ void Frame::internalCursorMoved(int x, int y)
 	}
 	_lastCursor[0] = x;
 	_lastCursor[1] = y;
+	VLOG("Frame move: cursor=(%d,%d) d=(%+d,%+d) %s",
+		x, y, dx, dy, _dragging ? "drag" : "resize");
 
 	if (_dragging && _moveable)
 	{
@@ -616,6 +619,8 @@ void Frame::internalMousePressed(MouseCode code)
 				// until the finger actually moves -> no press-time jump.
 				_lastCursorValid = false;
 				setAsMouseCapture(true);
+				VLOG("Frame press: resize zone=%d at screen(%d,%d) local(%d,%d) frame(%d,%d %dx%d)",
+					zone, mx, my, lx, ly, _pos[0], _pos[1], wide, tall);
 			}
 			else if (_moveable)
 			{
@@ -626,6 +631,13 @@ void Frame::internalMousePressed(MouseCode code)
 					_dragging = true;
 					_lastCursorValid = false;
 					setAsMouseCapture(true);
+					VLOG("Frame press: drag at screen(%d,%d) local(%d,%d) frame(%d,%d %dx%d)",
+						mx, my, lx, ly, _pos[0], _pos[1], wide, tall);
+				}
+				else
+				{
+					VLOG("Frame press: no-action local(%d,%d) caption=[%d..%d]",
+						lx, ly, border, border + captionH);
 				}
 			}
 		}
@@ -637,6 +649,9 @@ void Frame::internalMouseReleased(MouseCode code)
 {
 	if (code == MOUSE_LEFT && (_dragging || _resizing))
 	{
+		VLOG("Frame release: was %s, frame ended at (%d,%d %dx%d)",
+			_dragging ? "drag" : "resize",
+			_pos[0], _pos[1], getWide(), getTall());
 		_dragging = false;
 		_resizing = false;
 		_resizeZone = 0;
