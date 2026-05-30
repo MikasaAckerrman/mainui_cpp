@@ -93,38 +93,21 @@ protected:
 		schemeBgColor(this, bg);
 		drawFilledRect(1, 1, wide - 1, tall - 1);
 
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
-		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-		unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
-		unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
+		// Phase 1-D: canonical CS 1.6 border = 1px ONLY.
+		// Sunken (depressed/selected) = inset (BorderDark TL, BorderBright BR).
+		// Raised = bevel (BorderBright TL, BorderDark BR). No inner second band.
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
-		if (sunken)
-		{
-			schemeBgColor(this, dark);
-			drawFilledRect(0, 0, wide, 1);
-			drawFilledRect(0, 0, 1, tall);
-			schemeBgColor(this, bright);
-			drawFilledRect(0, tall - 1, wide, tall);
-			drawFilledRect(wide - 1, 0, wide, tall);
-			schemeBgColor(this, innerDark);
-			drawFilledRect(1, 1, wide - 1, 2);
-			drawFilledRect(1, 1, 2, tall - 1);
-		}
-		else
-		{
-			schemeBgColor(this, bright);
-			drawFilledRect(0, 0, wide, 1);
-			drawFilledRect(0, 0, 1, tall);
-			schemeBgColor(this, dark);
-			drawFilledRect(0, tall - 1, wide, tall);
-			drawFilledRect(wide - 1, 0, wide, tall);
-			schemeBgColor(this, innerBright);
-			drawFilledRect(1, 1, wide - 1, 2);
-			drawFilledRect(1, 1, 2, tall - 1);
-			schemeBgColor(this, innerDark);
-			drawFilledRect(1, tall - 2, wide - 1, tall - 1);
-			drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
-		}
+		unsigned int tl = sunken ? dark   : bright;
+		unsigned int br = sunken ? bright : dark;
+
+		schemeBgColor(this, tl);
+		drawFilledRect(0, 0, wide, 1);
+		drawFilledRect(0, 0, 1, tall);
+		schemeBgColor(this, br);
+		drawFilledRect(0, tall - 1, wide, tall);
+		drawFilledRect(wide - 1, 0, wide, tall);
 	}
 
 	virtual void paint()
@@ -317,26 +300,18 @@ void Frame::paintBackground()
 	schemeBgColor(this, loBand);
 	drawFilledRect(border, tall - border - 1, wide - border, tall - border);
 
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
-	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-	unsigned int innerBright = g_Scheme.borderInnerBright ? g_Scheme.borderInnerBright : 0xC8909880;
-	unsigned int innerDark   = g_Scheme.borderInnerDark   ? g_Scheme.borderInnerDark   : 0xC83A3E30;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
-	// Outer bevel (raised)
+	// Canonical CS 1.6 RaisedBorder = 1px only:
+	// Top + Left = BorderBright; Bottom + Right = BorderDark.
+	// No inner-bevel (we used to draw a second band - that was non-canonical).
 	schemeBgColor(this, bright);
 	drawFilledRect(0, 0, wide, 1);
 	drawFilledRect(0, 0, 1, tall);
 	schemeBgColor(this, dark);
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
-
-	// Inner bevel
-	schemeBgColor(this, innerBright);
-	drawFilledRect(1, 1, wide - 1, 2);
-	drawFilledRect(1, 1, 2, tall - 1);
-	schemeBgColor(this, innerDark);
-	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
-	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 
 	drawTitleBar(wide);
 
