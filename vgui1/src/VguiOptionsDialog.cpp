@@ -571,15 +571,18 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 		leftX, y, VS(60), VS(14)));
 	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSz, slotSz));
-	// Avatar action buttons stacked to the right, vertically centered to box
+	// Avatar action buttons: flush with TOP and BOTTOM of the preview box,
+	// not vertically centered as a group. This is the canon CS 1.6 layout -
+	// the buttons line up exactly with the slot's top/bottom edges so they
+	// frame it instead of looking "trapped" in dead space beside it.
 	int actX = leftX + slotSz + gap;
-	int btnGroupH = btnH * 2 + VS(4);
-	int btnY1 = y + (slotSz - btnGroupH) / 2;
+	int btnTopY = y;
+	int btnBotY = y + slotSz - btnH;
 	page->addChild(new Button("\xD0\x97\xD0\xB0\xD0\xB3\xD1\x80\xD1\x83\xD0\xB7\xD0\xB8\xD1\x82\xD1\x8C...",
-		actX, btnY1, btnW, btnH));
+		actX, btnTopY, btnW, btnH));
 	static const char* k_teams[] = { "cts_team", "ts_team", "vip_team", "admin_team" };
 	StubComboButton* teamCombo = new StubComboButton("logo_team", k_teams, 4,
-		actX, btnY1 + btnH + VS(4), btnW, btnH);
+		actX, btnBotY, btnW, btnH);
 	teamCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(teamCombo);
 	y += slotSz + VS(10);
@@ -589,15 +592,16 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 		leftX, y, VS(60), VS(14)));
 	y += VS(14);
 	page->addChild(new PreviewBox(leftX, y, slotSz, slotSz));
-	int btnY2 = y + (slotSz - btnGroupH) / 2;
+	int btn2TopY = y;
+	int btn2BotY = y + slotSz - btnH;
 	static const char* k_logos[] = { "lambda", "skull", "ts_team", "cts_team", "n0!se" };
 	StubComboButton* logoCombo = new StubComboButton("cl_logofile", k_logos, 5,
-		actX, btnY2, btnW, btnH);
+		actX, btn2TopY, btnW, btnH);
 	logoCombo->addActionSignal(new MarkDirtyActionSignal(this));
 	page->addChild(logoCombo);
 	page->addChild(new Button(
 		"\xD0\x98\xD0\xB7\xD0\xBC\xD0\xB5\xD0\xBD\xD0\xB8\xD1\x82\xD1\x8C \xD1\x86\xD0\xB2\xD0\xB5\xD1\x82",
-		actX, btnY2 + btnH + VS(4), btnW, btnH));
+		actX, btn2BotY, btnW, btnH));
 	y += slotSz + VS(8);
 
 	// Dim hint label, single line if it fits
