@@ -102,14 +102,19 @@ bool CStbFont::Create( const char *name, int tall, int weight, int blur, float b
 
 void CStbFont::GetCharRGBA(int ch, Point pt, Size sz, unsigned char *rgba, Size &drawSize )
 {
-	byte *buf, *dst;
+	byte *dst;
 	int a, b, c;
 
 	GetCharABCWidths( ch, a, b, c ); // speed up cache
 
 	int bm_top, bm_left, bm_rows, bm_width;
 
-	buf = stbtt_GetCodepointBitmap( &m_fontInfo, scale, scale, ch, &bm_width, &bm_rows, &bm_left, &bm_top );
+	// stbtt_GetCodepointBitmap mallocs the bitmap; the caller MUST free
+	// it with stbtt_FreeBitmap. The previous code shifted `buf` mid-loop
+	// and lost the allocation address - every glyph render leaked the
+	// raster. Hold onto the original here and free at the end.
+	byte *bm_orig = stbtt_GetCodepointBitmap( &m_fontInfo, scale, scale, ch, &bm_width, &bm_rows, &bm_left, &bm_top );
+	byte *buf = bm_orig;
 
 	// see where we should start rendering
 	const int pushDown = m_iAscent + bm_top;
@@ -132,27 +137,34 @@ void CStbFont::GetCharRGBA(int ch, Point pt, Size sz, unsigned char *rgba, Size 
 	if( pushLeft + xend > sz.w )
 		xend += sz.w - ( pushLeft + xend );
 
-	buf = &buf[ ystart * bm_width ];
+	if( buf )
+		buf = &buf[ ystart * bm_width ];
 	dst = rgba + 4 * sz.w * ( ystart + pushDown );
 
 	// iterate through copying the generated dib into the texture
-	for (int j = ystart; j < yend; j++, dst += 4 * sz.w, buf += bm_width )
+	if( buf )
 	{
-		unsigned int *xdst = (unsigned int*)(dst + 4 * ( m_iBlur + m_iOutlineSize ));
-		for (int i = xstart; i < xend; i++, xdst++)
+		for (int j = ystart; j < yend; j++, dst += 4 * sz.w, buf += bm_width )
 		{
-			if( buf[i] > 0 )
+			unsigned int *xdst = (unsigned int*)(dst + 4 * ( m_iBlur + m_iOutlineSize ));
+			for (int i = xstart; i < xend; i++, xdst++)
 			{
-				// paint white and alpha
-				*xdst = PackRGBA( 0xFF, 0xFF, 0xFF, buf[i] );
-			}
-			else
-			{
-				// paint black and null alpha
-				*xdst = 0;
+				if( buf[i] > 0 )
+				{
+					// paint white and alpha
+					*xdst = PackRGBA( 0xFF, 0xFF, 0xFF, buf[i] );
+				}
+				else
+				{
+					// paint black and null alpha
+					*xdst = 0;
+				}
 			}
 		}
 	}
+
+	if( bm_orig )
+		stbtt_FreeBitmap( bm_orig, m_fontInfo.userdata );
 
 	drawSize.w = xend - xstart + m_iBlur * 2 + m_iOutlineSize * 2;
 	drawSize.h = yend - ystart + m_iBlur * 2 + m_iOutlineSize * 2;
