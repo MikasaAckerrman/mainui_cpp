@@ -396,9 +396,9 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	int clientW, clientH;
 	client->getSize(clientW, clientH);
 
-	// Bottom button row: 24px buttons + 16px margin
+	// Bottom button row: 24px buttons + 8px margin (canon ~52px from bottom)
 	int btnH    = VS(24);
-	int btnRowH = btnH + VS(16);
+	int btnRowH = btnH + VS(8);
 	int tabH    = clientH - btnRowH;
 	if (tabH < VS(100)) tabH = VS(100);
 
@@ -492,7 +492,7 @@ void VguiOptionsDialog::setSize(int wide, int tall)
 	client->getSize(clientW, clientH);
 
 	int btnH    = VS(24);
-	int btnRowH = btnH + VS(16);
+	int btnRowH = btnH + VS(8);   // canon: button row sits ~52px from bottom (was 16+24=40)
 	int tabH    = clientH - btnRowH;
 	if (tabH < VS(100)) tabH = VS(100);
 
