@@ -44,7 +44,9 @@ protected:
 	virtual void paintBackground();
 	virtual void paint();
 	virtual void computeAlignment(int& tx, int& ty, int twide, int ttall, int pwide, int ptall);
-private:
+protected:
+	// protected (not private): Button reimplements paint() with a +1,+1
+	// depressed text shift and needs the text/font directly.
 	char _text[256];
 	Alignment _textAlignment;
 	Alignment _contentAlignment;
