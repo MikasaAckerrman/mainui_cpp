@@ -50,6 +50,9 @@ bool CStbFont::Create( const char *name, int tall, int weight, int blur, float b
 {
 	char font_face_path[256];
 
+	Con_Printf( "[font] CStbFont::Create(\"%s\", tall=%d, weight=%d) - WARN stb_truetype path active, native MS hints UNAVAILABLE\n",
+		name, tall, weight );
+
 	Q_strncpy( m_szName, name, sizeof( m_szName ) );
 	m_iTall = tall;
 	m_iWeight = weight;

@@ -51,6 +51,9 @@ bool CFreeTypeFont::Create(const char *name, int tall, int weight, int blur, flo
 	char font_face_path[256];
 	int font_face_length;
 
+	Con_Printf( "[font] CFreeTypeFont::Create(\"%s\", tall=%d, weight=%d, blur=%d, outline=%d)\n",
+		name, tall, weight, blur, outlineSize );
+
 	Q_strncpy( m_szName, name, sizeof( m_szName ) );
 	m_iTall = tall;
 	m_iWeight = weight;
@@ -89,6 +92,14 @@ bool CFreeTypeFont::Create(const char *name, int tall, int weight, int blur, flo
 	m_iAscent = PIXEL(face->size->metrics.ascender );
 	m_iHeight = PIXEL( face->size->metrics.height );
 	m_iMaxCharWidth = PIXEL(face->size->metrics.max_advance );
+
+	// Log what FreeType actually loaded - the TTF's name table is the
+	// authoritative answer to 'what font is in use', useful when the
+	// menu does not look like Tahoma and we need to know whether a
+	// different file overrode the embedded one.
+	Con_Printf( "[font] FreeType face loaded: family=\"%s\" style=\"%s\" hints=native\n",
+		face->family_name ? face->family_name : "(null)",
+		face->style_name ? face->style_name : "(null)" );
 
 	return true;
 }

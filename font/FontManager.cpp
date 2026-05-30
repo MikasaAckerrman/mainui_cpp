@@ -556,11 +556,13 @@ bool CFontManager::FindFontDataFile( const char *name, int tall, int weight, int
 	if( !strcmp( name, "Trebuchet MS" ))
 	{
 		Q_strncpy( dataFile, "gfx/fonts/FiraSans-Regular.ttf", dataFileChars );
+		Con_Printf( "[font] FindFontDataFile(\"%s\") -> \"%s\"\n", name, dataFile );
 		return true;
 	}
 	else if( !strcmp( name, "Tahoma" ))
 	{
 		Q_strncpy( dataFile, "gfx/fonts/tahoma.ttf", dataFileChars );
+		Con_Printf( "[font] FindFontDataFile(\"%s\") -> \"%s\"\n", name, dataFile );
 		return true;
 	}
 
@@ -581,9 +583,11 @@ bool CFontManager::FindFontDataFile( const char *name, int tall, int weight, int
 		}
 		lower[i] = 0;
 		snprintf( dataFile, dataFileChars, "gfx/fonts/%s.ttf", lower );
+		Con_Printf( "[font] FindFontDataFile(\"%s\") -> \"%s\" (generic)\n", name, dataFile );
 		return true;
 	}
 
+	Con_Printf( "[font] FindFontDataFile(\"%s\") -> NOT FOUND\n", name ? name : "(null)" );
 	return false;
 }
 
@@ -606,6 +610,7 @@ byte *CFontManager::LoadFontDataFile( const char *vfspath, int *plen )
 
 		font_file file = { len, p };
 		m_FontFiles.Insert( vfspath, file );
+		Con_Printf( "[font] LoadFontDataFile(\"%s\") VFS hit %d bytes\n", vfspath, len );
 		return p;
 	}
 
@@ -619,8 +624,13 @@ byte *CFontManager::LoadFontDataFile( const char *vfspath, int *plen )
 	{
 		byte *embedded = (byte *)Embedded_GetData( plen );
 		if( embedded )
+		{
+			Con_Printf( "[font] LoadFontDataFile(\"%s\") embedded fallback %d bytes\n",
+				vfspath, plen ? *plen : 0 );
 			return embedded;
+		}
 	}
 
+	Con_Printf( "[font] LoadFontDataFile(\"%s\") FAILED (no VFS, no embedded match)\n", vfspath );
 	return NULL;
 }

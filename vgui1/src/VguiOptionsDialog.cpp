@@ -112,6 +112,66 @@ protected:
 	}
 };
 
+// Page panel that proportionally scales every child when its own size
+// changes. Pages are built with absolute pixel coordinates that match a
+// reference dialog size (clientW x pageH at construction time); when the
+// user resizes the dialog, TabPanel calls setSize on each page with new
+// dimensions and we rescale every child by the ratio newSize/refSize.
+//
+// Reference size is captured once on the FIRST resize that actually
+// changes the bounds (Panel ctor already sets size, so we cannot use
+// "first setSize call" - that one would be a no-op). Subsequent resizes
+// always scale relative to the captured reference, so rounding errors
+// do not accumulate.
+class LayoutPage : public Panel
+{
+public:
+	LayoutPage(int x, int y, int w, int h) : Panel(x, y, w, h), _refW(0), _refH(0) {}
+
+	virtual void setSize(int wide, int tall)
+	{
+		int oldW = getWide(), oldH = getTall();
+		Panel::setSize(wide, tall);
+
+		// Capture the first non-trivial size as the reference. Pages are
+		// constructed with their target initial size, so the ctor sets
+		// _refW/_refH==0 and the very first matching setSize call leaves
+		// them zero - that is fine, the scaling block is guarded by
+		// _refW>0. Reference is taken at the construction-time bounds.
+		if (_refW <= 0 || _refH <= 0)
+		{
+			_refW = oldW > 0 ? oldW : wide;
+			_refH = oldH > 0 ? oldH : tall;
+			return;
+		}
+		if (wide == oldW && tall == oldH)
+			return;
+
+		// Scale every child proportionally to the resize ratio. setBounds
+		// triggers child setSize which (for nested LayoutPage / Slider /
+		// CheckButton) recomputes their internals.
+		int cnt = getChildCount();
+		for (int i = 0; i < cnt; i++)
+		{
+			Panel* c = getChild(i);
+			if (!c) continue;
+			int cx, cy, cw, ch;
+			c->getBounds(cx, cy, cw, ch);
+			int nx = (cx * wide + _refW / 2) / _refW;
+			int ny = (cy * tall + _refH / 2) / _refH;
+			int nw = (cw * wide + _refW / 2) / _refW;
+			int nh = (ch * tall + _refH / 2) / _refH;
+			c->setBounds(nx, ny, nw, nh);
+		}
+		_refW = wide;
+		_refH = tall;
+	}
+
+private:
+	int _refW;
+	int _refH;
+};
+
 
 // PasswordTextEntry: masks with '*', eye icon toggle
 class PasswordTextEntry : public CvarTextEntry
@@ -418,14 +478,14 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 
 	// Tab page height (below tab strip)
 	int pageH = tabH - VS(28);
-	Panel* mpPage      = new Panel(0, 0, clientW, pageH);
-	Panel* kbPage      = new Panel(0, 0, clientW, pageH);
-	Panel* mousePage   = new Panel(0, 0, clientW, pageH);
-	Panel* audioPage   = new Panel(0, 0, clientW, pageH);
-	Panel* videoPage   = new Panel(0, 0, clientW, pageH);
-	Panel* hudPage     = new Panel(0, 0, clientW, pageH);
-	Panel* accountPage = new Panel(0, 0, clientW, pageH);
-	Panel* systemPage  = new Panel(0, 0, clientW, pageH);
+	Panel* mpPage      = new LayoutPage(0, 0, clientW, pageH);
+	Panel* kbPage      = new LayoutPage(0, 0, clientW, pageH);
+	Panel* mousePage   = new LayoutPage(0, 0, clientW, pageH);
+	Panel* audioPage   = new LayoutPage(0, 0, clientW, pageH);
+	Panel* videoPage   = new LayoutPage(0, 0, clientW, pageH);
+	Panel* hudPage     = new LayoutPage(0, 0, clientW, pageH);
+	Panel* accountPage = new LayoutPage(0, 0, clientW, pageH);
+	Panel* systemPage  = new LayoutPage(0, 0, clientW, pageH);
 
 	// Etched border around each page: REMOVED. The active tab merges into
 	// the page area (+2px overlap), and an etched border drawn on top of
