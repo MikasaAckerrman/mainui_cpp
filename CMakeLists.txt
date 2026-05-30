@@ -51,10 +51,14 @@ endif()
 
 add_definitions(-DSTDINT_H=<cstdint>)
 
-# Android uses stb_truetype by default for rendering fonts
-if(ANDROID)
-	set(MAINUI_USE_STB TRUE)
-endif()
+# Android historically used stb_truetype because Android NDK ships no
+# system FreeType. We now vendor FreeType under 3rdparty/freetype and
+# default Android to it - stb_truetype lacks support for native
+# TrueType hints (the hand-crafted bytecode Microsoft put in Tahoma)
+# and that absence is exactly what made the canon CS 1.6 menu render
+# look 'thin/soft' on device. Re-enable stb explicitly with
+# -DMAINUI_USE_STB=ON if needed (e.g. for a build that does NOT have
+# the FreeType submodule populated).
 
 include_directories(${XASH_SDK}/common ${XASH_SDK}/engine ${XASH_SDK}/pm_shared ${XASH_SDK}/public . controls/ menus/ miniutl/ font/ model/ vgui1/include/)
 
@@ -70,11 +74,40 @@ if(MAINUI_USE_CUSTOM_FONT_RENDER)
 			# Use stbtt
 			add_definitions(-DMAINUI_USE_STB)
 		else()
-			# Use freetype2
-			find_package(PkgConfig)
-			pkg_check_modules(FT2 REQUIRED freetype2)
-			include_directories(${FT2_INCLUDE_DIRS})
-			target_link_libraries(menu ${FT2_LIBRARIES})
+			# FreeType. Prefer system FreeType via pkg-config (the way
+			# every desktop build has worked for years). When pkg-config
+			# fails - mostly Android NDK, where there is no system
+			# FreeType - fall back to the vendored 3rdparty/freetype
+			# submodule. The vendored build disables every optional
+			# dependency (zlib/png/bzip2/harfbuzz/brotli) so the static
+			# lib has zero external linkage and slots cleanly into the
+			# Android cross-compile.
+			find_package(PkgConfig QUIET)
+			set(FT2_FOUND OFF)
+			if(PKG_CONFIG_FOUND)
+				pkg_check_modules(FT2 freetype2)
+			endif()
+			if(FT2_FOUND)
+				include_directories(${FT2_INCLUDE_DIRS})
+				target_link_libraries(menu ${FT2_LIBRARIES})
+			elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/freetype/CMakeLists.txt")
+				message(STATUS "mainui: using vendored FreeType from 3rdparty/freetype")
+				set(FT_DISABLE_ZLIB     ON CACHE BOOL "" FORCE)
+				set(FT_DISABLE_BZIP2    ON CACHE BOOL "" FORCE)
+				set(FT_DISABLE_PNG      ON CACHE BOOL "" FORCE)
+				set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+				set(FT_DISABLE_BROTLI   ON CACHE BOOL "" FORCE)
+				# libmenu is a SHARED object; the static FreeType inside
+				# it must be -fPIC or the linker rejects it on x86_64.
+				# Setting CMAKE_POSITION_INDEPENDENT_CODE before the
+				# add_subdirectory makes FreeType's own targets pick up
+				# the flag.
+				set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+				add_subdirectory(3rdparty/freetype EXCLUDE_FROM_ALL)
+				target_link_libraries(menu freetype)
+			else()
+				message(FATAL_ERROR "mainui: FreeType not found and 3rdparty/freetype submodule is empty")
+			endif()
 			add_definitions(-DMAINUI_USE_FREETYPE)
 		endif()
 	endif()
