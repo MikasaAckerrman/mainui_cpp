@@ -41,8 +41,13 @@ def gen(ttf_path: str, out_cpp: str, font_logical_name: str) -> None:
         o.write("// internal 'name' table of the original TTF if you want to know what\n")
         o.write("// designer/family is really inside.\n\n")
         o.write("#include <stddef.h>\n\n")
-        o.write('extern "C" {\n')
-        o.write(f"const unsigned char g_embeddedFontData[{n}] = {{\n")
+        # Each definition needs BOTH `extern "C"` (no C++ name mangling)
+        # AND the explicit `extern` storage class - otherwise C++ gives
+        # `const` namespace-scope variables internal linkage and the
+        # linker cannot see them from embedded_font.cpp. clang/lld on
+        # Android NDK enforces this strictly; gcc on the host happens
+        # to be lenient. Both compilers are happy with this form.
+        o.write(f"extern \"C\" const unsigned char g_embeddedFontData[{n}] = {{\n")
         for i in range(0, n, 16):
             chunk = data[i:i + 16]
             line = ", ".join("0x%02X" % b for b in chunk)
@@ -51,9 +56,8 @@ def gen(ttf_path: str, out_cpp: str, font_logical_name: str) -> None:
                 o.write(",")
             o.write("\n")
         o.write("};\n")
-        o.write(f"const unsigned int g_embeddedFontLen  = {n};\n")
-        o.write(f'const char         g_embeddedFontName[] = "{safe_name}";\n')
-        o.write('} // extern "C"\n')
+        o.write(f"extern \"C\" const unsigned int g_embeddedFontLen  = {n};\n")
+        o.write(f'extern "C" const char         g_embeddedFontName[] = "{safe_name}";\n')
     print(f"-> {out_cpp}: {n} bytes embedded as logical font \"{font_logical_name}\"")
 
 
