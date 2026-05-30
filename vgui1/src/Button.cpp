@@ -100,14 +100,16 @@ void Button::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	bool enabled = isEnabled();
 	bool sunken = _selected || _depressed;
 
-	// Body fill color
+	// Body fill color. Canon CS 1.6: a disabled button keeps the SAME body
+	// color as enabled - only its text is dimmed (DimBaseText). Using a
+	// different "inactive" fill here was a non-canonical artefact that made
+	// the disabled Apply button look like a darker rectangle painted onto
+	// the dialog. Now: enabled, disabled and hot all derive from the
+	// canonical button body family.
 	unsigned int bg;
-	if (!enabled)
-		bg = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6373E2B;
-	else if (_armed)
+	if (_armed)
 		bg = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF5A6A50;
 	else
 		bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;

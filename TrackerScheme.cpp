@@ -51,8 +51,11 @@ static char s_defaultScheme[] = R"SCHEME(
 		"SelectionBG"		"149 136 49 255"
 		"FieldBG"			"62 70 55 230"
 
-		// Tab strip
-		"TabInactive"		"55 62 43 230"
+		// Tab strip: inactive tabs share ControlBG with the body (canon CS 1.6).
+		// They are distinguished from the active tab purely by 1px bevel and
+		// the 2px top shrink, NOT by background color. Using a darker fill
+		// here was a non-canonical artefact of an early scheme draft.
+		"TabInactive"		"76 88 68 255"
 
 		// Title bar (canonical TitleBG is transparent; we keep ControlBG for
 		// VGUI1 which expects an opaque title since it does not composite)

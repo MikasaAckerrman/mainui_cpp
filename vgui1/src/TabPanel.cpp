@@ -139,7 +139,7 @@ void TabPanel::paint()
 		return;
 
 	unsigned int frameBg     = g_Scheme.frameBgColor       ? g_Scheme.frameBgColor       : 0xFF4C5844;
-	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6373E2B;
+	unsigned int inactiveBg  = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xFF4C5844;
 	unsigned int textColor   = g_Scheme.tabTextColor       ? g_Scheme.tabTextColor       : 0xFFA0AA95;
 	unsigned int selTextCol  = g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFC4B550;
 	unsigned int bright      = g_Scheme.borderBright       ? g_Scheme.borderBright       : 0xFF889180;
@@ -213,13 +213,25 @@ void TabPanel::paint()
 		x += w - VS(TAB_OVERLAP);
 	}
 
-	// Single 1px separator line between tab strip and body (canon InsetBorder
-	// top edge). Gap under the active tab so it visually joins the body.
+	// Content-area RAISED bevel (canon CS 1.6 PropertySheet content panel,
+	// 1px). Active tab covers its top edge with body color, creating the
+	// "merge" with the body the canon look depends on.
+	//   TOP    = bright (with gap under the active tab)
+	//   LEFT   = bright
+	//   RIGHT  = dark
+	//   BOTTOM = dark
+	int bodyTop = tabH;
+	schemeBgColor(this, bright);
+	int gapL = activeX;
+	int gapR = activeX + activeW;
+	if (gapL > 0)
+		drawFilledRect(0, bodyTop, gapL, bodyTop + 1);
+	if (gapR < wide)
+		drawFilledRect(gapR, bodyTop, wide, bodyTop + 1);
+	drawFilledRect(0, bodyTop, 1, tall);
 	schemeBgColor(this, dark);
-	if (activeX > 0)
-		drawFilledRect(0, tabH, activeX + 1, tabH + 1);
-	if (activeX + activeW < wide)
-		drawFilledRect(activeX + activeW - 1, tabH, wide, tabH + 1);
+	drawFilledRect(wide - 1, bodyTop, wide, tall);
+	drawFilledRect(0, tall - 1, wide, tall);
 }
 
 void TabPanel::internalMousePressed(MouseCode code)
