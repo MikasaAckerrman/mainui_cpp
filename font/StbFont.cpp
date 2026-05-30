@@ -31,6 +31,10 @@ GNU General Public License for more details.
 
 #include "StbFont.h"
 
+// Forward-declare the file-logging helper so font diagnostics also land
+// in <gamedir>/logs/vgui_diag.log.
+extern "C" void VguiLogFile( const char *fmt, ... );
+
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
@@ -51,6 +55,8 @@ bool CStbFont::Create( const char *name, int tall, int weight, int blur, float b
 	char font_face_path[256];
 
 	Con_Printf( "[font] CStbFont::Create(\"%s\", tall=%d, weight=%d) - WARN stb_truetype path active, native MS hints UNAVAILABLE\n",
+		name, tall, weight );
+	VguiLogFile( "[font] CStbFont::Create(\"%s\", tall=%d, weight=%d) - WARN stb_truetype path active, native MS hints UNAVAILABLE\n",
 		name, tall, weight );
 
 	Q_strncpy( m_szName, name, sizeof( m_szName ) );

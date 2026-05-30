@@ -49,6 +49,14 @@ if(MAINUI_FONT_SCALE)
 	add_definitions(-DMAINUI_FONT_SCALE)
 endif()
 
+# Enable VGUI diagnostic logging. With this define, VLOG() in vgui1 actively
+# writes both to the engine console (Con_Printf) and to
+# <gamedir>/logs/vgui_diag.log via fopen("a"). Font init logs piggyback on
+# VguiLogFile too. Cost in release builds is ~12 fopen calls per click,
+# acceptable while we are diagnosing on-device issues. Remove this line to
+# compile VLOG calls back into no-ops.
+add_definitions(-DVGUI_DIAG)
+
 add_definitions(-DSTDINT_H=<cstdint>)
 
 # Android historically used stb_truetype because Android NDK ships no

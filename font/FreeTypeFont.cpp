@@ -20,6 +20,10 @@ GNU General Public License for more details.
 #include "FreeTypeFont.h"
 #include "Utils.h"
 
+// Forward-declare the file-logging helper so font diagnostics also land
+// in <gamedir>/logs/vgui_diag.log alongside the drag/resize VLOGs.
+extern "C" void VguiLogFile( const char *fmt, ... );
+
 FT_Library CFreeTypeFont::m_Library;
 
 /* round a 26.6 pixel coordinate to the nearest larger integer */
@@ -51,6 +55,10 @@ bool CFreeTypeFont::Create(const char *name, int tall, int weight, int blur, flo
 	char font_face_path[256];
 	int font_face_length;
 
+	// Mirror to <gamedir>/logs/vgui_diag.log so users on Android without
+	// adb / engine console access can still read the diagnostic.
+	VguiLogFile( "[font] CFreeTypeFont::Create(\"%s\", tall=%d, weight=%d, blur=%d, outline=%d)\n",
+		name, tall, weight, blur, outlineSize );
 	Con_Printf( "[font] CFreeTypeFont::Create(\"%s\", tall=%d, weight=%d, blur=%d, outline=%d)\n",
 		name, tall, weight, blur, outlineSize );
 
@@ -98,6 +106,9 @@ bool CFreeTypeFont::Create(const char *name, int tall, int weight, int blur, flo
 	// menu does not look like Tahoma and we need to know whether a
 	// different file overrode the embedded one.
 	Con_Printf( "[font] FreeType face loaded: family=\"%s\" style=\"%s\" hints=native\n",
+		face->family_name ? face->family_name : "(null)",
+		face->style_name ? face->style_name : "(null)" );
+	VguiLogFile( "[font] FreeType face loaded: family=\"%s\" style=\"%s\" hints=native\n",
 		face->family_name ? face->family_name : "(null)",
 		face->style_name ? face->style_name : "(null)" );
 
