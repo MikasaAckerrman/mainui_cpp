@@ -34,6 +34,16 @@ CFreeTypeFont::CFreeTypeFont() : CBaseFont(),
 
 CFreeTypeFont::~CFreeTypeFont()
 {
+	// Each Create() did FT_New_Memory_Face(); without a matching
+	// FT_Done_Face the FT_Face leaked on every menu shutdown / scale
+	// change (DeleteAllFonts deletes us, but our dtor was empty).
+	// m_pFontData is borrowed from the FontManager cache or static
+	// .rodata - NOT owned here, so do NOT free it.
+	if( face )
+	{
+		FT_Done_Face( face );
+		face = NULL;
+	}
 }
 
 bool CFreeTypeFont::Create(const char *name, int tall, int weight, int blur, float brighten, int outlineSize, int scanlineOffset, float scanlineScale, int flags)
@@ -99,11 +109,12 @@ void CFreeTypeFont::GetCharRGBA(int ch, Point pt, Size sz, unsigned char *rgba, 
 	// resolution UI rendering, and discarding those hints (the previous
 	// FT_LOAD_TARGET_NORMAL behaviour) produced the 'thin/soft' look that
 	// visibly diverged from the canon Windows GDI render of CS 1.6 PC.
-	// FT_LOAD_TARGET_LIGHT picks light-grayscale AA which respects the
-	// native hints; we deliberately do NOT use FT_LOAD_TARGET_LCD here
-	// because LCD would emit 3-channel subpixel bitmaps and CEngineSurface
-	// expects single-channel alpha at the moment - LCD is a follow-up.
-	if(( error = FT_Load_Glyph( face, idx, FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT | FT_LOAD_TARGET_LIGHT )))
+	// Render mode defaults to FT_RENDER_MODE_NORMAL (8-bit grayscale AA),
+	// which is exactly what CEngineSurface's PIXEL_MODE_GRAY branch
+	// expects. We deliberately do NOT use FT_LOAD_TARGET_LCD here because
+	// LCD would emit 3-channel subpixel bitmaps and the engine still
+	// consumes single-channel alpha - LCD is a follow-up.
+	if(( error = FT_Load_Glyph( face, idx, FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT )))
 	{
 		Con_Printf( "Error in FT_Load_Glyph: %x\n", error );
 		return;
