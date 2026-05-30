@@ -17,6 +17,7 @@ GNU General Public License for more details.
 #include "FontManager.h"
 #include "BaseMenu.h"
 #include "Utils.h"
+#include "embedded_font.h"
 
 #include "BaseFontBackend.h"
 
@@ -605,7 +606,21 @@ byte *CFontManager::LoadFontDataFile( const char *vfspath, int *plen )
 
 		font_file file = { len, p };
 		m_FontFiles.Insert( vfspath, file );
+		return p;
 	}
 
-	return p;
+	// Last resort: embedded font compiled into libmenu.so. Available even
+	// when the gamedir has no font assets at all, which on Android is the
+	// common case after a fresh install. The pointer points into static
+	// .rodata - it is intentionally NOT inserted into m_FontFiles because
+	// DeleteAllFonts() calls COM_FreeFile on every cached entry, which
+	// would crash on a read-only address.
+	if( Embedded_PathMatches( vfspath ))
+	{
+		byte *embedded = (byte *)Embedded_GetData( plen );
+		if( embedded )
+			return embedded;
+	}
+
+	return NULL;
 }
