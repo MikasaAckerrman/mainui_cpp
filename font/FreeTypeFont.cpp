@@ -93,7 +93,17 @@ void CFreeTypeFont::GetCharRGBA(int ch, Point pt, Size sz, unsigned char *rgba, 
 		GetCharABCWidths( ch, a, b, c );
 	}
 
-	if(( error = FT_Load_Glyph( face, idx, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL )))
+	// FT_LOAD_NO_AUTOHINT keeps the font's own hand-crafted bytecode hints
+	// instead of replacing them with FreeType's auto-hinter. For Tahoma the
+	// difference is significant - Microsoft hand-tuned every glyph for low-
+	// resolution UI rendering, and discarding those hints (the previous
+	// FT_LOAD_TARGET_NORMAL behaviour) produced the 'thin/soft' look that
+	// visibly diverged from the canon Windows GDI render of CS 1.6 PC.
+	// FT_LOAD_TARGET_LIGHT picks light-grayscale AA which respects the
+	// native hints; we deliberately do NOT use FT_LOAD_TARGET_LCD here
+	// because LCD would emit 3-channel subpixel bitmaps and CEngineSurface
+	// expects single-channel alpha at the moment - LCD is a follow-up.
+	if(( error = FT_Load_Glyph( face, idx, FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT | FT_LOAD_TARGET_LIGHT )))
 	{
 		Con_Printf( "Error in FT_Load_Glyph: %x\n", error );
 		return;
