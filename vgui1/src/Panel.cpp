@@ -1027,6 +1027,12 @@ void Panel::internalKeyTyped(KeyCode code)
 	}
 }
 
+void Panel::internalCharTyped(char ch)
+{
+	// Base: no-op. TextEntry overrides to insert the literal character.
+	(void)ch;
+}
+
 void Panel::internalKeyReleased(KeyCode code)
 {
 	for (int i = 0; i < _inputSignalDar.getCount(); i++)

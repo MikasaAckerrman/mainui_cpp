@@ -340,13 +340,14 @@ static void VGUI_TextInput(const char *text)
 	for (int i = 0; text[i]; i++)
 	{
 		unsigned char ch = (unsigned char)text[i];
-		// Skip UTF-8 continuation bytes -- VGUI1 enum has no Cyrillic, just
-		// drop multibyte chars for now. Latin/digits/punctuation pass through.
+		// Skip UTF-8 continuation bytes -- VGUI1 has no Cyrillic, just drop
+		// multibyte chars for now. Latin/digits/punctuation pass through.
 		if (ch >= 0x80)
 			continue;
-		vgui::KeyCode kc = EngineKeyToVgui((int)ch);
-		if (kc != vgui::KEY_LAST)
-			s_app->internalKeyTyped(kc, sb);
+		// Deliver the LITERAL character. The old KeyCode round-trip
+		// (getKeyCodeChar with shifted=false) downcased capitals and dropped
+		// shifted symbols like ! @ # $; this preserves them.
+		s_app->internalCharTyped((char)ch, sb);
 	}
 }
 

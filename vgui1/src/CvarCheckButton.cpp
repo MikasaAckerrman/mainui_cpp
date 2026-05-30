@@ -27,7 +27,7 @@ void CvarCheckButton::apply()
 
 void CvarCheckButton::internalMousePressed(MouseCode code)
 {
-	if (code == MOUSE_LEFT)
+	if (code == MOUSE_LEFT && isEnabled())
 	{
 		setSelected(!isSelected());
 		VGUI_SetCvarFloat(_cvarName, isSelected() ? 1.0f : 0.0f);

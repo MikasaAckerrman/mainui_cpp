@@ -13,6 +13,7 @@ class Font
 public:
 	Font(const char* name, int tall, int wide, float rotation, int weight, bool italic, bool underline, bool strikeout, bool symbol);
 	Font(const char* name, void* pFileData, int fileDataLen, int tall, int wide, float rotation, int weight, bool italic, bool underline, bool strikeout, bool symbol);
+	~Font();
 public:
 	void getCharABCwide(int ch, int& a, int& b, int& c);
 	void getTextSize(const char* text, int& wide, int& tall);
