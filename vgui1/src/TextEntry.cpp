@@ -140,7 +140,8 @@ void TextEntry::paintBackground()
 	schemeBgColor(this, innerDark);
 	drawFilledRect(1, 1, wide - 1, 2);
 	drawFilledRect(1, 1, 2, tall - 1);
-	schemeBgColor(this, 0xC8606850);
+	// Inner inset bottom-right (1px inside outer) - reuse scheme borderBright
+	schemeBgColor(this, bright);
 	drawFilledRect(1, tall - 2, wide - 1, tall - 1);
 	drawFilledRect(wide - 2, 1, wide - 1, tall - 1);
 }
