@@ -800,10 +800,19 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 		vgui::g_pOptionsDialog = new vgui::VguiOptionsDialog(sw, sh);
 		root->addChild(vgui::g_pOptionsDialog);
 	}
-	else
+
+	// Re-clamp to the CURRENT screen on every show: the resolution may have
+	// changed since the dialog was created, and it must never start larger
+	// than the display. Shrink to fit (keep an 8px margin), then center.
 	{
+		int margin = vgui::VS(8);
 		int dlgW, dlgH;
 		vgui::g_pOptionsDialog->getSize(dlgW, dlgH);
+		if (dlgW > sw - margin) dlgW = sw - margin;
+		if (dlgH > sh - margin) dlgH = sh - margin;
+		if (dlgW < 1) dlgW = sw;
+		if (dlgH < 1) dlgH = sh;
+		vgui::g_pOptionsDialog->setSize(dlgW, dlgH);
 		vgui::g_pOptionsDialog->setPos((sw - dlgW) / 2, (sh - dlgH) / 2);
 	}
 
