@@ -3,6 +3,7 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include "TrackerScheme.h"
 
 #include <VGUI_SchemeColors.h>
+#include <VGUI_UIScale.h>
 #include <VGUI_CheckButton.h>
 #include <VGUI_ActionSignal.h>
 
@@ -34,10 +35,12 @@ void CheckButton::paintBackground()
 	// Checkbox sits transparently on the parent panel background -- do NOT
 	// fill the whole rect, otherwise we paint over the form's olive panel.
 
-	// 13x13 sunken box, vertically centered, 2px from left edge
-	int boxSize = 13;
+	// 13x13 sunken box at REFERENCE 640x480; scale via VS() so the checkbox
+	// stays proportional to the text on HD screens. Hardcoded 13 used to
+	// shrink the box to a near-invisible dot at vguiScale 2-3.
+	int boxSize = VS(13);
 	int boxY = (tall - boxSize) / 2;
-	int boxX = 2;
+	int boxX = VS(2);
 
 	// Field background inside the box
 	schemeBgColor(this, fieldBg);
@@ -52,23 +55,26 @@ void CheckButton::paintBackground()
 	drawFilledRect(boxX, boxY + boxSize - 1, boxX + boxSize, boxY + boxSize);
 	drawFilledRect(boxX + boxSize - 1, boxY, boxX + boxSize, boxY + boxSize);
 
-	// Check mark when selected
+	// Check mark when selected. Sized in VS() so the glyph thickens with the
+	// box on HD screens; was a tight 3x3+4-row pattern that looked dotted.
 	if (isSelected())
 	{
 		schemeBgColor(this, markCol);
-		int cx = boxX + 3;
-		int cy = boxY + 5;
+		int cx = boxX + VS(3);
+		int cy = boxY + VS(5);
+		int t  = VS(2); if (t < 2) t = 2;            // brush thickness
+		int s  = VS(1); if (s < 1) s = 1;            // step
 		// Diagonal down-right then up-right (simple checkmark)
-		for (int i = 0; i < 3; i++)
-			drawFilledRect(cx + i, cy + i, cx + i + 2, cy + i + 2);
-		for (int i = 0; i < 4; i++)
-			drawFilledRect(cx + 3 + i, cy + 2 - i, cx + 3 + i + 2, cy + 2 - i + 2);
+		for (int i = 0; i < 3 * s; i++)
+			drawFilledRect(cx + i, cy + i, cx + i + t, cy + i + t);
+		for (int i = 0; i < 4 * s; i++)
+			drawFilledRect(cx + 3 * s + i, cy + 2 * s - i, cx + 3 * s + i + t, cy + 2 * s - i + t);
 	}
 }
 
 void CheckButton::paint()
 {
-	// Draw label text to the right of the 13x13 checkbox so it doesn't overlap
+	// Draw label text to the right of the scaled checkbox (canon spacing).
 	int wide, tall;
 	getSize(wide, tall);
 
@@ -80,8 +86,8 @@ void CheckButton::paint()
 
 	schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFD8DED3);
 	drawSetTextFont(Scheme::sf_primary1);
-	int textX = 2 + 13 + 6; // box (2px from left, 13 wide) + 6px spacing
-	int textY = (tall - 12) / 2;
+	int textX = VS(2) + VS(13) + VS(6);  // box(left+width) + 6px spacing
+	int textY = (tall - VS(12)) / 2;
 	drawPrintText(textX, textY, buf, textLen);
 }
 

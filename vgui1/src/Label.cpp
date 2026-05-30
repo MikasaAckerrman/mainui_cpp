@@ -44,11 +44,21 @@ Label::Label(const char* text, int x, int y, int wide, int tall) : Panel(x, y, w
 	_contentFitted = false;
 }
 
-void Label::setText(const char* format, ...)
+void Label::setText(const char* text)
+{
+	if (text)
+		vgui_strcpy(_text, sizeof(_text), text);
+	else
+		_text[0] = 0;
+	repaint();
+}
+
+void Label::setTextFmt(const char* format, ...)
 {
 	if (!format)
 	{
 		_text[0] = 0;
+		repaint();
 		return;
 	}
 	va_list args;

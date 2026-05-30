@@ -6,6 +6,8 @@
 
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 extern void UI_EnableTextInput( bool enable );
+#include "BaseMenu.h"
+#include "FontManager.h"
 #include "TrackerScheme.h"
 
 #include <VGUI_Log.h>
@@ -158,9 +160,18 @@ protected:
 
 			if (hasFocus())
 			{
-				int cursorX = textX + n * 8;
+				// Use the FontManager's real width for the masked text just
+				// like the parent TextEntry does for the plain text path.
+				// Without this the caret used a guessed 8px/char and drifted
+				// off the actual asterisks at scaled resolutions.
+				HFont hFont = uiStatic.hDefaultFont;
+				int caretX;
+				if (g_FontMgr && hFont && n > 0)
+					caretX = textX + g_FontMgr->GetTextWideScaled(hFont, buf, VS(12));
+				else
+					caretX = textX + n * 8;
 				schemeBgColor(this, textCol);
-				drawFilledRect(cursorX, 3, cursorX + 1, ptall - 3);
+				drawFilledRect(caretX, 3, caretX + 1, ptall - 3);
 			}
 		}
 
@@ -336,7 +347,7 @@ private:
 	{
 		// Label stored for Button base but we override paint() so this is cosmetic
 		const char* v = (_idx >= 0 && _idx < _optCount && _opts[_idx]) ? _opts[_idx] : "";
-		setText("%s", v);
+		setText(v ? v : "");
 	}
 	char _cvar[64];
 	const char* const* _opts;

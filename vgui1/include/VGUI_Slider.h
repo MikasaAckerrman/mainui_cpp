@@ -27,6 +27,7 @@ public:
 	virtual void setSliderSize(int size);
 	virtual int getSliderSize();
 	virtual void setButtonOffset(int offset);
+	virtual void setSize(int wide, int tall);
 protected:
 	virtual void paint();
 	virtual void paintBackground();

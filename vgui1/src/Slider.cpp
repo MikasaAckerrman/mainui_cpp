@@ -142,13 +142,16 @@ void Slider::recomputeValueFromNobPos()
 	{
 		int trackLen = tall - _buttonOffset * 2 - _nobSize;
 		if (trackLen <= 0) trackLen = 1;
-		_value = _range[0] + (int)((float)(_nobPos[1] - _buttonOffset) / (float)trackLen * (float)range);
+		// Round-to-nearest (+0.5f) instead of int-cast truncate-toward-zero;
+		// without rounding the slider biased low and never quite reached the
+		// upper bound on drag.
+		_value = _range[0] + (int)((float)(_nobPos[1] - _buttonOffset) / (float)trackLen * (float)range + 0.5f);
 	}
 	else
 	{
 		int trackLen = wide - _buttonOffset * 2 - _nobSize;
 		if (trackLen <= 0) trackLen = 1;
-		_value = _range[0] + (int)((float)(_nobPos[0] - _buttonOffset) / (float)trackLen * (float)range);
+		_value = _range[0] + (int)((float)(_nobPos[0] - _buttonOffset) / (float)trackLen * (float)range + 0.5f);
 	}
 
 	if (_value < _range[0]) _value = _range[0];
@@ -237,15 +240,60 @@ void Slider::internalMousePressed(MouseCode code)
 			app->getCursorPos(mx, my);
 			screenToLocal(mx, my);
 
+			// Click-to-jump: if the press lands on the track (outside the
+			// nob), recenter the nob on the cursor first - matches every
+			// canon GoldSrc/GUI slider's UX, where clicking the track moves
+			// the nob there. Without this, only direct drags worked: a tap
+			// on empty track did nothing visible until the user dragged.
+			int wide, tall;
+			getSize(wide, tall);
+			int half = _nobSize / 2;
+			if (_vertical)
+			{
+				bool onNob = (my >= _nobPos[1] && my < _nobPos[1] + _nobSize);
+				if (!onNob)
+				{
+					int newPos = my - half;
+					int maxPos = tall - _buttonOffset - _nobSize;
+					if (newPos < _buttonOffset) newPos = _buttonOffset;
+					if (newPos > maxPos)        newPos = maxPos;
+					_nobPos[1] = newPos;
+					recomputeValueFromNobPos();
+				}
+			}
+			else
+			{
+				bool onNob = (mx >= _nobPos[0] && mx < _nobPos[0] + _nobSize);
+				if (!onNob)
+				{
+					int newPos = mx - half;
+					int maxPos = wide - _buttonOffset - _nobSize;
+					if (newPos < _buttonOffset) newPos = _buttonOffset;
+					if (newPos > maxPos)        newPos = maxPos;
+					_nobPos[0] = newPos;
+					recomputeValueFromNobPos();
+				}
+			}
+
 			_dragging = true;
 			_dragStartPos[0] = mx;
 			_dragStartPos[1] = my;
 			_nobDragStartPos[0] = _nobPos[0];
 			_nobDragStartPos[1] = _nobPos[1];
 			setAsMouseCapture(true);
+			repaint();
 		}
 	}
 	Panel::internalMousePressed(code);
+}
+
+// Resize-aware: when the parent (page or dialog) resizes us, the nob has to
+// move so it still shows the same value. Without this, sliders froze
+// visually after a dialog resize until the user dragged them.
+void Slider::setSize(int wide, int tall)
+{
+	Panel::setSize(wide, tall);
+	recomputeNobPosFromValue();
 }
 
 void Slider::internalMouseReleased(MouseCode code)
