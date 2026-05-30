@@ -24,86 +24,114 @@ static char s_defaultScheme[] = R"SCHEME(
 {
 	"Colors"
 	{
+		// CS 1.6 PC canonical palette - mirrors SmileyAG TrackerScheme.res
+		// (reference verified pixel-by-pixel against original screenshots in
+		//  Documentation/reference/: ControlBG 76 88 68 dominates 74-77% of
+		//  every Options page; gold #ADA34D == BrightControlText 196 181 80
+		//  appears in the active tab text band).
 		"White"				"255 255 255 255"
-		"OffWhite"			"220 220 220 255"
-		"LightGray"			"200 200 200 255"
-		"DullWhite"			"160 160 160 255"
-		"MedOlive"			"75 80 50 255"
-		"DarkOlive"			"55 58 35 255"
-		"DarkerOlive"		"35 38 22 255"
-		"TitleOlive"		"95 104 79 230"
-		"TitleTopEdge"		"105 114 89 255"
-		"TitleBottomEdge"	"75 84 59 255"
 		"Black"				"0 0 0 255"
-		"TransBlack"		"0 0 0 128"
-		"ListBG"			"45 50 35 230"
-		"FieldBG"			"85 96 75 230"
-		"FrameBG"			"95 104 79 230"
-		"MainBG"			"95 104 79 255"
-		"SelectionBG"		"90 90 50 255"
-		"Highlight"			"80 85 50 64"
-		"ActiveTabGreen"	"93 102 77 230"
-		"TabInactive"		"55 62 43 230"
-		"TabActiveText"		"255 255 255 255"
-		"WindowBG"			"48 56 40 230"
 		"Blank"				"0 0 0 0"
+
+		// Text colors
+		"BaseText"			"216 222 211 255"
+		"BrightBaseText"	"255 255 255 255"
+		"DimBaseText"		"160 170 149 255"
+		"ControlText"		"216 222 211 255"
+		"BrightControlText"	"196 181 80 255"
+		"DimListText"		"117 134 102 255"
+		"DisabledText1"		"117 128 111 255"
+		"DisabledText2"		"40 46 34 255"
+
+		// Backgrounds
+		"ControlBG"			"76 88 68 255"
+		"ControlDarkBG"		"90 106 80 255"
+		"WindowBG"			"62 70 55 255"
+		"ListBG"			"62 70 55 230"
+		"SelectionBG"		"149 136 49 255"
+		"FieldBG"			"62 70 55 230"
+
+		// Tab strip
+		"TabInactive"		"55 62 43 230"
+
+		// Title bar (canonical TitleBG is transparent; we keep ControlBG for
+		// VGUI1 which expects an opaque title since it does not composite)
+		"TitleBG"			"76 88 68 255"
+		"TitleTopEdge"		"136 145 128 255"
+		"TitleBottomEdge"	"40 46 34 255"
+
+		// Borders
+		"BorderBright"		"136 145 128 255"
+		"BorderDark"		"40 46 34 255"
+		"BorderSelection"	"0 0 0 255"
 	}
 
 	"BaseSettings"
 	{
-		"Frame.BgColor"					"FrameBG"
-		"Frame.OutOfFocusBgColor"		"FrameBG"
-		"FrameTitleBar.BgColor"			"TitleOlive"
-		"FrameTitleBar.TextColor"		"White"
+		"Frame.BgColor"					"ControlBG"
+		"Frame.OutOfFocusBgColor"		"ControlBG"
+		"FrameTitleBar.BgColor"			"TitleBG"
+		"FrameTitleBar.TextColor"		"BrightBaseText"
 		"FrameTitleBar.TopEdgeColor"	"TitleTopEdge"
 		"FrameTitleBar.BottomEdgeColor"	"TitleBottomEdge"
 
-		"Border.Bright"					"95 101 88 200"
-		"Border.Dark"					"40 44 36 200"
-		"Border.Selection"				"Black"
-		"Border.InnerBright"			"144 152 128 200"
-		"Border.InnerDark"				"58 62 48 200"
+		"Border.Bright"					"BorderBright"
+		"Border.Dark"					"BorderDark"
+		"Border.Selection"				"BorderSelection"
+		// Phase 1 inner-bevel (we draw a second 1px line inside the outer
+		// border for GoldSrc 3D depth). Canonical CS 1.6 borders are 1px
+		// only, but removing this is Phase D - for now we just dim it so it
+		// reads as a subtle highlight rather than a second band.
+		"Border.InnerBright"			"104 113 96 200"
+		"Border.InnerDark"				"50 56 42 200"
 
-		"Frame.HighlightBandColor"		"255 255 255 64"
-		"Frame.ShadowBandColor"			"0 0 0 64"
+		"Frame.HighlightBandColor"		"255 255 255 48"
+		"Frame.ShadowBandColor"			"0 0 0 48"
 
-		"Button.TextColor"				"White"
-		"Button.BgColor"				"91 99 80 255"
-		"Button.ArmedTextColor"			"White"
-		"Button.ArmedBgColor"			"107 115 96 255"
-		"Button.DepressedTextColor"		"DullWhite"
+		// Buttons
+		"Button.TextColor"				"BaseText"
+		"Button.BgColor"				"ControlBG"
+		"Button.ArmedTextColor"			"BrightBaseText"
+		"Button.ArmedBgColor"			"ControlDarkBG"
+		"Button.DepressedTextColor"		"DimBaseText"
 
-		"Label.TextColor"				"LightGray"
-		"Label.TextBrightColor"			"White"
-		"Label.TextDullColor"			"DullWhite"
-		"Label.DisabledFgColor1"		"DarkOlive"
-		"Label.DisabledFgColor2"		"DarkerOlive"
+		// Labels
+		"Label.TextColor"				"ControlText"
+		"Label.TextBrightColor"			"BrightBaseText"
+		"Label.TextDullColor"			"DimBaseText"
+		"Label.DisabledFgColor1"		"DisabledText1"
+		"Label.DisabledFgColor2"		"DisabledText2"
 
-		"ListPanel.TextColor"			"White"
+		// Lists
+		"ListPanel.TextColor"			"BaseText"
 		"ListPanel.BgColor"				"ListBG"
-		"ListPanel.SelectedTextColor"	"White"
+		"ListPanel.SelectedTextColor"	"BrightBaseText"
 		"ListPanel.SelectedBgColor"		"SelectionBG"
-		"ListPanel.HeaderTextColor"		"DullWhite"
-		"SectionedListPanel.HeaderTextColor" "DullWhite"
+		"ListPanel.HeaderTextColor"		"DimBaseText"
+		"SectionedListPanel.HeaderTextColor" "DimBaseText"
 
-		"TextEntry.TextColor"			"White"
-		"TextEntry.BgColor"				"FieldBG"
-		"TextEntry.SelectedTextColor"	"White"
+		// Text fields
+		"TextEntry.TextColor"			"BaseText"
+		"TextEntry.BgColor"				"WindowBG"
+		"TextEntry.SelectedTextColor"	"BrightBaseText"
 		"TextEntry.SelectedBgColor"		"SelectionBG"
 
-		"PropertySheet.TextColor"		"DullWhite"
-		"PropertySheet.SelectedTextColor" "TabActiveText"
-		"PropertySheet.ActiveTabBgColor" "ActiveTabGreen"
-		"PropertySheet.InactiveTabBgColor" "TabInactive"
-		"PropertySheet.BgColor"			"WindowBG"
+		// Property sheet (tabs)
+		"PropertySheet.TextColor"			"DimBaseText"
+		"PropertySheet.SelectedTextColor"	"BrightControlText"
+		"PropertySheet.ActiveTabBgColor"	"ControlBG"
+		"PropertySheet.InactiveTabBgColor"	"TabInactive"
+		"PropertySheet.BgColor"				"ControlBG"
 
-		"Menu.TextColor"				"White"
-		"Menu.BgColor"					"FrameBG"
-		"Menu.ArmedTextColor"			"White"
+		// Menus
+		"Menu.TextColor"				"BaseText"
+		"Menu.BgColor"					"ControlBG"
+		"Menu.ArmedTextColor"			"BrightBaseText"
 		"Menu.ArmedBgColor"				"SelectionBG"
 
-		"Panel.FgColor"					"White"
-		"Panel.BgColor"					"FrameBG"
+		// Generic Panel
+		"Panel.FgColor"					"BaseText"
+		"Panel.BgColor"					"ControlBG"
 	}
 }
 )SCHEME";

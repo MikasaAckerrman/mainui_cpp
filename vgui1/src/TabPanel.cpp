@@ -206,7 +206,8 @@ void TabPanel::paint()
 			drawFilledRect(x, tabH - 1, x + w, tabH);
 
 			// Inner highlight (top)
-			schemeBgColor(this, 0xC8686E58);
+			// Inner highlight (1px inset from outer) - use scheme bevel
+			schemeBgColor(this, innerBright);
 			drawFilledRect(x + 1, yTop + 1, x + w - 1, yTop + 2);
 		}
 

@@ -94,12 +94,14 @@ protected:
 	{
 		int wide, tall;
 		getSize(wide, tall);
-		// Dark olive fill (not pure black - GoldSrc uses dark green-gray)
-		schemeBgColor(this, 0xE63A4030);
+		// Recessed slot fill: same as TextEntry/list background (canon WindowBG).
+		unsigned int slotBg = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE63E4637;
+		schemeBgColor(this, slotBg);
 		drawFilledRect(0, 0, wide, tall);
-		// Double inset border
-		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282C24;
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
+		// Double inset border (sunken look)
+		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282E22;
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC8889180;
+		unsigned int innerDark = g_Scheme.borderInnerDark ? g_Scheme.borderInnerDark : 0xC832382A;
 		// Outer inset
 		schemeBgColor(this, dark);
 		drawFilledRect(0, 0, wide, 1);
@@ -108,7 +110,7 @@ protected:
 		drawFilledRect(0, tall - 1, wide, tall);
 		drawFilledRect(wide - 1, 0, wide, tall);
 		// Inner inset
-		schemeBgColor(this, 0xC8303828);
+		schemeBgColor(this, innerDark);
 		drawFilledRect(1, 1, wide - 1, 2);
 		drawFilledRect(1, 1, 2, tall - 1);
 	}
