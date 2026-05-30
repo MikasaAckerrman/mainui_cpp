@@ -13,6 +13,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 #include <locale.h>
+#include <stdio.h>
 #include "FontManager.h"
 #include "BaseMenu.h"
 #include "Utils.h"
@@ -29,10 +30,25 @@ GNU General Public License for more details.
 
 #include "BitmapFont.h"
 #include "utflib.h"
+#include "TrackerScheme.h"
 
 #define DEFAULT_MENUFONT "Tahoma"
 #define DEFAULT_CONFONT  "Tahoma"
 #define DEFAULT_WEIGHT   400
+
+// Resolve the name and weight of the default menu font. Prefer the value
+// parsed from TrackerScheme.res (Fonts/DefaultFont/1) so the user can change
+// the engine font by editing the .res - falls back to the canonical Tahoma
+// 400 when nothing was configured.
+static const char *MenuFontName( void )
+{
+	return g_Scheme.menuFontName[0] ? g_Scheme.menuFontName : DEFAULT_MENUFONT;
+}
+
+static int MenuFontWeight( void )
+{
+	return g_Scheme.menuFontWeight > 0 ? g_Scheme.menuFontWeight : DEFAULT_WEIGHT;
+}
 
 CFontManager *g_FontMgr;
 
@@ -75,26 +91,28 @@ void CFontManager::VidInit( void )
 	)
 	{
 		DeleteAllFonts();
-		uiStatic.hDefaultFont = CFontBuilder( DEFAULT_MENUFONT, UI_MED_CHAR_HEIGHT * scale, DEFAULT_WEIGHT )
+		const char *menuFont = MenuFontName();
+		int menuWeight = MenuFontWeight();
+		uiStatic.hDefaultFont = CFontBuilder( menuFont, UI_MED_CHAR_HEIGHT * scale, menuWeight )
 			.SetHandleNum( QM_DEFAULTFONT )
 			.Create();
-		uiStatic.hSmallFont   = CFontBuilder( DEFAULT_MENUFONT, UI_SMALL_CHAR_HEIGHT * scale, DEFAULT_WEIGHT )
+		uiStatic.hSmallFont   = CFontBuilder( menuFont, UI_SMALL_CHAR_HEIGHT * scale, menuWeight )
 			.SetHandleNum( QM_SMALLFONT )
 			.Create();
-		uiStatic.hBigFont     = CFontBuilder( DEFAULT_MENUFONT, UI_BIG_CHAR_HEIGHT * scale, DEFAULT_WEIGHT )
+		uiStatic.hBigFont     = CFontBuilder( menuFont, UI_BIG_CHAR_HEIGHT * scale, menuWeight )
 			.SetHandleNum( QM_BIGFONT )
 			.Create();
-		uiStatic.hBoldFont = CFontBuilder( DEFAULT_MENUFONT, UI_MED_CHAR_HEIGHT * scale, 1000 )
+		uiStatic.hBoldFont = CFontBuilder( menuFont, UI_MED_CHAR_HEIGHT * scale, 1000 )
 			.SetHandleNum( QM_BOLDFONT )
 			.Create();
 
 		if( !uiStatic.lowmemory )
 		{
-			uiStatic.hLightBlur = CFontBuilder( DEFAULT_MENUFONT, UI_MED_CHAR_HEIGHT * scale, DEFAULT_WEIGHT )
+			uiStatic.hLightBlur = CFontBuilder( menuFont, UI_MED_CHAR_HEIGHT * scale, menuWeight )
 				.SetBlurParams( 2 * scale, 1.25f )
 				.Create();
 
-			uiStatic.hHeavyBlur = CFontBuilder( DEFAULT_MENUFONT, UI_MED_CHAR_HEIGHT * scale, DEFAULT_WEIGHT )
+			uiStatic.hHeavyBlur = CFontBuilder( menuFont, UI_MED_CHAR_HEIGHT * scale, menuWeight )
 				.SetBlurParams( 8 * scale, 2.0f )
 				.Create();
 		}
@@ -542,6 +560,26 @@ bool CFontManager::FindFontDataFile( const char *name, int tall, int weight, int
 	else if( !strcmp( name, "Tahoma" ))
 	{
 		Q_strncpy( dataFile, "gfx/fonts/tahoma.ttf", dataFileChars );
+		return true;
+	}
+
+	// Generic fallback so .res-driven font names work without code changes.
+	// Lower-case the name and try gfx/fonts/<name>.ttf - if the user dropped
+	// a TTF at that VFS path, it loads. If not, the caller falls back to a
+	// system font (or bitmap font).
+	if( name && name[0] && dataFileChars > 0 )
+	{
+		char lower[64];
+		size_t i = 0;
+		for( ; name[i] && i + 1 < sizeof( lower ); i++ )
+		{
+			char c = name[i];
+			if( c >= 'A' && c <= 'Z' ) c = c - 'A' + 'a';
+			else if( c == ' ' )         c = '_';
+			lower[i] = c;
+		}
+		lower[i] = 0;
+		snprintf( dataFile, dataFileChars, "gfx/fonts/%s.ttf", lower );
 		return true;
 	}
 

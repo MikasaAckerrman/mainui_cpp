@@ -142,6 +142,22 @@ static char s_defaultScheme[] = R"SCHEME(
 		// Slider track behind handle (canon: ControlDarkBG)
 		"Slider.SliderBgColor"			"ControlDarkBG"
 	}
+
+	"Fonts"
+	{
+		// Default menu font. CS 1.6 PC menu canonically uses Tahoma.
+		// Override here (and ship a matching TTF at gfx/fonts/<name>.ttf)
+		// to re-skin the engine font without rebuilding mainui.
+		"DefaultFont"
+		{
+			"1"
+			{
+				"name"		"Tahoma"
+				"tall"		"10"
+				"weight"	"500"
+			}
+		}
+	}
 }
 )SCHEME";
 
@@ -402,7 +418,84 @@ static void BaseSettingsHandler( const char *key, const char *value )
 		uiColorHelp = color;
 }
 
-// Parse a scheme KeyValues buffer (on-disk file or built-in default) into
+// Parse the "Fonts" section to capture the DefaultFont entry (name + tall).
+// CS 1.6 / Tracker scheme structure:
+//   Fonts {
+//     DefaultFont {
+//       "1" { "name" "Tahoma" "tall" "10" "weight" "500" }
+//     }
+//     ...other named font groups we ignore...
+//   }
+// We grab only DefaultFont/1/{name,tall,weight}; the FontManager resolves
+// the rest on its own. Anything we don't understand is skipped, including
+// any extra resolution-buckets ("2", "3", ...) - the CS 1.6 menu uses a
+// single bucket in practice and DPI scaling is already handled by VS().
+static void ParseFontsSection( KVParser &kv )
+{
+	if( !kv.NextToken() || kv.token[0] != '{' )
+		return;
+
+	while( kv.NextToken() )
+	{
+		if( kv.token[0] == '}' )
+			return;
+
+		bool isDefault = !stricmp( kv.token, "DefaultFont" );
+
+		if( !kv.NextToken() || kv.token[0] != '{' )
+			return;
+
+		if( !isDefault )
+		{
+			// Skip the whole named-font group.
+			int depth = 1;
+			while( depth > 0 && kv.NextToken() )
+			{
+				if( kv.token[0] == '{' ) depth++;
+				else if( kv.token[0] == '}' ) depth--;
+			}
+			continue;
+		}
+
+		// Inside DefaultFont: walk numbered buckets and grab the first one
+		// we can read fully.
+		while( kv.NextToken() )
+		{
+			if( kv.token[0] == '}' )
+				break;
+
+			if( !kv.NextToken() || kv.token[0] != '{' )
+				return;
+
+			char fName[64] = {0};
+			int fTall = 0, fWeight = 0;
+			while( kv.NextToken() )
+			{
+				if( kv.token[0] == '}' )
+					break;
+				char key[64];
+				Q_strncpy( key, kv.token, sizeof( key ) );
+				if( !kv.NextToken() )
+					return;
+				if( !stricmp( key, "name" ) )
+					Q_strncpy( fName, kv.token, sizeof( fName ) );
+				else if( !stricmp( key, "tall" ) )
+					fTall = atoi( kv.token );
+				else if( !stricmp( key, "weight" ) )
+					fWeight = atoi( kv.token );
+			}
+
+			if( !g_Scheme.menuFontName[0] && fName[0] )
+			{
+				Q_strncpy( g_Scheme.menuFontName, fName, sizeof( g_Scheme.menuFontName ) );
+				g_Scheme.menuFontTall = fTall;
+				g_Scheme.menuFontWeight = fWeight;
+			}
+		}
+	}
+}
+
+
 // g_Scheme and mirror the relevant colors into the legacy mainui globals.
 // buffer must be a writable, null-terminated cursor for COM_ParseFile.
 static void ParseSchemeBuffer( char *buffer )
@@ -435,9 +528,13 @@ static void ParseSchemeBuffer( char *buffer )
 		{
 			ParseSection( kv, BaseSettingsHandler );
 		}
-		else if( !stricmp( kv.token, "Fonts" ) || !stricmp( kv.token, "Borders" ) || !stricmp( kv.token, "CustomFontFiles" ) )
+		else if( !stricmp( kv.token, "Fonts" ) )
 		{
-			// Handled elsewhere (FontManager / programmatic bevels) - skip.
+			ParseFontsSection( kv );
+		}
+		else if( !stricmp( kv.token, "Borders" ) || !stricmp( kv.token, "CustomFontFiles" ) )
+		{
+			// Handled elsewhere (programmatic bevels) - skip.
 			ParseSection( kv, NULL );
 		}
 		else

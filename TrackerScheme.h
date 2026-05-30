@@ -85,6 +85,15 @@ struct SchemeColors
 	unsigned int checkMarkColor;
 	// Slider track behind handle (canon: ControlDarkBG 90,106,80)
 	unsigned int sliderBgColor;
+
+	// Default menu font, parsed from Fonts/DefaultFont/1 in TrackerScheme.res.
+	// Empty name = use the engine's hardcoded default (Tahoma). When set, it
+	// flows through CFontManager::VidInit so the user can re-skin the engine
+	// font without rebuilding - just edit the .res and drop a TTF that the
+	// FontManager can resolve.
+	char menuFontName[64];
+	int  menuFontTall;
+	int  menuFontWeight;
 };
 
 extern SchemeColors g_Scheme;
