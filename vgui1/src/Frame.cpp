@@ -89,7 +89,7 @@ protected:
 		getSize(wide, tall);
 		bool sunken = isDepressed() || isSelected();
 
-		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5C6450;
+		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;
 		schemeBgColor(this, bg);
 		drawFilledRect(1, 1, wide - 1, tall - 1);
 
@@ -117,7 +117,7 @@ protected:
 
 		unsigned int argb = isArmed()
 			? (g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF)
-			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE0E0E0);
+			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3);
 
 		int side = (wide < tall ? wide : tall);
 		int extent = (side * 55) / 100;
@@ -240,7 +240,7 @@ void Frame::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xE6646E50;
+	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xFF4C5844;
 	schemeBgColor(this, frameBg);
 	drawFilledRect(0, 0, wide, tall);
 
@@ -335,15 +335,15 @@ void Frame::drawTitleBar(int wide)
 	int barX = border, barY = border;
 	int barW = wide - border * 2, barH = captionH;
 
-	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xE64A5440;
+	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xFF4C5844;
 	schemeBgColor(this, titleBg);
 	drawFilledRect(barX, barY, barX + barW, barY + barH);
 
-	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF8E9678;
+	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF889180;
 	schemeBgColor(this, topEdge);
 	drawFilledRect(barX, barY, barX + barW, barY + 1);
 
-	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF2A3020;
+	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF282E22;
 	schemeBgColor(this, botEdge);
 	drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
 

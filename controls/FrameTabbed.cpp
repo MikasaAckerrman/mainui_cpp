@@ -118,10 +118,10 @@ void CMenuFrameTabbed::DrawTabs()
 	int lastTabW = ( m_iNumTabs > 1 ) ? m_scSize.w - tabW * (m_iNumTabs - 1) : tabW;
 
 	// GoldSrc VGUI tab colors - active tab uses frame body color to blend seamlessly
-	unsigned int frameBg    = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
+	unsigned int frameBg    = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
 	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xE64E5643 );
-	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
-	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
+	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF889180 );
+	unsigned int dark       = Scheme_GetColor( g_Scheme.borderDark, 0xFF282E22 );
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFFDCDCDC );
 	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFBFB85E );
 

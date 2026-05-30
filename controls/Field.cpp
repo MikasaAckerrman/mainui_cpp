@@ -455,7 +455,7 @@ void CMenuField::Draw( void )
 	else
 	{
 		// GoldSrc inset style: fill with field bg, then draw sunken border
-		unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
+		unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xFF3E4637 );
 
 		UI_FillRect( newPos, m_scSize, fieldBg );
 

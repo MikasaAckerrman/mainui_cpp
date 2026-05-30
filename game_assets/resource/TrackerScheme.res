@@ -111,6 +111,12 @@
 		// ===== Generic panel =====
 		"Panel.FgColor"					"BaseText"
 		"Panel.BgColor"					"ControlBG"
+
+		// ===== Check button (canon check mark = gold) =====
+		"CheckButtonCheck"				"BrightControlText"
+
+		// ===== Slider (canon track = ControlDarkBG) =====
+		"Slider.SliderBgColor"			"ControlDarkBG"
 	}
 
 	"Fonts"

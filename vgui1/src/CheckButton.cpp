@@ -24,10 +24,12 @@ void CheckButton::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int fieldBg = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE655604B;
-	unsigned int bright  = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
-	unsigned int dark    = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
-	unsigned int markCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
+	unsigned int fieldBg = g_Scheme.fieldBgColor    ? g_Scheme.fieldBgColor    : 0xFF3E4637;
+	unsigned int bright  = g_Scheme.borderBright    ? g_Scheme.borderBright    : 0xFF889180;
+	unsigned int dark    = g_Scheme.borderDark      ? g_Scheme.borderDark      : 0xFF282E22;
+	// Canon CS 1.6 check mark = BrightControlText (gold 196,181,80), NOT field text.
+	unsigned int markCol = g_Scheme.checkMarkColor  ? g_Scheme.checkMarkColor  :
+	                       (g_Scheme.tabSelectedTextColor ? g_Scheme.tabSelectedTextColor : 0xFFC4B550);
 
 	// Checkbox sits transparently on the parent panel background -- do NOT
 	// fill the whole rect, otherwise we paint over the form's olive panel.
@@ -76,7 +78,7 @@ void CheckButton::paint()
 	if (textLen == 0)
 		return;
 
-	schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFC8C8C8);
+	schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFD8DED3);
 	drawSetTextFont(Scheme::sf_primary1);
 	int textX = 2 + 13 + 6; // box (2px from left, 13 wide) + 6px spacing
 	int textY = (tall - 12) / 2;

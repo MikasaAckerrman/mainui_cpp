@@ -159,7 +159,7 @@ void CMenuDropDown::Draw()
 		return;
 
 	uint textflags = ETF_NO_WRAP;
-	unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xE655604B );
+	unsigned int fieldBg = Scheme_GetColor( g_Scheme.fieldBgColor, 0xFF3E4637 );
 	unsigned int dark = Scheme_GetColor( g_Scheme.borderDark, 0xFF2F342B );
 
 	if( iFlags & QMF_DROPSHADOW )

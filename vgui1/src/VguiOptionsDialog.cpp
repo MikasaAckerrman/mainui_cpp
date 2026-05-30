@@ -264,8 +264,8 @@ protected:
 		int wide, tall;
 		getSize(wide, tall);
 		int arrowW = VS(16);
-		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xC8282C24;
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC87A8070;
+		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xFF282E22;
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
 		// Vertical separator
 		schemeBgColor(this, dark);
 		drawFilledRect(wide - arrowW - 1, 2, wide - arrowW, tall - 2);
@@ -284,7 +284,7 @@ protected:
 		if (!isEnabled())
 			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFF808080;
 		else
-			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE8E8E8;
+			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3;
 
 		schemeFgColor(this, argb);
 		drawSetTextFont(Scheme::sf_primary1);

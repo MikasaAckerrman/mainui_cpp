@@ -1,3 +1,8 @@
+// Include heavy mainui headers BEFORE VGUI_*.h to avoid the `null` macro clash.
+extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
+#include "TrackerScheme.h"
+
+#include <VGUI_SchemeColors.h>
 #include <VGUI_ListPanel.h>
 #include <VGUI_ScrollBar.h>
 #include <VGUI_Label.h>
@@ -15,8 +20,9 @@ ListPanel::ListPanel(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	int sbWidth = 16;
 	_vscrollBar = new ScrollBar(wide - sbWidth, 0, sbWidth, tall, true);
 	addChild(_vscrollBar);
-
-	setBgColor(255, 255, 255, 0);
+	// Bg is taken from g_Scheme.listBgColor at paint time; do NOT pre-set
+	// a hardcoded white via setBgColor() - that produced a solid white panel
+	// when scheme failed, completely breaking the list look.
 }
 
 void ListPanel::setPixelScroll(int value)
@@ -114,12 +120,16 @@ void ListPanel::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	int r, g, b, a;
-	getBgColor(r, g, b, a);
-	drawSetColor(r, g, b, a);
-	drawFilledRect(0, 0, wide - 16, tall);
+	// Canonical CS 1.6 ListPanel: ListBG (62,70,55,230) for the body and
+	// SelectionBG (149,136,49 olive-gold) for the highlighted row. Both are
+	// driven by the scheme; canonical fallbacks match the canon palette.
+	unsigned int listBg  = g_Scheme.listBgColor         ? g_Scheme.listBgColor         : 0xE63E4637;
+	unsigned int selBg   = g_Scheme.listSelectedBgColor ? g_Scheme.listSelectedBgColor : 0xFF958831;
+	int sbW = 16;
 
-	// Draw selection highlight
+	schemeBgColor(this, listBg);
+	drawFilledRect(0, 0, wide - sbW, tall);
+
 	if (_selectedIndex >= 0 && _selectedIndex < _itemDar.getCount())
 	{
 		Panel* item = _itemDar[_selectedIndex];
@@ -127,7 +137,7 @@ void ListPanel::paintBackground()
 		{
 			int ix, iy, iw, ih;
 			item->getBounds(ix, iy, iw, ih);
-			drawSetColor(0, 0, 128, 0);
+			schemeBgColor(this, selBg);
 			drawFilledRect(ix, iy, ix + iw, iy + ih);
 		}
 	}

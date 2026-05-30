@@ -160,9 +160,9 @@ void Slider::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int trackCol = g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xE655604B;
-	unsigned int bright   = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
-	unsigned int dark     = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int trackCol = g_Scheme.sliderBgColor ? g_Scheme.sliderBgColor : (g_Scheme.fieldBgColor ? g_Scheme.fieldBgColor : 0xFF5A6A50);
+	unsigned int bright   = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+	unsigned int dark     = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
 	// Slider sits transparently on the parent panel; only draw the track groove.
 	if (_vertical)
@@ -193,9 +193,9 @@ void Slider::paint()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int nobBg  = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5B6350;
-	unsigned int bright = g_Scheme.borderBright  ? g_Scheme.borderBright  : 0xC85F6558;
-	unsigned int dark   = g_Scheme.borderDark    ? g_Scheme.borderDark    : 0xC8282C24;
+	unsigned int nobBg  = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;
+	unsigned int bright = g_Scheme.borderBright  ? g_Scheme.borderBright  : 0xFF889180;
+	unsigned int dark   = g_Scheme.borderDark    ? g_Scheme.borderDark    : 0xFF282E22;
 
 	int nx, ny, nw, nh;
 	if (_vertical)

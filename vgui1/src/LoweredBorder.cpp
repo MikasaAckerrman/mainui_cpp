@@ -21,8 +21,8 @@ void LoweredBorder::paint(Panel* panel)
 	int wide, tall;
 	panel->getSize(wide, tall);
 
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xC85F6558;
-	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xC8282C24;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
 
 	// Sunken: dark on top + left, bright on bottom + right
 	schemeBgColor(panel, dark);

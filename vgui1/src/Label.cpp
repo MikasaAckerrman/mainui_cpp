@@ -210,7 +210,7 @@ void Label::paint()
 		if (r == 0 && g == 0 && b == 0 && a == 0)
 		{
 			// Default: use scheme labelTextColor
-			schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFC8C8C8);
+			schemeFgColor(this, g_Scheme.labelTextColor ? g_Scheme.labelTextColor : 0xFFD8DED3);
 		}
 		else
 		{

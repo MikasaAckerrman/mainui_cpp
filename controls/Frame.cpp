@@ -90,7 +90,7 @@ int CMenuFrame::HitTestResize( int x, int y )
 
 void CMenuFrame::DrawBackground()
 {
-	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
+	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH, m_scSize.w, m_scSize.h - m_iTitleH, bgColor );
 
 	// GoldSrc subtle noise/grain effect - sparse grid, position-based hash
@@ -146,10 +146,10 @@ void CMenuFrame::DrawBackground()
 
 void CMenuFrame::DrawTitleBar()
 {
-	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xE65F684E );
+	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
 	unsigned int titleFg = Scheme_GetColor( g_Scheme.frameTitleBarFg, 0xFFFFFFFF );
-	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
-	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 );
+	unsigned int bright  = Scheme_GetColor( g_Scheme.borderBright, 0xFF889180 );
+	unsigned int dark    = Scheme_GetColor( g_Scheme.borderDark, 0xFF282E22 );
 
 	// Title bar uses the SAME color as frame body so it blends seamlessly (CS 1.6 style)
 	unsigned int titleTop = Scheme_GetColor( g_Scheme.frameTitleBarTop, 0xFF697259 );
@@ -225,7 +225,7 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xC8282C24 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282E22 );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;
@@ -244,8 +244,8 @@ void CMenuFrame::DrawResizeGrip()
 	if( !bAllowResize )
 		return;
 
-	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xC85F6558 );
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xC8282C24 );
+	unsigned int bright = Scheme_GetColor( g_Scheme.borderBright, 0xFF889180 );
+	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282E22 );
 
 	// Draw 3 diagonal groove lines at bottom-right corner.
 	// Each line is a pair of bright+dark 1px diagonal strokes for a grooved look.
