@@ -248,9 +248,11 @@ void Frame::paintBackground()
 	int border = Fborder();
 
 	// Subtle GoldSrc noise/grain over the body region (canonical look - the
-	// original CS 1.6 VGUI window is not a flat color). Position-based hash
-	// picks sparse pixels and nudges them brighter/darker. Sparse step keeps
-	// the per-frame cost bounded.
+	// original CS 1.6 VGUI window has a visible noisy texture, not a flat
+	// color; pixel audit shows reference body luminance stddev ~15-25 vs
+	// our flat ~1). Position-based hash picks sparse pixels and nudges them
+	// brighter/darker. Tighter step (VS(3)) + larger amplitude bring stddev
+	// up while staying cheap (~50K pixels at 800x500).
 	{
 		int bx0 = border;
 		int by0 = captionH + border;
@@ -260,8 +262,8 @@ void Frame::paintBackground()
 		int areaH = by1 - by0;
 		if (areaW > 16 && areaH > 16)
 		{
-			int step = VS(7);
-			if (step < 5) step = 5;
+			int step = VS(3);
+			if (step < 2) step = 2;
 			unsigned int br = (frameBg >> 16) & 0xFF;
 			unsigned int bg = (frameBg >> 8) & 0xFF;
 			unsigned int bb = frameBg & 0xFF;
@@ -271,22 +273,16 @@ void Frame::paintBackground()
 				for (int px = bx0; px < bx1; px += step)
 				{
 					unsigned int h = ((unsigned int)px * 2654435761u) ^ ((unsigned int)py * 340573321u);
-					if ((h & 0xF) < 2)
-					{
-						unsigned int nr = (br + 10 > 255) ? 255 : br + 10;
-						unsigned int ng = (bg + 10 > 255) ? 255 : bg + 10;
-						unsigned int nb = (bb + 10 > 255) ? 255 : bb + 10;
-						schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
-						drawFilledRect(px, py, px + 1, py + 1);
-					}
-					else if ((h & 0xF) == 15)
-					{
-						unsigned int nr = (br > 10) ? br - 10 : 0;
-						unsigned int ng = (bg > 10) ? bg - 10 : 0;
-						unsigned int nb = (bb > 10) ? bb - 10 : 0;
-						schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
-						drawFilledRect(px, py, px + 1, py + 1);
-					}
+					int q = h & 0xF;
+					int d = 0;
+					if (q < 4)        d =  16;  // 25% brighter
+					else if (q >= 12) d = -16;  // 25% darker
+					if (d == 0) continue;
+					int nr = (int)br + d; if (nr < 0) nr = 0; if (nr > 255) nr = 255;
+					int ng = (int)bg + d; if (ng < 0) ng = 0; if (ng > 255) ng = 255;
+					int nb = (int)bb + d; if (nb < 0) nb = 0; if (nb > 255) nb = 255;
+					schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
+					drawFilledRect(px, py, px + 1, py + 1);
 				}
 			}
 		}
