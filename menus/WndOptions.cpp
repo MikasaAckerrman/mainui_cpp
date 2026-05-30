@@ -55,7 +55,7 @@ private:
 		void Draw() override
 		{
 			UI_FillRect( m_scPos.x, m_scPos.y, m_scSize.w, m_scSize.h,
-				Scheme_GetColor( g_Scheme.borderDark, 0xC8282C24 ) );
+				Scheme_GetColor( g_Scheme.borderDark, 0xFF282E22 ) );
 		}
 	};
 

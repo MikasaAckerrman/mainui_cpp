@@ -105,11 +105,11 @@ void Button::paintBackground()
 	// Body fill color
 	unsigned int bg;
 	if (!enabled)
-		bg = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6404830;
+		bg = g_Scheme.tabInactiveBgColor ? g_Scheme.tabInactiveBgColor : 0xE6373E2B;
 	else if (_armed)
-		bg = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF6B7360;
+		bg = g_Scheme.buttonArmedBgColor ? g_Scheme.buttonArmedBgColor : 0xFF5A6A50;
 	else
-		bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF5C6450;
+		bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;
 
 	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
 	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
@@ -156,11 +156,11 @@ void Button::paint()
 
 	unsigned int argb;
 	if (!isEnabled())
-		argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFF808080;
+		argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFFA0AA95;
 	else if (_armed)
 		argb = g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF;
 	else
-		argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFE8E8E8;
+		argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3;
 
 	int a = (argb >> 24) & 0xFF;
 	int r = (argb >> 16) & 0xFF;

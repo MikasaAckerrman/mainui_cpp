@@ -132,6 +132,12 @@ static char s_defaultScheme[] = R"SCHEME(
 		// Generic Panel
 		"Panel.FgColor"					"BaseText"
 		"Panel.BgColor"					"ControlBG"
+
+		// Check button glyph (canon = gold)
+		"CheckButtonCheck"				"BrightControlText"
+
+		// Slider track behind handle (canon: ControlDarkBG)
+		"Slider.SliderBgColor"			"ControlDarkBG"
 	}
 }
 )SCHEME";
@@ -369,6 +375,14 @@ static void BaseSettingsHandler( const char *key, const char *value )
 	// Content area behind a PropertySheet/TabView (read by TabView.cpp)
 	else if( !stricmp( key, "PropertySheet.BgColor" ) )
 		g_Scheme.windowBgColor = color;
+
+	// Check button glyph color (gold in canon CS 1.6)
+	else if( !stricmp( key, "CheckButtonCheck" ) )
+		g_Scheme.checkMarkColor = color;
+
+	// Slider track (area behind handle - canonical ControlDarkBG)
+	else if( !stricmp( key, "Slider.SliderBgColor" ) || !stricmp( key, "ScrollBarSlider.ScrollBarSliderBgColor" ) )
+		g_Scheme.sliderBgColor = color;
 
 	// Also apply to mainui global colors for legacy controls
 	if( !stricmp( key, "Label.TextColor" ) || !stricmp( key, "BaseText" ) )
