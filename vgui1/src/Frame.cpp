@@ -15,6 +15,7 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include <VGUI_App.h>
 #include <VGUI_Button.h>
 #include <VGUI_ActionSignal.h>
+#include <VGUI_CvarBridge.h> // VGUI_GetScreenSize - authoritative drawable canvas
 #include <string.h>
 
 namespace vgui
@@ -44,6 +45,20 @@ static inline int EdgeGrip()   { return VS(6); }
 static inline int CornerGrip() { return VS(10); } // larger for corner hit-test
 static inline int MinW()       { return VS(360); }
 static inline int MinH()       { return VS(240); }
+
+// Authoritative drawable canvas size (the coordinate space _pos/_size live in).
+// Prefer the parent (root) panel size; fall back to the engine screen size, then
+// to a sane default. Used to clamp drag/resize so the window can never grow
+// larger than the screen nor be flung fully off it.
+static void GetCanvasSize(Panel* frame, int& sw, int& sh)
+{
+	sw = 0; sh = 0;
+	Panel* p = frame ? frame->getParent() : null;
+	if (p) p->getSize(sw, sh);
+	if (sw <= 0 || sh <= 0) VGUI_GetScreenSize(&sw, &sh);
+	if (sw <= 0) sw = 640;
+	if (sh <= 0) sh = 480;
+}
 
 // Hit-test resize zones. lx,ly are panel-local coords, w,h panel size.
 // Returns 0 if cursor is not in any resize edge.
@@ -421,52 +436,103 @@ void Frame::internalCursorMoved(int x, int y)
 	{
 		int newX = _pos[0] + dx;
 		int newY = _pos[1] + dy;
-		// Clamp: keep title bar grabbable
+
 		int wide, tall;
 		getSize(wide, tall);
-		Panel* p = getParent();
-		int rootW = 0, rootH = 0;
-		if (p) p->getSize(rootW, rootH);
-		if (rootW > 0 && rootH > 0)
-		{
-			int margin = VS(24);
-			if (newX < -wide + margin) newX = -wide + margin;
-			if (newX > rootW - margin) newX = rootW - margin;
-			if (newY < 0) newY = 0;
-			if (newY > rootH - margin) newY = rootH - margin;
-		}
+		int sw, sh;
+		GetCanvasSize(this, sw, sh);
+
+		int captionH = _smallCaption ? FcapSmall() : Fcap();
+		int margin = VS(24);
+		if (margin > wide) margin = wide;
+
+		// Horizontal: the window may slide partly off the left/right edges, but
+		// at least `margin` px must stay on-screen so it can always be grabbed
+		// back. newX is the window's left edge in canvas space.
+		int minX = margin - wide;   // right edge keeps `margin` visible at left
+		int maxX = sw - margin;     // left edge keeps `margin` visible at right
+		if (newX < minX) newX = minX;
+		if (newX > maxX) newX = maxX;
+
+		// Vertical: the caption bar must stay fully reachable - never hide it
+		// above the top, and never push it past the bottom edge.
+		int maxY = sh - captionH;
+		if (maxY < 0) maxY = 0;
+		if (newY < 0) newY = 0;
+		if (newY > maxY) newY = maxY;
+
 		setPos(newX, newY);
 	}
 	else if (_resizing && _sizeable && _resizeZone)
 	{
 		int wide, tall;
 		getSize(wide, tall);
-		int newX = _pos[0], newY = _pos[1];
-		int newW = wide, newH = tall;
+		int sw, sh;
+		GetCanvasSize(this, sw, sh);
+
 		int minW = MinW(), minH = MinH();
+		int maxW = sw, maxH = sh;            // window can never exceed the screen
+		if (minW > maxW) minW = maxW;
+		if (minH > maxH) minH = maxH;
+
+		// Work in absolute edge coordinates. Only the grabbed edge(s) move; the
+		// opposite edge stays anchored. Each moving edge is clamped so the
+		// resulting size is within [min,max] AND the edge stays on-screen -
+		// this single formula prevents over-stretch, oversized windows, and
+		// pushing the window off the canvas.
+		int left   = _pos[0];
+		int top    = _pos[1];
+		int right  = left + wide;
+		int bottom = top  + tall;
 
 		if (_resizeZone & RZ_W)
 		{
-			newX += dx;
-			newW -= dx;
-			if (newW < minW) { newX -= (minW - newW); newW = minW; }
+			left += dx;
+			int lo = right - maxW; if (lo < 0) lo = 0; // on-screen + max width
+			int hi = right - minW;                     // min width
+			if (left < lo) left = lo;
+			if (left > hi) left = hi;
 		}
 		if (_resizeZone & RZ_E)
 		{
-			newW += dx;
-			if (newW < minW) newW = minW;
+			right += dx;
+			int lo = left + minW;
+			int hi = left + maxW; if (hi > sw) hi = sw; // on-screen + max width
+			if (right < lo) right = lo;
+			if (right > hi) right = hi;
 		}
 		if (_resizeZone & RZ_N)
 		{
-			newY += dy;
-			newH -= dy;
-			if (newH < minH) { newY -= (minH - newH); newH = minH; }
+			top += dy;
+			int lo = bottom - maxH; if (lo < 0) lo = 0;
+			int hi = bottom - minH;
+			if (top < lo) top = lo;
+			if (top > hi) top = hi;
 		}
 		if (_resizeZone & RZ_S)
 		{
-			newH += dy;
-			if (newH < minH) newH = minH;
+			bottom += dy;
+			int lo = top + minH;
+			int hi = top + maxH; if (hi > sh) hi = sh;
+			if (bottom < lo) bottom = lo;
+			if (bottom > hi) bottom = hi;
 		}
+
+		int newX = left, newY = top;
+		int newW = right - left, newH = bottom - top;
+		if (newW < minW) newW = minW;        // final safety on tiny canvases
+		if (newH < minH) newH = minH;
+
+		// Safety net: if the window was ALREADY larger than the screen or
+		// off-screen before this resize (e.g. created oversized, or the
+		// resolution shrank), force it back within bounds. For a normal
+		// in-screen window this is a no-op (the per-edge clamps already hold).
+		if (newW > sw) newW = sw;
+		if (newH > sh) newH = sh;
+		if (newX + newW > sw) newX = sw - newW;
+		if (newY + newH > sh) newY = sh - newH;
+		if (newX < 0) newX = 0;
+		if (newY < 0) newY = 0;
 
 		if (newX != _pos[0] || newY != _pos[1])
 			setPos(newX, newY);
