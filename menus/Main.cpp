@@ -55,7 +55,6 @@ static void UI_ShowVguiOptions( void )
 	if( !s_vguiInitDone )
 	{
 		Con_Printf( "[VGUI] init: ScreenWidth=%g ScreenHeight=%g\n", ScreenWidth, ScreenHeight );
-		VGUI_SetScreenSize( ScreenWidth, ScreenHeight );
 		VGUI_SetCvarFuncs(
 			EngFuncs::engfuncs.pfnGetCvarFloat,
 			EngFuncs::engfuncs.pfnCvarSetValue,
@@ -66,6 +65,11 @@ static void UI_ShowVguiOptions( void )
 		s_vguiInitDone = true;
 		Con_Printf( "[VGUI] init done, calling VGUI_ShowOptions\n" );
 	}
+	// Refresh the screen size on EVERY open: the player may have changed
+	// resolution since the dialog was first initialized. This keeps the VGUI
+	// canvas, hit-testing and the drag/resize clamps aligned with the real
+	// screen (cvar funcs only need to be wired once, above).
+	VGUI_SetScreenSize( ScreenWidth, ScreenHeight );
 	VGUI_ShowOptions();
 	Con_Printf( "[VGUI] returned from VGUI_ShowOptions\n" );
 }
