@@ -252,6 +252,25 @@ void TextEntry::internalKeyPressed(KeyCode code)
 	Panel::internalKeyPressed(code);
 }
 
+// Insert a single printable ASCII char at the caret. Shared by the typed-key
+// path and the literal char/IME path. Ignores control chars and respects the
+// buffer limit; keeps the null terminator intact via the +1 in the memmove.
+void TextEntry::insertChar(char ch)
+{
+	if (!_editable)
+		return;
+	if (ch < 32 || (unsigned char)ch >= 127) // printable ASCII only
+		return;
+	if (_textLen >= (int)sizeof(_text) - 1)
+		return;
+	memmove(_text + _cursorPos + 1, _text + _cursorPos, _textLen - _cursorPos + 1);
+	_text[_cursorPos] = ch;
+	_cursorPos++;
+	_textLen++;
+	repaint();
+	fireActionSignal();
+}
+
 void TextEntry::internalKeyTyped(KeyCode code)
 {
 	if (!_editable) { Panel::internalKeyTyped(code); return; }
@@ -259,18 +278,20 @@ void TextEntry::internalKeyTyped(KeyCode code)
 	App* app = App::getInstance();
 	if (!app) { Panel::internalKeyTyped(code); return; }
 
+	// Legacy KeyCode-typed path (case-less). The primary text route is
+	// internalCharTyped, which preserves case/symbols.
 	char ch = app->getKeyCodeChar(code, false);
-	if (ch && ch != '\n' && ch != '\t' && _textLen < (int)sizeof(_text) - 1)
-	{
-		memmove(_text + _cursorPos + 1, _text + _cursorPos, _textLen - _cursorPos + 1);
-		_text[_cursorPos] = ch;
-		_cursorPos++;
-		_textLen++;
-		repaint();
-		fireActionSignal();
-	}
+	if (ch != '\n' && ch != '\t')
+		insertChar(ch);
 
 	Panel::internalKeyTyped(code);
+}
+
+// Primary text-input path: the engine's char/IME route delivers the already
+// resolved character (correct case, shifted symbols). Insert it verbatim.
+void TextEntry::internalCharTyped(char ch)
+{
+	insertChar(ch);
 }
 
 }

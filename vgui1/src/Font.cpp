@@ -5,6 +5,9 @@
 namespace vgui
 {
 
+// Matches vgui_strdup's allocator (see vgui.cpp).
+extern void vgui_internal_free(void* ptr);
+
 static int _staticFontId = 0;
 
 Font::Font(const char* name, int tall, int wide, float rotation, int weight, bool italic, bool underline, bool strikeout, bool symbol)
@@ -24,6 +27,17 @@ void Font::init(const char* name, void* pFileData, int fileDataLen, int tall, in
 	_id = _staticFontId++;
 	_tall = tall;
 	_wide = wide;
+}
+
+// Free the strdup'd name. Fonts are owned/deleted by Scheme (see Scheme::~Scheme);
+// without this the name buffer leaked on every menu shutdown/reinit.
+Font::~Font()
+{
+	if (_name)
+	{
+		vgui_internal_free(_name);
+		_name = null;
+	}
 }
 
 BaseFontPlat* Font::getPlat()

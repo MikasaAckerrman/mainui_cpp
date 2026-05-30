@@ -87,7 +87,7 @@ void CheckButton::paint()
 
 void CheckButton::internalMousePressed(MouseCode code)
 {
-	if (code == MOUSE_LEFT)
+	if (code == MOUSE_LEFT && isEnabled())
 	{
 		setSelected(!isSelected());
 		fireActionSignal();

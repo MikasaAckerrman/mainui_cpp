@@ -144,6 +144,7 @@ protected:
 	virtual void internalMouseWheeled(int delta);
 	virtual void internalKeyPressed(KeyCode code);
 	virtual void internalKeyTyped(KeyCode code);
+	virtual void internalCharTyped(char ch); // literal printable char (preserves case/symbols)
 	virtual void internalKeyReleased(KeyCode code);
 	virtual void internalKeyFocusTicked();
 	virtual void internalFocusChanged(bool lost);

@@ -535,6 +535,17 @@ void App::internalKeyTyped(KeyCode code, SurfaceBase* surfaceBase)
 	}
 }
 
+// Literal printable character (from the engine's char/IME route). Routed
+// straight to the key-focus panel so case and shifted symbols survive - the
+// KeyCode path downcased and dropped them.
+void App::internalCharTyped(char ch, SurfaceBase* surfaceBase)
+{
+	if (_keyFocus)
+	{
+		_keyFocus->internalCharTyped(ch);
+	}
+}
+
 void App::internalKeyReleased(KeyCode code, SurfaceBase* surfaceBase)
 {
 	if (code >= 0 && code < KEY_LAST)

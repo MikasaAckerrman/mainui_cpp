@@ -63,6 +63,7 @@ public:
 	virtual void internalMouseWheeled(int delta, SurfaceBase* surfaceBase);
 	virtual void internalKeyPressed(KeyCode code, SurfaceBase* surfaceBase);
 	virtual void internalKeyTyped(KeyCode code, SurfaceBase* surfaceBase);
+	virtual void internalCharTyped(char ch, SurfaceBase* surfaceBase);
 	virtual void internalKeyReleased(KeyCode code, SurfaceBase* surfaceBase);
 	virtual void internalSetMouseArena(int x0, int y0, int x1, int y1, bool enabled);
 	virtual bool setRegistryString(const char* key, const char* value);
