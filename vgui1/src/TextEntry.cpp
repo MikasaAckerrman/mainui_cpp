@@ -152,8 +152,31 @@ void TextEntry::paint()
 	else
 		drawSetTextFont(_schemeFont);
 
+	// Scroll-on-overflow: keep the caret visible inside the field. Without
+	// this, typing past the right edge would push the caret off-screen and
+	// the user would lose sight of where they are. Computed here so it tracks
+	// every paint (covers caret moves from arrow keys, click-to-position, etc).
+	int leftPad  = VS(6);
+	int rightPad = VS(6);
+	int visibleW = pwide - leftPad - rightPad;
+	if (visibleW < 1) visibleW = 1;
+
+	int caretAbs = TE_MeasureWidth(_text, _cursorPos);
+	int totalW   = TE_MeasureWidth(_text, _textLen);
+
+	// Slide the scroll window so the caret sits inside [scroll, scroll+visibleW].
+	if (caretAbs - _scrollOffset > visibleW)
+		_scrollOffset = caretAbs - visibleW;
+	if (caretAbs - _scrollOffset < 0)
+		_scrollOffset = caretAbs;
+	// Don't scroll past content; if everything fits, anchor at 0.
+	if (_scrollOffset > totalW - visibleW)
+		_scrollOffset = totalW - visibleW;
+	if (_scrollOffset < 0)
+		_scrollOffset = 0;
+
 	// GoldSrc left padding: 6px inside the inset border
-	int textX = VS(6) - _scrollOffset;
+	int textX = leftPad - _scrollOffset;
 	// Vertical center: text baseline aligned to center of field
 	int textY = (ptall - VS(11)) / 2;
 	if (textY < 2) textY = 2;

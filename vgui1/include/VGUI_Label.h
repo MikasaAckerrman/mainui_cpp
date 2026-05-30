@@ -29,7 +29,12 @@ public:
 	Label(const char* text);
 	Label(const char* text, int x, int y, int wide, int tall);
 public:
-	virtual void setText(const char* format, ...);
+	// Verbatim text (canon VGUI1 API). Use this for any string that may
+	// contain '%' or that comes from user/cvar/file - the variadic
+	// setTextFmt below would interpret % as a printf format and could
+	// crash on stray formatting chars.
+	virtual void setText(const char* text);
+	virtual void setTextFmt(const char* format, ...);
 	virtual void getText(char* buf, int bufLen);
 	virtual void setFont(Scheme::SchemeFont schemeFont);
 	virtual void setFont(Font* font);
