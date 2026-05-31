@@ -434,6 +434,13 @@ void Frame::internalCursorMoved(int x, int y)
 		_lastCursor[0] = x;
 		_lastCursor[1] = y;
 		_lastCursorValid = true;
+		// The algorithm applies NO movement on the seed sample - the window
+		// starts tracking from here, not from the press point. Re-anchor the
+		// report's finger-start to this seed so finger-delta and window-delta
+		// share the same origin; otherwise MISMATCH would carry a constant
+		// (press - firstMove) offset that is not real drift.
+		_dragOrgCursor[0] = x;
+		_dragOrgCursor[1] = y;
 		VLOG("Frame move: seed cursor (%d,%d), no delta applied yet", x, y);
 		Panel::internalCursorMoved(x, y);
 		return;
@@ -670,8 +677,11 @@ void Frame::internalMousePressed(MouseCode code)
 				{
 					_dragging = true;
 					_lastCursorValid = false;
-					// Anchors for the release report (reuse legacy ABI fields):
-					//   _dragOrgCursor = finger-down position (drag start)
+					// Report anchors (reuse legacy ABI fields):
+					//   _dragOrgCursor = finger reference; seeded to the press
+					//     point here as a fallback for taps with no motion,
+					//     then refined to the first move sample (the actual
+					//     tracking origin) in internalCursorMoved.
 					//   _dragOrgPos    = window position at drag start
 					//   _dragOrgSize   = [0] dropped spurious(0,0), [1] clamped-huge
 					_dragOrgCursor[0] = mx; _dragOrgCursor[1] = my;
