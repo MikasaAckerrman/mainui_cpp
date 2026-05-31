@@ -413,6 +413,21 @@ void Frame::internalCursorMoved(int x, int y)
 		return;
 	}
 
+	// Engine on Android emits spurious cursorMoved events with cursor=(0,0)
+	// between real touch motion samples (likely a per-frame poll reading
+	// stale state when no FINGER_MOTION fired this tick). Without this
+	// filter, the (0,0) events seeded with huge negative deltas relative
+	// to real touch positions and the next real sample applied an equally
+	// huge positive delta - net algebraic round-trip, but resize/drag
+	// clamps consume the negative excursion asymmetrically and the frame
+	// drifts (typically right-and-down on this device). A finger on an
+	// active dialog cannot legitimately be at exactly (0,0); drop them.
+	if (x == 0 && y == 0)
+	{
+		Panel::internalCursorMoved(x, y);
+		return;
+	}
+
 	if (!_lastCursorValid)
 	{
 		_lastCursor[0] = x;
@@ -430,6 +445,26 @@ void Frame::internalCursorMoved(int x, int y)
 		Panel::internalCursorMoved(x, y);
 		return;
 	}
+
+	// Safety net for any other engine-side glitch that produces a delta
+	// larger than physically possible in one engine tick (60 Hz). Finger
+	// velocity tops out well under 500 px/tick on a 2800 px display; any
+	// larger delta is spurious. Re-seed _lastCursor without applying the
+	// move so the next real event measures from the new baseline rather
+	// than chasing the bogus jump on its own.
+	{
+		int adx = dx < 0 ? -dx : dx;
+		int ady = dy < 0 ? -dy : dy;
+		if (adx > 500 || ady > 500)
+		{
+			VLOG("Frame move: clamp huge d=(%+d,%+d) - reseed only", dx, dy);
+			_lastCursor[0] = x;
+			_lastCursor[1] = y;
+			Panel::internalCursorMoved(x, y);
+			return;
+		}
+	}
+
 	_lastCursor[0] = x;
 	_lastCursor[1] = y;
 	VLOG("Frame move: cursor=(%d,%d) d=(%+d,%+d) %s",
