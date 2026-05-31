@@ -24,6 +24,8 @@ extern "C"
 {
     #include <ft2build.h>
     #include FT_FREETYPE_H
+    #include FT_MODULE_H    // FT_Property_Set
+    #include FT_DRIVER_H    // TT_INTERPRETER_VERSION_35
 }
 
 #include "utlmemory.h"
