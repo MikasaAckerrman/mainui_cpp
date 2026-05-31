@@ -69,6 +69,22 @@ CFontManager::CFontManager()
 {
 #ifdef MAINUI_USE_FREETYPE
 	FT_Init_FreeType( &CFreeTypeFont::m_Library );
+	// Force the classic TrueType bytecode interpreter (v35) instead of the
+	// modern subpixel-tuned v40. v40 deliberately drops horizontal grid-
+	// fitting (it targets ClearType/LCD), which makes hinted UI fonts look
+	// soft and slightly off-grid versus Windows GDI. CS 1.6's PC menu was
+	// rendered through GDI, whose grayscale path uses the v35 interpreter -
+	// so v35 + Tahoma's own bytecode hints is what reproduces the exact PC
+	// look. Guarded: older FreeType without this property simply ignores it.
+#if defined( FT_CONFIG_OPTION_SUBPIXEL_HINTING ) || ( FREETYPE_MAJOR > 2 ) || \
+	( FREETYPE_MAJOR == 2 && FREETYPE_MINOR >= 7 )
+	if( CFreeTypeFont::m_Library )
+	{
+		FT_UInt interp = TT_INTERPRETER_VERSION_35;
+		FT_Property_Set( CFreeTypeFont::m_Library, "truetype",
+			"interpreter-version", &interp );
+	}
+#endif
 #endif
 	m_Fonts.EnsureCapacity( 4 );
 	m_FontFiles.EnsureCapacity( 2 );

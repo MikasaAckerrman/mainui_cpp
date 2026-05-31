@@ -49,13 +49,14 @@ if(MAINUI_FONT_SCALE)
 	add_definitions(-DMAINUI_FONT_SCALE)
 endif()
 
-# Enable VGUI diagnostic logging. With this define, VLOG() in vgui1 actively
-# writes both to the engine console (Con_Printf) and to
-# <gamedir>/logs/vgui_diag.log via fopen("a"). Font init logs piggyback on
-# VguiLogFile too. Cost in release builds is ~12 fopen calls per click,
-# acceptable while we are diagnosing on-device issues. Remove this line to
-# compile VLOG calls back into no-ops.
-add_definitions(-DVGUI_DIAG)
+# VGUI diagnostic logging. When -DVGUI_DIAG is defined, VLOG() writes to both
+# the engine console (Con_Printf) and <gamedir>/logs/vgui_diag.log via
+# fopen("a"). That is a per-event fopen/fprintf/fclose - on a touch drag the
+# engine fires hundreds of cursorMoved events, so leaving it on caused visible
+# drag/resize lag on device. Diagnosis is complete (drag MISMATCH=0 confirmed),
+# so it is OFF by default now; VLOG() compiles to a no-op. Re-enable only when
+# actively debugging by uncommenting the line below.
+# add_definitions(-DVGUI_DIAG)
 
 add_definitions(-DSTDINT_H=<cstdint>)
 
