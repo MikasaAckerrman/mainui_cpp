@@ -424,6 +424,7 @@ void Frame::internalCursorMoved(int x, int y)
 	// active dialog cannot legitimately be at exactly (0,0); drop them.
 	if (x == 0 && y == 0)
 	{
+		_dragOrgSize[0]++;   // count spurious (0,0) events filtered this drag
 		Panel::internalCursorMoved(x, y);
 		return;
 	}
@@ -457,6 +458,7 @@ void Frame::internalCursorMoved(int x, int y)
 		int ady = dy < 0 ? -dy : dy;
 		if (adx > 500 || ady > 500)
 		{
+			_dragOrgSize[1]++;   // count clamped huge-delta events this drag
 			VLOG("Frame move: clamp huge d=(%+d,%+d) - reseed only", dx, dy);
 			_lastCursor[0] = x;
 			_lastCursor[1] = y;
@@ -653,6 +655,9 @@ void Frame::internalMousePressed(MouseCode code)
 				// First cursorMoved seeds _lastCursor; no movement happens
 				// until the finger actually moves -> no press-time jump.
 				_lastCursorValid = false;
+				_dragOrgCursor[0] = mx; _dragOrgCursor[1] = my;
+				_dragOrgPos[0] = _pos[0]; _dragOrgPos[1] = _pos[1];
+				_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 				setAsMouseCapture(true);
 				VLOG("Frame press: resize zone=%d at screen(%d,%d) local(%d,%d) frame(%d,%d %dx%d)",
 					zone, mx, my, lx, ly, _pos[0], _pos[1], wide, tall);
@@ -665,6 +670,13 @@ void Frame::internalMousePressed(MouseCode code)
 				{
 					_dragging = true;
 					_lastCursorValid = false;
+					// Anchors for the release report (reuse legacy ABI fields):
+					//   _dragOrgCursor = finger-down position (drag start)
+					//   _dragOrgPos    = window position at drag start
+					//   _dragOrgSize   = [0] dropped spurious(0,0), [1] clamped-huge
+					_dragOrgCursor[0] = mx; _dragOrgCursor[1] = my;
+					_dragOrgPos[0] = _pos[0]; _dragOrgPos[1] = _pos[1];
+					_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 					setAsMouseCapture(true);
 					VLOG("Frame press: drag at screen(%d,%d) local(%d,%d) frame(%d,%d %dx%d)",
 						mx, my, lx, ly, _pos[0], _pos[1], wide, tall);
@@ -684,9 +696,40 @@ void Frame::internalMouseReleased(MouseCode code)
 {
 	if (code == MOUSE_LEFT && (_dragging || _resizing))
 	{
-		VLOG("Frame release: was %s, frame ended at (%d,%d %dx%d)",
-			_dragging ? "drag" : "resize",
-			_pos[0], _pos[1], getWide(), getTall());
+		if (_dragging)
+		{
+			// By-the-numbers drag verification (no eyeballing):
+			//   finger delta  = last real cursor - finger-down anchor
+			//   window delta  = current pos       - window-start anchor
+			//   expected end  = window-start + finger delta
+			//   MISMATCH      = actual end - expected end
+			// MISMATCH (0,0) means the window tracked the finger perfectly.
+			// A non-zero MISMATCH with dropped/clamped == 0 is a pure
+			// edge-clamp (window hit a screen border); with dropped/clamped
+			// > 0 it quantifies drift the engine-glitch filter absorbed.
+			int fsx = _dragOrgCursor[0], fsy = _dragOrgCursor[1];
+			int fex = _lastCursorValid ? _lastCursor[0] : fsx;
+			int fey = _lastCursorValid ? _lastCursor[1] : fsy;
+			int fdx = fex - fsx, fdy = fey - fsy;
+			int wsx = _dragOrgPos[0], wsy = _dragOrgPos[1];
+			int wex = _pos[0], wey = _pos[1];
+			int wdx = wex - wsx, wdy = wey - wsy;
+			int eex = wsx + fdx, eey = wsy + fdy;
+			int mmx = wdx - fdx, mmy = wdy - fdy;
+			VLOG("Frame DRAG report: finger start(%d,%d) end(%d,%d) d(%+d,%+d) | "
+				"window start(%d,%d) end(%d,%d) d(%+d,%+d) | expected end(%d,%d) | "
+				"MISMATCH(%+d,%+d) | dropped(0,0)=%d clampedHuge=%d",
+				fsx, fsy, fex, fey, fdx, fdy,
+				wsx, wsy, wex, wey, wdx, wdy,
+				eex, eey, mmx, mmy, _dragOrgSize[0], _dragOrgSize[1]);
+		}
+		else
+		{
+			VLOG("Frame RESIZE report: frame ended at (%d,%d %dx%d) | "
+				"dropped(0,0)=%d clampedHuge=%d",
+				_pos[0], _pos[1], getWide(), getTall(),
+				_dragOrgSize[0], _dragOrgSize[1]);
+		}
 		_dragging = false;
 		_resizing = false;
 		_resizeZone = 0;

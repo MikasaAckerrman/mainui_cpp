@@ -613,6 +613,31 @@ byte *CFontManager::LoadFontDataFile( const char *vfspath, int *plen )
 
 		return m_FontFiles[i].data;
 	}
+	// Embedded font is AUTHORITATIVE for its own canonical path (e.g.
+	// "gfx/fonts/tahoma.ttf"). We deliberately load the compiled-in TTF
+	// BEFORE consulting the VFS so the menu always renders with the real
+	// MS Tahoma we shipped - identical to the Windows look - regardless of
+	// any (possibly corrupt, re-hinted or differently-shaped) tahoma.ttf a
+	// user may have dropped into the gamedir. Fonts with any OTHER name fall
+	// through to the VFS below, so .res-driven custom fonts keep working.
+	//
+	// The pointer points into static .rodata - it is intentionally NOT
+	// inserted into m_FontFiles because DeleteAllFonts() calls COM_FreeFile
+	// on every cached entry, which would crash on a read-only address.
+	if( Embedded_PathMatches( vfspath ))
+	{
+		int elen = 0;
+		byte *embedded = (byte *)Embedded_GetData( &elen );
+		if( embedded )
+		{
+			if( plen )
+				*plen = elen;
+			FLOG( "[font] LoadFontDataFile(\"%s\") embedded AUTHORITATIVE %d bytes\n",
+				vfspath, elen );
+			return embedded;
+		}
+	}
+
 	int len = 0;
 	byte *p = EngFuncs::COM_LoadFile( vfspath, &len );
 	if( p != nullptr )
@@ -624,23 +649,6 @@ byte *CFontManager::LoadFontDataFile( const char *vfspath, int *plen )
 		m_FontFiles.Insert( vfspath, file );
 		FLOG( "[font] LoadFontDataFile(\"%s\") VFS hit %d bytes\n", vfspath, len );
 		return p;
-	}
-
-	// Last resort: embedded font compiled into libmenu.so. Available even
-	// when the gamedir has no font assets at all, which on Android is the
-	// common case after a fresh install. The pointer points into static
-	// .rodata - it is intentionally NOT inserted into m_FontFiles because
-	// DeleteAllFonts() calls COM_FreeFile on every cached entry, which
-	// would crash on a read-only address.
-	if( Embedded_PathMatches( vfspath ))
-	{
-		byte *embedded = (byte *)Embedded_GetData( plen );
-		if( embedded )
-		{
-			FLOG( "[font] LoadFontDataFile(\"%s\") embedded fallback %d bytes\n",
-				vfspath, plen ? *plen : 0 );
-			return embedded;
-		}
 	}
 
 	FLOG( "[font] LoadFontDataFile(\"%s\") FAILED (no VFS, no embedded match)\n", vfspath );
