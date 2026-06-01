@@ -121,7 +121,7 @@ void Button::paintBackground()
 	// Raised  (default): TL=Bright, BR=Dark.
 	// Sunken (depressed): TL=Dark, BR=Bright (inset).
 	schemeBgColor(this, bg);
-	drawFilledRect(2, 2, wide - 2, tall - 2);
+	drawFilledRect(1, 1, wide - 1, tall - 1);
 
 	unsigned int tl = sunken ? dark   : bright;
 	unsigned int br = sunken ? bright : dark;
@@ -132,17 +132,20 @@ void Button::paintBackground()
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
 
-	// Armed (mouse/finger over, incl. pressed-and-held-over) state: canon
-	// CS 1.6 draws a 1px black keyline around the hot control so the user
-	// sees which button is highlighted and will fire on release. It vanishes
-	// when the finger is dragged off (decided not to press).
+	// Armed (mouse/finger over, incl. pressed-and-held-over): canon CS 1.6
+	// draws a 1px black keyline so the user sees which control is hot and
+	// will fire on release. Drawn INSET one pixel inside the bevel so the
+	// raised/sunken bevel underneath stays visible - that bevel is the press
+	// animation (it inverts to "sunken" while held), and the black ring is
+	// the focus highlight on top. Both vanish when the finger drags off the
+	// button (the user decided not to press).
 	if (_armed)
 	{
 		schemeBgColor(this, 0xFF000000);
-		drawFilledRect(0, 0, wide, 1);
-		drawFilledRect(0, 0, 1, tall);
-		drawFilledRect(0, tall - 1, wide, tall);
-		drawFilledRect(wide - 1, 0, wide, tall);
+		drawFilledRect(1, 1, wide - 1, 2);                  // top
+		drawFilledRect(1, 1, 2, tall - 1);                  // left
+		drawFilledRect(1, tall - 2, wide - 1, tall - 1);    // bottom
+		drawFilledRect(wide - 2, 1, wide - 1, tall - 1);    // right
 	}
 }
 

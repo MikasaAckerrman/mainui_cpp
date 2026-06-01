@@ -234,23 +234,19 @@ void TabPanel::paint()
 			drawFilledRect(x, tabH - 1, x + w, tabH);
 		}
 
-		// Tab label - centred within the (stretched) cell. With tabs stretched
-		// to span the full strip, centring matches the PC PropertySheet look;
-		// the min-padding clamp keeps text from underflowing the left border
-		// when a cell is narrower than its label (overflow on tiny dialogs).
+		// Tab label - LEFT-aligned (canon CS 1.6 PropertySheet/PageTab). The PC
+		// reference shows tab captions hugging the left edge with a small fixed
+		// pad, NOT centred - even though our row is stretched to the full strip
+		// width, the text stays left so it reads exactly like the PC Options.
+		// Vertically centred in the tab (the active tab is 2px taller because
+		// inactive tabs are pushed down by `shrink`).
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
 		{
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
 			int textH = VS(TAB_TEXT_HEIGHT_B);
-			HFont mf = g_FontMgr ? g_FontMgr->GetVGUIFont(textH) : 0;
-			int textW = (g_FontMgr && mf)
-				? g_FontMgr->GetTextWideScaled(mf, tab->text, textH)
-				: textLen * (textH * 6 / 10);
-			int textX = x + (w - textW) / 2;
-			int minX = x + VS(TAB_TEXT_PAD_LEFT_B);
-			if (textX < minX) textX = minX;
+			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			int textY = (tabH - textH) / 2 - 1;
 			if (!selected) textY += shrink / 2;
 			drawPrintText(textX, textY, tab->text, textLen);

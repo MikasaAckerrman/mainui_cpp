@@ -92,16 +92,6 @@ private:
 	Frame* _frame;
 };
 
-// Maximize/restore ("fill screen") button signal
-class FrameMaximizeSignal : public ActionSignal
-{
-public:
-	FrameMaximizeSignal(Frame* frame) : _frame(frame) {}
-	virtual void actionPerformed(Panel* panel) { if (_frame) _frame->toggleMaximize(); }
-private:
-	Frame* _frame;
-};
-
 // GoldSrc close button: bevel border + thick X glyph
 class FrameCloseGlyph : public Button
 {
@@ -162,92 +152,6 @@ protected:
 	}
 };
 
-// GoldSrc maximize/restore button: same bevel as close; glyph is a hollow
-// square (maximize) or two overlapped squares (restore), drawn with thin bars
-// so it reads clearly at small sizes.
-class FrameMaximizeGlyph : public Button
-{
-public:
-	FrameMaximizeGlyph(int x, int y, int w, int h, Frame* owner)
-		: Button("", x, y, w, h), _owner(owner) {}
-protected:
-	virtual void paintBackground()
-	{
-		int wide, tall;
-		getSize(wide, tall);
-		bool sunken = isDepressed() || isSelected();
-
-		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;
-		schemeBgColor(this, bg);
-		drawFilledRect(1, 1, wide - 1, tall - 1);
-
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
-		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
-		unsigned int tl = sunken ? dark   : bright;
-		unsigned int br = sunken ? bright : dark;
-		schemeBgColor(this, tl);
-		drawFilledRect(0, 0, wide, 1);
-		drawFilledRect(0, 0, 1, tall);
-		schemeBgColor(this, br);
-		drawFilledRect(0, tall - 1, wide, tall);
-		drawFilledRect(wide - 1, 0, wide, tall);
-	}
-
-	virtual void paint()
-	{
-		int wide, tall;
-		getSize(wide, tall);
-
-		unsigned int argb = isArmed()
-			? (g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF)
-			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3);
-
-		int side = (wide < tall ? wide : tall);
-		int extent = (side * 55) / 100;
-		if (extent < 6) extent = 6;
-		int bar = VS(2); if (bar < 1) bar = 1;
-		int dx = 0, dy = 0;
-		if (isDepressed()) { dx = 1; dy = 1; }
-
-		schemeBgColor(this, argb);
-
-		bool maxed = _owner && _owner->isMaximized();
-		if (!maxed)
-		{
-			// Maximize: single hollow square outline.
-			int sx = (wide - extent) / 2 + dx;
-			int sy = (tall - extent) / 2 + dy;
-			drawFilledRect(sx, sy, sx + extent, sy + bar);                  // top
-			drawFilledRect(sx, sy + extent - bar, sx + extent, sy + extent);// bottom
-			drawFilledRect(sx, sy, sx + bar, sy + extent);                  // left
-			drawFilledRect(sx + extent - bar, sy, sx + extent, sy + extent);// right
-		}
-		else
-		{
-			// Restore: two overlapped square outlines (back + front).
-			int sq = (extent * 3) / 4; if (sq < 4) sq = 4;
-			int off = extent - sq;
-			int bx = (wide - extent) / 2 + dx;       // back square top-left
-			int by = (tall - extent) / 2 + dy;
-			int fx = bx;                              // front square top-left
-			int fy = by + off;
-			// Back square (top-right)
-			int bx0 = bx + off;
-			drawFilledRect(bx0, by, bx0 + sq, by + bar);
-			drawFilledRect(bx0, by + sq - bar, bx0 + sq, by + sq);
-			drawFilledRect(bx0, by, bx0 + bar, by + sq);
-			drawFilledRect(bx0 + sq - bar, by, bx0 + sq, by + sq);
-			// Front square (bottom-left), drawn on top
-			drawFilledRect(fx, fy, fx + sq, fy + bar);
-			drawFilledRect(fx, fy + sq - bar, fx + sq, fy + sq);
-			drawFilledRect(fx, fy, fx + bar, fy + sq);
-			drawFilledRect(fx + sq - bar, fy, fx + sq, fy + sq);
-		}
-	}
-private:
-	Frame* _owner;
-};
-
 Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 {
 	VLOG("Frame ctor: pos(%d,%d) size(%dx%d)", x, y, wide, tall);
@@ -266,15 +170,11 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_dragOrgCursor[0] = 0; _dragOrgCursor[1] = 0;
 	_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 	_dragAnchorReady = false;
-	_maximizable = false;
-	_maximized = false;
-	_restorePos[0] = 0; _restorePos[1] = 0;
-	_restoreSize[0] = wide; _restoreSize[1] = tall;
 
 	_topGrip = null; _bottomGrip = null; _leftGrip = null; _rightGrip = null;
 	_topLeftGrip = null; _topRightGrip = null;
 	_bottomLeftGrip = null; _bottomRightGrip = null;
-	_minimizeButton = null; _maximizeButton = null;
+	_minimizeButton = null;
 	_captionBar = null;
 
 	int captionH = Fcap();
@@ -288,14 +188,6 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 		border + btnInset, btnSize, btnSize);
 	_closeButton->addActionSignal(new FrameCloseSignal(this));
 	addChild(_closeButton);
-
-	// Maximize button sits just left of close. Hidden unless setMaximizable(true).
-	_maximizeButton = new FrameMaximizeGlyph(
-		wide - border - btnSize * 2 - btnInset * 2,
-		border + btnInset, btnSize, btnSize, this);
-	_maximizeButton->addActionSignal(new FrameMaximizeSignal(this));
-	_maximizeButton->setVisible(false);
-	addChild(_maximizeButton);
 }
 
 void Frame::setTitle(const char* title)
@@ -355,50 +247,6 @@ void Frame::setSize(int wide, int tall)
 		int btnInset = FbtnIns();
 		_closeButton->setBounds(wide - border - btnSize - btnInset,
 			border + btnInset, btnSize, btnSize);
-		if (_maximizeButton)
-			_maximizeButton->setBounds(wide - border - btnSize * 2 - btnInset * 2,
-				border + btnInset, btnSize, btnSize);
-	}
-}
-
-void Frame::setMaximizable(bool state)
-{
-	_maximizable = state;
-	if (_maximizeButton) _maximizeButton->setVisible(state);
-}
-bool Frame::isMaximizable() { return _maximizable; }
-bool Frame::isMaximized()   { return _maximized; }
-
-void Frame::toggleMaximize()
-{
-	if (!_maximizable) return;
-
-	int sw, sh;
-	GetCanvasSize(this, sw, sh);
-
-	if (!_maximized)
-	{
-		// Remember current geometry, then fill the whole canvas.
-		getPos(_restorePos[0], _restorePos[1]);
-		getSize(_restoreSize[0], _restoreSize[1]);
-		_maximized = true;
-		setPos(0, 0);
-		setSize(sw, sh);
-	}
-	else
-	{
-		// Restore previous geometry, clamped to the current canvas.
-		_maximized = false;
-		int w = _restoreSize[0], h = _restoreSize[1];
-		if (w > sw) w = sw;
-		if (h > sh) h = sh;
-		int x = _restorePos[0], y = _restorePos[1];
-		if (x + w > sw) x = sw - w;
-		if (y + h > sh) y = sh - h;
-		if (x < 0) x = 0;
-		if (y < 0) y = 0;
-		setSize(w, h);
-		setPos(x, y);
 	}
 }
 
@@ -766,15 +614,6 @@ Panel* Frame::isWithinTraverse(int x, int y)
 	if (_closeButton && _closeButton->isVisible())
 	{
 		Panel* hit = _closeButton->isWithinTraverse(x, y);
-		if (hit)
-			return hit;
-	}
-
-	// Maximize button keeps priority in its own rect (it overlaps the caption
-	// drag-zone, so without this the drag handler would swallow the click).
-	if (_maximizeButton && _maximizeButton->isVisible())
-	{
-		Panel* hit = _maximizeButton->isWithinTraverse(x, y);
 		if (hit)
 			return hit;
 	}

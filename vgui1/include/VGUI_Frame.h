@@ -20,14 +20,6 @@ public:
 	virtual bool isMoveable();
 	virtual void setSizeable(bool state);
 	virtual bool isSizeable();
-	// Maximize ("fill screen") support. When maximizable, a maximize/restore
-	// glyph appears next to the close button. toggleMaximize() snaps the frame
-	// to the full drawable canvas and back to its previous geometry. Used by the
-	// fixed-size main Options dialog so the user can still go fullscreen.
-	virtual void setMaximizable(bool state);
-	virtual bool isMaximizable();
-	virtual bool isMaximized();
-	virtual void toggleMaximize();
 	virtual void setVisible(bool state);
 	virtual Panel* getClient();
 	virtual void setInternal(bool state);
@@ -56,7 +48,6 @@ private:
 	Panel* _client;
 	Button* _closeButton;
 	Button* _minimizeButton;
-	Button* _maximizeButton;
 	bool _moveable;
 	bool _sizeable;
 	bool _internal;
@@ -71,11 +62,6 @@ private:
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];
 	bool _dragAnchorReady;
-	// Maximize / restore state.
-	bool _maximizable;
-	bool _maximized;
-	int _restorePos[2];
-	int _restoreSize[2];
 };
 
 }
