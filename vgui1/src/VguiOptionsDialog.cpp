@@ -422,6 +422,186 @@ inline void StubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
 }
 
 
+// InvertMouseCheckButton: toggles m_pitch sign (positive=normal, negative=inverted)
+class InvertMouseCheckButton : public CheckButton
+{
+public:
+	InvertMouseCheckButton(const char* text, int x, int y, int w, int h)
+		: CheckButton(text, x, y, w, h) { reset(); }
+	void reset()
+	{
+		float val = VGUI_GetCvarFloat("m_pitch");
+		setSelected(val < 0.0f);
+	}
+	void apply()
+	{
+		float cur = VGUI_GetCvarFloat("m_pitch");
+		if (cur == 0.0f) cur = 0.022f; // default if unset
+		bool wantInvert = isSelected();
+		if (wantInvert && cur > 0.0f)
+			VGUI_SetCvarFloat("m_pitch", -cur);
+		else if (!wantInvert && cur < 0.0f)
+			VGUI_SetCvarFloat("m_pitch", -cur);
+	}
+protected:
+	virtual void internalMousePressed(MouseCode code)
+	{
+		if (code == MOUSE_LEFT && isEnabled())
+		{
+			setSelected(!isSelected());
+			apply();
+			fireActionSignal();
+		}
+		Panel::internalMousePressed(code);
+	}
+};
+
+
+// IntStubComboButton: cycles integer cvar values on click, draws arrow zone
+class IntStubComboButton;
+class IntStubCombo_CycleSignal : public ActionSignal
+{
+public:
+	IntStubCombo_CycleSignal(IntStubComboButton* c) : _c(c) {}
+	virtual void actionPerformed(Panel* p);
+private:
+	IntStubComboButton* _c;
+};
+
+class IntStubComboButton : public Button
+{
+public:
+	IntStubComboButton(const char* cvarName, const char* const* labels, const int* values, int count,
+	                   int x, int y, int w, int h)
+		: Button("", x, y, w, h),
+		  _labels(labels), _values(values), _count(count)
+	{
+		_cvar[0] = 0;
+		if (cvarName) vgui_strcpy(_cvar, sizeof(_cvar), cvarName);
+		_idx = 0;
+		int cur = (int)VGUI_GetCvarFloat(_cvar);
+		for (int i = 0; i < _count; i++)
+		{
+			if (_values[i] == cur) { _idx = i; break; }
+		}
+		refreshLabel();
+		addActionSignal(new IntStubCombo_CycleSignal(this));
+	}
+
+	void cycle()
+	{
+		if (_count <= 0) return;
+		_idx = (_idx + 1) % _count;
+		VGUI_SetCvarFloat(_cvar, (float)_values[_idx]);
+		refreshLabel();
+	}
+
+	void reset()
+	{
+		int cur = (int)VGUI_GetCvarFloat(_cvar);
+		for (int i = 0; i < _count; i++)
+		{
+			if (_values[i] == cur) { _idx = i; break; }
+		}
+		refreshLabel();
+	}
+
+	void apply()
+	{
+		if (_idx >= 0 && _idx < _count)
+			VGUI_SetCvarFloat(_cvar, (float)_values[_idx]);
+	}
+
+protected:
+	virtual void paintBackground()
+	{
+		Button::paintBackground();
+		int wide, tall;
+		getSize(wide, tall);
+		int arrowW = VS(16);
+		unsigned int dark = g_Scheme.borderDark ? g_Scheme.borderDark : 0xFF282E22;
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
+		schemeBgColor(this, dark);
+		drawFilledRect(wide - arrowW - 1, 2, wide - arrowW, tall - 2);
+		schemeBgColor(this, bright);
+		drawFilledRect(wide - arrowW, 2, wide - arrowW + 1, tall - 2);
+	}
+
+	virtual void paint()
+	{
+		int wide, tall;
+		getSize(wide, tall);
+		int arrowW = VS(16);
+
+		unsigned int argb;
+		if (!isEnabled())
+			argb = g_Scheme.labelDimColor ? g_Scheme.labelDimColor : 0xFF808080;
+		else
+			argb = g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3;
+
+		schemeFgColor(this, argb);
+		drawSetTextFont(Scheme::sf_primary1);
+
+		char lbl[128];
+		const char* v = (_idx >= 0 && _idx < _count && _labels[_idx]) ? _labels[_idx] : "";
+		vgui_strcpy(lbl, sizeof(lbl), v);
+		int textLen = (int)strlen(lbl);
+		int textY = (tall - VS(11)) / 2;
+		if (textY < 2) textY = 2;
+		drawPrintText(VS(6), textY, lbl, textLen);
+
+		static HIMAGE s_arrowDown = (HIMAGE)-1;
+		if (s_arrowDown == (HIMAGE)-1)
+			s_arrowDown = EngFuncs::PIC_Load("gfx/vgui/640_arrowdown.tga");
+
+		unsigned int col = argb;
+		if (s_arrowDown)
+		{
+			int iconH = tall - VS(6);
+			if (iconH < VS(6)) iconH = VS(6);
+			int iconW = iconH;
+			int iconX = wide - arrowW / 2 - iconW / 2;
+			int iconY = (tall - iconH) / 2;
+			int sx = iconX, sy = iconY;
+			localToScreen(sx, sy);
+			int r = (col >> 16) & 0xFF;
+			int g = (col >> 8) & 0xFF;
+			int b = col & 0xFF;
+			int a = (col >> 24) & 0xFF;
+			EngFuncs::PIC_Set(s_arrowDown, r, g, b, a);
+			EngFuncs::PIC_DrawTrans(sx, sy, iconW, iconH);
+		}
+		else
+		{
+			schemeBgColor(this, col);
+			int cx = wide - arrowW / 2;
+			int cy = tall / 2 - VS(1);
+			int t = VS(1) > 0 ? VS(1) : 1;
+			drawFilledRect(cx - VS(3), cy,       cx + VS(3), cy + t);
+			drawFilledRect(cx - VS(2), cy + t,   cx + VS(2), cy + 2*t);
+			drawFilledRect(cx - VS(1), cy + 2*t, cx + VS(1), cy + 3*t);
+		}
+	}
+
+private:
+	void refreshLabel()
+	{
+		const char* v = (_idx >= 0 && _idx < _count && _labels[_idx]) ? _labels[_idx] : "";
+		setText(v);
+	}
+	char _cvar[64];
+	const char* const* _labels;
+	const int* _values;
+	int _count;
+	int _idx;
+};
+
+inline void IntStubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
+{
+	if (_c) _c->cycle();
+}
+
+
 // ====================================================================
 // GoldSrc grid layout constants (@ 640x480 reference, scaled via VS)
 // All multiples of 4 for pixel-perfect alignment.
@@ -1001,24 +1181,43 @@ void VguiOptionsDialog::buildMouseTab(Panel* page)
 {
 	int y = FirstY();
 
-	CvarCheckButton* filter = new CvarCheckButton("m_filter",
-		"\xD0\xA4\xD0\xB8\xD0\xBB\xD1\x8C\xD1\x82\xD1\x80 \xD0\xBC\xD1\x8B\xD1\x88\xD0\xB8",
+	// Row 1: Invert mouse (m_pitch sign flip)
+	InvertMouseCheckButton* invertBtn = new InvertMouseCheckButton(
+		"\xD0\x98\xD0\xBD\xD0\xB2\xD0\xB5\xD1\x80\xD1\x82\xD0\xB8\xD1\x80\xD0\xBE\xD0\xB2\xD0\xB0\xD1\x82\xD1\x8C \xD0\xBC\xD1\x8B\xD1\x88\xD1\x8C",
 		LblX(), y, VS(200), FldH());
-	page->addChild(filter); _checkButtons.addElement(filter);
+	page->addChild(invertBtn);
+	invertBtn->addActionSignal(new MarkDirtyActionSignal(this));
 	y += RowH();
 
+	// Row 2: Sensitivity slider
 	page->addChild(new Label("\xD0\xA7\xD1\x83\xD0\xB2\xD1\x81\xD1\x82\xD0\xB2\xD0\xB8\xD1\x82\xD0\xB5\xD0\xBB\xD1\x8C\xD0\xBD\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C:",
 		LblX(), y, LblW(), FldH()));
 	CvarSlider* sensSlider = new CvarSlider("sensitivity", InpX(), y, InpW(), FldH(), 1, 20);
 	page->addChild(sensSlider); _sliders.addElement(sensSlider);
 	y += RowH();
 
+	// Row 3: Zoom sensitivity slider
+	page->addChild(new Label("\xD0\xA7\xD1\x83\xD0\xB2\xD1\x81\xD1\x82\xD0\xB2. \xD0\xB7\xD1\x83\xD0\xBC\xD0\xB0:",
+		LblX(), y, LblW(), FldH()));
+	CvarSlider* zoomSlider = new CvarSlider("zoom_sensitivity_ratio", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 2.0f);
+	page->addChild(zoomSlider); _sliders.addElement(zoomSlider);
+	y += RowH();
+
+	// Row 4: Mouse filter
+	CvarCheckButton* filter = new CvarCheckButton("m_filter",
+		"\xD0\xA4\xD0\xB8\xD0\xBB\xD1\x8C\xD1\x82\xD1\x80 \xD0\xBC\xD1\x8B\xD1\x88\xD0\xB8",
+		LblX(), y, VS(200), FldH());
+	page->addChild(filter); _checkButtons.addElement(filter);
+	y += RowH();
+
+	// Row 5: Raw input
 	CvarCheckButton* rawinput = new CvarCheckButton("m_rawinput",
 		"\xD0\x9F\xD1\x80\xD1\x8F\xD0\xBC\xD0\xBE\xD0\xB9 \xD0\xB2\xD0\xB2\xD0\xBE\xD0\xB4",
 		LblX(), y, VS(200), FldH());
 	page->addChild(rawinput); _checkButtons.addElement(rawinput);
 	y += RowH();
 
+	// Row 6: Custom acceleration
 	CvarCheckButton* customaccel = new CvarCheckButton("m_customaccel",
 		"\xD0\xA1\xD0\xB2\xD0\xBE\xD1\x91 \xD1\x83\xD1\x81\xD0\xBA\xD0\xBE\xD1\x80\xD0\xB5\xD0\xBD\xD0\xB8\xD0\xB5",
 		LblX(), y, VS(200), FldH());
@@ -1057,18 +1256,47 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 {
 	int y = FirstY();
 
+	// Static data for resolution combo
+	static const char* k_resLabels[] = {"640x480", "800x600", "1024x768", "1280x720", "1280x1024", "1366x768", "1600x900", "1920x1080"};
+	static const int k_resValues[] = {0, 1, 2, 3, 4, 5, 6, 7};
+
+	// Static data for fullscreen combo
+	static const char* k_fsLabels[] = {"\xD0\x9E\xD0\xBA\xD0\xBE\xD0\xBD\xD0\xBD\xD1\x8B\xD0\xB9", "\xD0\x9F\xD0\xBE\xD0\xBB\xD0\xBD\xD1\x8B\xD0\xB9 \xD1\x8D\xD0\xBA\xD1\x80\xD0\xB0\xD0\xBD"};
+	static const int k_fsValues[] = {0, 1};
+
+	// Row 1: Resolution combo
+	page->addChild(new Label("\xD0\xA0\xD0\xB0\xD0\xB7\xD1\x80\xD0\xB5\xD1\x88\xD0\xB5\xD0\xBD\xD0\xB8\xD0\xB5:",
+		LblX(), y, LblW(), FldH()));
+	IntStubComboButton* resCombo = new IntStubComboButton("vid_mode", k_resLabels, k_resValues, 8,
+		InpX(), y, InpW(), FldH());
+	page->addChild(resCombo);
+	resCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	y += RowH();
+
+	// Row 2: Display mode combo
+	page->addChild(new Label("\xD0\xA0\xD0\xB5\xD0\xB6\xD0\xB8\xD0\xBC \xD1\x8D\xD0\xBA\xD1\x80\xD0\xB0\xD0\xBD\xD0\xB0:",
+		LblX(), y, LblW(), FldH()));
+	IntStubComboButton* fsCombo = new IntStubComboButton("fullscreen", k_fsLabels, k_fsValues, 2,
+		InpX(), y, InpW(), FldH());
+	page->addChild(fsCombo);
+	fsCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	y += RowH();
+
+	// Row 3: Gamma slider
 	page->addChild(new Label("\xD0\x93\xD0\xB0\xD0\xBC\xD0\xBC\xD0\xB0:",
 		LblX(), y, LblW(), FldH()));
 	CvarSlider* gammaSlider = new CvarSlider("gamma", InpX(), y, InpW(), FldH(), 0, 100, 1.8f, 3.0f);
 	page->addChild(gammaSlider); _sliders.addElement(gammaSlider);
 	y += RowH();
 
+	// Row 4: Brightness slider
 	page->addChild(new Label("\xD0\xAF\xD1\x80\xD0\xBA\xD0\xBE\xD1\x81\xD1\x82\xD1\x8C:",
 		LblX(), y, LblW(), FldH()));
 	CvarSlider* brightSlider = new CvarSlider("brightness", InpX(), y, InpW(), FldH(), 0, 100, 0.0f, 2.0f);
 	page->addChild(brightSlider); _sliders.addElement(brightSlider);
 	y += RowH();
 
+	// Row 5: VSync checkbox
 	CvarCheckButton* vsync = new CvarCheckButton("gl_vsync",
 		"\xD0\x92\xD0\xB5\xD1\x80\xD1\x82. \xD1\x81\xD0\xB8\xD0\xBD\xD1\x85\xD1\x80\xD0\xBE\xD0\xBD\xD0\xB8\xD0\xB7\xD0\xB0\xD1\x86\xD0\xB8\xD1\x8F",
 		LblX(), y, VS(200), FldH());
