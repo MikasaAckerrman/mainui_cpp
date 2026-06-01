@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "PlayerModelView.h"
 #include "StringVectorModel.h"
 #include "ColorPickerDialog.h"
+#include "LogoPickerDialog.h"
 
 #define ART_BANNER		"gfx/shell/head_customize"
 
@@ -48,6 +49,8 @@ public:
 	void WriteNewLogo();
 	void ShowColorPicker();
 	void OnColorPickerOk();
+	void ShowLogoPicker();
+	void OnLogoPickerOk();
 	void SaveAndPopMenu() override;
 
 	class CModelListModel : public CStringVectorModel
@@ -107,8 +110,10 @@ public:
 	} logoImage;
 
 	CMenuSpinControl	logo;
+	CMenuPicButton		btnChooseLogo;
 	CMenuPicButton		btnChooseColor;
 	CMenuColorPickerDialog	colorPickerDlg;
+	CMenuLogoPickerDialog	logoPickerDlg;
 	byte			m_logoR;
 	byte			m_logoG;
 	byte			m_logoB;
@@ -335,6 +340,22 @@ void CMenuPlayerSetup::OnColorPickerOk()
 	ApplyColorToLogoPreview();
 }
 
+void CMenuPlayerSetup::ShowLogoPicker()
+{
+	// PC-style modal picker window instead of the blind cycle-spin
+	logoPickerDlg.Show( &logosModel, logo.GetCurrentValue() );
+}
+
+void CMenuPlayerSetup::OnLogoPickerOk()
+{
+	const int idx = logoPickerDlg.GetSelectedIndex();
+	if( idx >= 0 )
+	{
+		logo.SetCurrentValue( idx );
+		UpdateLogo();
+	}
+}
+
 void CMenuPlayerSetup::ApplyColorToImagePreview()
 {
 	EngFuncs::ProcessImage( view.hPlayerImage, -1,
@@ -557,12 +578,19 @@ void CMenuPlayerSetup::_Init( void )
 		logo.onChanged = VoidCb( &CMenuPlayerSetup::UpdateLogo );
 		logo.SetRect( 460, logoImage.pos.y + logoImage.size.h + UI_OUTLINE_WIDTH, 200, 32 );
 
+		btnChooseLogo.szName = L( "Choose logo" );
+		btnChooseLogo.SetRect( 460, logo.pos.y + logo.size.h + UI_OUTLINE_WIDTH, 200, 32 );
+		btnChooseLogo.onReleased = VoidCb( &CMenuPlayerSetup::ShowLogoPicker );
+
 		btnChooseColor.szName = L( "Choose logo color" );
-		btnChooseColor.SetRect( 460, logo.pos.y + logo.size.h + UI_OUTLINE_WIDTH, 200, 32 );
+		btnChooseColor.SetRect( 460, btnChooseLogo.pos.y + btnChooseLogo.size.h + UI_OUTLINE_WIDTH, 200, 32 );
 		btnChooseColor.onReleased = VoidCb( &CMenuPlayerSetup::ShowColorPicker );
 
 		colorPickerDlg.Link( this );
 		colorPickerDlg.onOk = VoidCb( &CMenuPlayerSetup::OnColorPickerOk );
+
+		logoPickerDlg.Link( this );
+		logoPickerDlg.onOk = VoidCb( &CMenuPlayerSetup::OnLogoPickerOk );
 	}
 	}
 
@@ -576,6 +604,7 @@ void CMenuPlayerSetup::_Init( void )
 	{
 		UpdateLogo();
 		AddItem( logo );
+		AddItem( btnChooseLogo );
 		AddItem( btnChooseColor );
 		AddItem( logoImage );
 	}
