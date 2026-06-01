@@ -27,6 +27,7 @@ extern void UI_EnableTextInput( bool enable );
 #include <VGUI_App.h>
 #include <VGUI_EtchedBorder.h>
 #include <VGUI_UIScale.h>
+#include <VGUI_ListPanel.h>
 #include <string.h>
 
 namespace vgui
@@ -709,10 +710,265 @@ void VguiOptionsDialog::buildMultiplayerTab(Panel* page)
 }
 
 
+// ====================================================================
+// Keyboard tab - key binding classes and data
+// ====================================================================
+
+struct KeyBindDef {
+	const char* actionName; // UTF-8 Russian
+	const char* command;    // engine command
+	const char* defaultKey; // default key name (for EngFuncs::ClientCmd bind)
+};
+
+static const KeyBindDef s_keyBindings[] = {
+	{"\xD0\x92\xD0\xBF\xD0\xB5\xD1\x80\xD0\xB5\xD0\xB4", "+forward", "W"},
+	{"\xD0\x9D\xD0\xB0\xD0\xB7\xD0\xB0\xD0\xB4", "+back", "S"},
+	{"\xD0\x92\xD0\xBB\xD0\xB5\xD0\xB2\xD0\xBE", "+moveleft", "A"},
+	{"\xD0\x92\xD0\xBF\xD1\x80\xD0\xB0\xD0\xB2\xD0\xBE", "+moveright", "D"},
+	{"\xD0\x9F\xD1\x80\xD1\x8B\xD0\xB6\xD0\xBE\xD0\xBA", "+jump", "SPACE"},
+	{"\xD0\x9F\xD1\x80\xD0\xB8\xD1\x81\xD0\xB5\xD1\x81\xD1\x82\xD1\x8C", "+duck", "CTRL"},
+	{"\xD0\x9F\xD0\xB5\xD1\x80\xD0\xB5\xD0\xB7\xD0\xB0\xD1\x80\xD1\x8F\xD0\xB4\xD0\xBA\xD0\xB0", "+reload", "R"},
+	{"\xD0\x98\xD1\x81\xD0\xBF\xD0\xBE\xD0\xBB\xD1\x8C\xD0\xB7\xD0\xBE\xD0\xB2\xD0\xB0\xD1\x82\xD1\x8C", "+use", "E"},
+	{"\xD0\x9E\xD1\x80\xD1\x83\xD0\xB6\xD0\xB8\xD0\xB5 1", "slot1", "1"},
+	{"\xD0\x9E\xD1\x80\xD1\x83\xD0\xB6\xD0\xB8\xD0\xB5 2", "slot2", "2"},
+	{"\xD0\x9E\xD1\x80\xD1\x83\xD0\xB6\xD0\xB8\xD0\xB5 3", "slot3", "3"},
+	{"\xD0\x9E\xD1\x80\xD1\x83\xD0\xB6\xD0\xB8\xD0\xB5 4", "slot4", "4"},
+	{"\xD0\x9E\xD1\x80\xD1\x83\xD0\xB6\xD0\xB8\xD0\xB5 5", "slot5", "5"},
+	{"\xD0\x90\xD1\x82\xD0\xB0\xD0\xBA\xD0\xB0", "+attack", "MOUSE1"},
+	{"\xD0\x90\xD0\xBB\xD1\x8C\xD1\x82. \xD0\xB0\xD1\x82\xD0\xB0\xD0\xBA\xD0\xB0", "+attack2", "MOUSE2"},
+	{"\xD0\x9E\xD0\xB1\xD1\x89\xD0\xB8\xD0\xB9 \xD1\x87\xD0\xB0\xD1\x82", "messagemode", "Y"},
+	{"\xD0\x9A\xD0\xBE\xD0\xBC\xD0\xB0\xD0\xBD\xD0\xB4\xD0\xBD\xD1\x8B\xD0\xB9 \xD1\x87\xD0\xB0\xD1\x82", "messagemode2", "U"},
+	{"\xD0\x9A\xD0\xBE\xD0\xBD\xD1\x81\xD0\xBE\xD0\xBB\xD1\x8C", "toggleconsole", "`"},
+	{"\xD0\xA1\xD0\xBA\xD1\x80\xD0\xB8\xD0\xBD\xD1\x88\xD0\xBE\xD1\x82", "screenshot", "F5"},
+	{"\xD0\xA2\xD0\xB0\xD0\xB1\xD0\xBB\xD0\xBE", "+showscores", "TAB"},
+	{"\xD0\xA4\xD0\xBE\xD0\xBD\xD0\xB0\xD1\x80\xD0\xB8\xD0\xBA", "impulse 100", "F"},
+	{"\xD0\xA1\xD0\xBF\xD1\x80\xD0\xB5\xD0\xB9", "impulse 201", "T"},
+	{"\xD0\x92\xD1\x8B\xD0\xB1\xD1\x80\xD0\xBE\xD1\x81\xD0\xB8\xD1\x82\xD1\x8C", "drop", "G"},
+	{"\xD0\x9A\xD1\x83\xD0\xBF\xD0\xB8\xD1\x82\xD1\x8C", "buy", "B"},
+	{"\xD0\xA0\xD0\xB0\xD0\xB4\xD0\xB8\xD0\xBE", "radio1", "Z"},
+};
+static const int NUM_KEY_BINDINGS = sizeof(s_keyBindings) / sizeof(s_keyBindings[0]);
+
+class KeyBindRow : public Panel
+{
+public:
+	KeyBindRow(const char* action, int x, int y, int wide, int tall, int splitX)
+		: Panel(x, y, wide, tall), _splitX(splitX)
+	{
+		vgui_strcpy(_action, sizeof(_action), action);
+		_key[0] = 0;
+	}
+	void setKeyText(const char* key)
+	{
+		vgui_strcpy(_key, sizeof(_key), key ? key : "");
+		repaint();
+	}
+	const char* getKeyText() const { return _key; }
+protected:
+	virtual void paint()
+	{
+		int wide, tall;
+		getSize(wide, tall);
+		unsigned int textCol = g_Scheme.fieldTextColor ? g_Scheme.fieldTextColor : 0xFFFFFFFF;
+		schemeFgColor(this, textCol);
+		drawSetTextFont(Scheme::sf_primary1);
+		int textY = (tall - VS(11)) / 2;
+		if (textY < 1) textY = 1;
+		drawPrintText(VS(4), textY, _action, (int)strlen(_action));
+		drawPrintText(_splitX + VS(4), textY, _key, (int)strlen(_key));
+	}
+	virtual void paintBackground() {} // ListPanel handles background
+private:
+	char _action[128];
+	char _key[64];
+	int _splitX;
+};
+
+// Forward declaration for the static instance pointer used by the grab callback
+class KeyBindList;
+static KeyBindList* s_activeKeyBindList = 0;
+
+class KeyBindList : public ListPanel
+{
+public:
+	KeyBindList(int x, int y, int wide, int tall, int splitX)
+		: ListPanel(x, y, wide, tall), _splitX(splitX), _grabIndex(-1)
+	{
+		// Populate rows
+		for (int i = 0; i < NUM_KEY_BINDINGS; i++)
+		{
+			KeyBindRow* row = new KeyBindRow(s_keyBindings[i].actionName,
+				0, 0, wide - 16, VS(18), _splitX);
+			addItem(row);
+		}
+	}
+
+	void populateFromEngine()
+	{
+		for (int i = 0; i < NUM_KEY_BINDINGS; i++)
+		{
+			KeyBindRow* row = static_cast<KeyBindRow*>(getItem(i));
+			if (!row) continue;
+			const char* found = findBoundKey(s_keyBindings[i].command);
+			row->setKeyText(found);
+		}
+	}
+
+	void restoreDefaults()
+	{
+		// Unbind all keys for our commands first
+		for (int i = 0; i < NUM_KEY_BINDINGS; i++)
+			unbindCommand(s_keyBindings[i].command);
+		// Bind defaults
+		char cmd[256];
+		for (int i = 0; i < NUM_KEY_BINDINGS; i++)
+		{
+			snprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n",
+				s_keyBindings[i].defaultKey, s_keyBindings[i].command);
+			EngFuncs::ClientCmd(false, cmd);
+		}
+		populateFromEngine();
+	}
+
+	void onKeyGrabbed(int engineKeyCode)
+	{
+		if (_grabIndex < 0 || _grabIndex >= NUM_KEY_BINDINGS)
+		{
+			_grabIndex = -1;
+			return;
+		}
+		const char* keyName = EngFuncs::KeynumToString(engineKeyCode);
+		if (!keyName || !keyName[0] || strcmp(keyName, "<OUT OF RANGE>") == 0)
+		{
+			_grabIndex = -1;
+			populateFromEngine();
+			return;
+		}
+		// Unbind old key for this command
+		unbindCommand(s_keyBindings[_grabIndex].command);
+		// Bind new key
+		char cmd[256];
+		snprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n",
+			keyName, s_keyBindings[_grabIndex].command);
+		EngFuncs::ClientCmd(false, cmd);
+		_grabIndex = -1;
+		populateFromEngine();
+	}
+
+	bool isGrabbing() const { return _grabIndex >= 0; }
+
+protected:
+	virtual void internalMousePressed(MouseCode code)
+	{
+		// If already grabbing, the mouse hook in vgui_main will handle it
+		if (_grabIndex >= 0) return;
+
+		// Let ListPanel handle selection
+		ListPanel::internalMousePressed(code);
+
+		int sel = getSelectedIndex();
+		if (sel >= 0 && sel < NUM_KEY_BINDINGS)
+		{
+			enterGrabMode(sel);
+		}
+	}
+
+private:
+	void enterGrabMode(int index)
+	{
+		_grabIndex = index;
+		// Show "???" in the key column while waiting
+		KeyBindRow* row = static_cast<KeyBindRow*>(getItem(index));
+		if (row) row->setKeyText("???");
+		s_activeKeyBindList = this;
+		VGUI_SetKeyGrabCallback(staticKeyGrabCallback);
+	}
+
+	static void staticKeyGrabCallback(int engineKeyCode)
+	{
+		if (s_activeKeyBindList)
+			s_activeKeyBindList->onKeyGrabbed(engineKeyCode);
+		s_activeKeyBindList = 0;
+	}
+
+	const char* findBoundKey(const char* command)
+	{
+		for (int k = 0; k < 256; k++)
+		{
+			const char* binding = EngFuncs::KEY_GetBinding(k);
+			if (binding && binding[0])
+			{
+				if (stricmp(binding, command) == 0)
+					return EngFuncs::KeynumToString(k);
+			}
+		}
+		return "";
+	}
+
+	void unbindCommand(const char* command)
+	{
+		for (int k = 0; k < 256; k++)
+		{
+			const char* binding = EngFuncs::KEY_GetBinding(k);
+			if (binding && binding[0] && stricmp(binding, command) == 0)
+				EngFuncs::KEY_SetBinding(k, "");
+		}
+	}
+
+	int _splitX;
+	int _grabIndex;
+};
+
+// ActionSignal for the Defaults button
+class KbDefaultsSignal : public ActionSignal
+{
+public:
+	KbDefaultsSignal(KeyBindList* list) : _list(list) {}
+	virtual void actionPerformed(Panel* panel) { if (_list) _list->restoreDefaults(); }
+private:
+	KeyBindList* _list;
+};
+
 void VguiOptionsDialog::buildKeyboardTab(Panel* page)
 {
-	page->addChild(new Label("\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD1\x8F\xD0\xB7\xD0\xBA\xD0\xB8 \xD0\xBA\xD0\xBB\xD0\xB0\xD0\xB2\xD0\xB8\xD1\x88",
-		LblX(), FirstY(), VS(180), FldH()));
+	int pageW, pageH;
+	page->getSize(pageW, pageH);
+
+	// Column headers
+	int headerY = VS(4);
+	int headerH = VS(16);
+	int listX = VS(8);
+	int listW = pageW - VS(16);
+	int splitX = listW * 60 / 100; // 60% for action, 40% for key
+
+	Label* hdrAction = new Label(
+		"\xD0\x94\xD0\xB5\xD0\xB9\xD1\x81\xD1\x82\xD0\xB2\xD0\xB8\xD0\xB5",
+		listX + VS(4), headerY, splitX, headerH);
+	page->addChild(hdrAction);
+
+	Label* hdrKey = new Label(
+		"\xD0\x9A\xD0\xBB\xD0\xB0\xD0\xB2\xD0\xB8\xD1\x88\xD0\xB0",
+		listX + splitX + VS(4), headerY, listW - splitX, headerH);
+	page->addChild(hdrKey);
+
+	// Key bind list
+	int listY = headerY + headerH + VS(2);
+	int btnH = VS(24);
+	int listH = pageH - listY - btnH - VS(12);
+
+	KeyBindList* kbList = new KeyBindList(listX, listY, listW, listH, splitX);
+	page->addChild(kbList);
+	kbList->populateFromEngine();
+
+	// Defaults button
+	int btnW = VS(120);
+	int btnX = listX;
+	int btnY = listY + listH + VS(4);
+	Button* defBtn = new Button(
+		"\xD0\x9F\xD0\xBE \xD1\x83\xD0\xBC\xD0\xBE\xD0\xBB\xD1\x87\xD0\xB0\xD0\xBD\xD0\xB8\xD1\x8E",
+		btnX, btnY, btnW, btnH);
+	defBtn->addActionSignal(new KbDefaultsSignal(kbList));
+	page->addChild(defBtn);
 }
 
 void VguiOptionsDialog::buildMouseTab(Panel* page)

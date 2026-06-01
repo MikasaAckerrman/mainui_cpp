@@ -92,6 +92,11 @@ static const char* (*g_pfnGetCvarString)(const char* name) = 0;
 static void (*g_pfnSetCvarString)(const char* name, const char* value) = 0;
 static void (*g_pfnClientCmd)(const char* cmd) = 0;
 
+// Key-grab callback: when set, intercepts the next key/mouse press at the
+// engine-code level, before VGUI KeyCode translation. Used by the Keyboard
+// tab to capture which key the user wants to bind.
+static void (*g_pfnKeyGrabCallback)(int engineKeyCode) = 0;
+
 // VGUI state
 static vgui::App *s_app = 0;
 static vgui::Panel *s_rootPanel = 0;
@@ -212,6 +217,14 @@ void VGUI_Mouse(enum VGUI_MouseAction action, int code)
 	if (!s_app || !s_rootPanel)
 		return;
 
+	if (g_pfnKeyGrabCallback && action == MA_PRESSED)
+	{
+		// Mouse buttons are K_MOUSE1 + code (code is 0-based from MOUSE_LEFT)
+		g_pfnKeyGrabCallback(241 + code); // K_MOUSE1 = 241
+		g_pfnKeyGrabCallback = 0; // one-shot
+		return;
+	}
+
 	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
 	vgui::MouseCode mc = (vgui::MouseCode)code;
 
@@ -300,6 +313,13 @@ void VGUI_Key(enum VGUI_KeyAction action, int code)
 	if (!s_app || !s_rootPanel)
 		return;
 
+	if (g_pfnKeyGrabCallback && action == KA_PRESSED)
+	{
+		g_pfnKeyGrabCallback(code);
+		g_pfnKeyGrabCallback = 0; // one-shot
+		return;
+	}
+
 	vgui::SurfaceBase* sb = s_rootPanel->getSurfaceBase();
 	vgui::KeyCode kc = EngineKeyToVgui(code);
 	if (kc == vgui::KEY_LAST)
@@ -357,6 +377,11 @@ static void VGUI_TextInput(const char *text)
 
 namespace vgui
 {
+
+void VGUI_SetKeyGrabCallback(void (*cb)(int engineKeyCode))
+{
+	g_pfnKeyGrabCallback = cb;
+}
 
 float VGUI_GetCvarFloat(const char* name)
 {
