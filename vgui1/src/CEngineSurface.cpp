@@ -228,8 +228,15 @@ void CEngineSurface::drawPrintText(const char* text, int textLen)
 	// Use mainui's FontManager directly with explicit character height.
 	// We do NOT use pfnDrawCharacter (requires valid HIMAGE) or DrawConsoleString
 	// (uses console font which is too large for VGUI1 widgets).
-	HFont hFont = uiStatic.hDefaultFont;
-	if (!hFont || !g_FontMgr)
+	// Render with a font rasterized at the NATIVE target height (charH) so the
+	// glyph atlas isn't bilinearly downscaled from the big default atlas -
+	// that downscaling is what made VGUI1 text look blurry / unlike PC Tahoma.
+	if (!g_FontMgr)
+		return;
+	HFont hFont = g_FontMgr->GetVGUIFont(charH);
+	if (!hFont)
+		hFont = uiStatic.hDefaultFont;
+	if (!hFont)
 		return;
 
 	int x = _textPos[0];

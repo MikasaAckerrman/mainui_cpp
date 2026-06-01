@@ -27,7 +27,7 @@ static int TE_MeasureWidth(const char* s, int n)
 		return 0;
 	if (n > 255)
 		n = 255;
-	HFont hFont = uiStatic.hDefaultFont;
+	HFont hFont = g_FontMgr ? g_FontMgr->GetVGUIFont(VS(12)) : 0;
 	if (!g_FontMgr || !hFont)
 		return n * 8;
 	char tmp[256];

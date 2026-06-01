@@ -94,7 +94,7 @@ void Label::getTextSize(int& wide, int& tall)
 	// off-centre and label text mis-aligned. VS(12) matches the sf_primary1
 	// glyph height used in drawPrintText.
 	int h = VS(12);
-	HFont hFont = uiStatic.hDefaultFont;
+	HFont hFont = g_FontMgr ? g_FontMgr->GetVGUIFont(h) : 0;
 	if (_text[0] && g_FontMgr && hFont)
 		wide = g_FontMgr->GetTextWideScaled(hFont, _text, h);
 	else

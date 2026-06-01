@@ -131,6 +131,19 @@ void Button::paintBackground()
 	schemeBgColor(this, br);
 	drawFilledRect(0, tall - 1, wide, tall);
 	drawFilledRect(wide - 1, 0, wide, tall);
+
+	// Armed (mouse/finger over, incl. pressed-and-held-over) state: canon
+	// CS 1.6 draws a 1px black keyline around the hot control so the user
+	// sees which button is highlighted and will fire on release. It vanishes
+	// when the finger is dragged off (decided not to press).
+	if (_armed)
+	{
+		schemeBgColor(this, 0xFF000000);
+		drawFilledRect(0, 0, wide, 1);
+		drawFilledRect(0, 0, 1, tall);
+		drawFilledRect(0, tall - 1, wide, tall);
+		drawFilledRect(wide - 1, 0, wide, tall);
+	}
 }
 
 void Button::paint()

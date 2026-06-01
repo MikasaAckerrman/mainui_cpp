@@ -39,6 +39,10 @@ public:
 	void DeleteFont( HFont hFont );
 
 	HFont GetFontByName( const char *name );
+	// Build (or fetch cached) the menu face at a NATIVE pixel height, so VGUI1
+	// text is rasterized crisply at its real size instead of downscaling the
+	// large default atlas (which made it look blurry / unlike PC Tahoma).
+	HFont GetVGUIFont( int charH );
 	void  GetCharABCWide( HFont font, int ch, int &a, int &b, int &c );
 	int   GetFontTall( HFont font );
 	int   GetFontAscent( HFont font );
