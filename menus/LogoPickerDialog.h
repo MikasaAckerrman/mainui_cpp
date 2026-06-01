@@ -33,7 +33,8 @@ public:
 	// current - index to preselect (<0 for none)
 	void Show( CMenuBaseModel *model, int current );
 
-	int  GetSelectedIndex() const { return m_table.GetCurrentIndex(); }
+	// not const: CMenuTable::GetCurrentIndex() is not const-qualified
+	int  GetSelectedIndex() { return m_table.GetCurrentIndex(); }
 
 	CEventCallback onOk;
 
