@@ -343,17 +343,17 @@ void CMenuPlayerSetup::OnColorPickerOk()
 void CMenuPlayerSetup::ShowLogoPicker()
 {
 	// PC-style modal picker window instead of the blind cycle-spin
-	logoPickerDlg.Show( &logosModel, logo.GetCurrentValue() );
+	logoPickerDlg.Show( &logosModel, (int)logo.GetCurrentValue() );
 }
 
 void CMenuPlayerSetup::OnLogoPickerOk()
 {
 	const int idx = logoPickerDlg.GetSelectedIndex();
-	if( idx >= 0 )
-	{
+	// SetCurrentValue fires onChanged -> UpdateLogo() when the value actually
+	// changes, so no explicit UpdateLogo() call is needed here (avoids a
+	// redundant image reload). Clamp guards UpdateLogo's Element(pos) access.
+	if( idx >= 0 && idx < logosModel.GetRows() )
 		logo.SetCurrentValue( idx );
-		UpdateLogo();
-	}
 }
 
 void CMenuPlayerSetup::ApplyColorToImagePreview()

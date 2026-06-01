@@ -106,9 +106,13 @@ void CMenuLogoPickerDialog::Draw()
 
 void CMenuLogoPickerDialog::Show( CMenuBaseModel *model, int current )
 {
+	// SetModel must happen before the table is added to the holder (done in
+	// _Init, triggered by BaseClass::Show on first show) - see Table.h note #3.
 	m_table.SetModel( model );
-	if( current >= 0 )
-		m_table.SetCurrentIndex( current );
 
 	BaseClass::Show();
+
+	// Select after VidInit so iNumRows is known and the row is scrolled into view.
+	if( current >= 0 )
+		m_table.SetCurrentIndex( current );
 }
