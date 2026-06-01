@@ -772,6 +772,12 @@ class KeyBindList;
 static KeyBindList* s_activeKeyBindList = 0;
 static KeyBindList* s_keyBindListInstance = 0; // persistent ref for re-show refresh
 
+// Custom widget pointers for resetAll()/applyAll() lifecycle participation.
+// These widgets are not CvarCheckButton so they cannot go in _checkButtons.
+static InvertMouseCheckButton* s_invertMouseBtn = 0;
+static IntStubComboButton* s_resCombo = 0;
+static IntStubComboButton* s_fsCombo = 0;
+
 void VguiOptionsDialog::setVisible(bool state)
 {
 	if (!state)
@@ -797,6 +803,10 @@ void VguiOptionsDialog::applyAll()
 		if (_sliders[i]) _sliders[i]->apply();
 	for (int i = 0; i < _textEntries.getCount(); i++)
 		if (_textEntries[i]) _textEntries[i]->apply();
+	// Custom widgets not in typed Dars
+	if (s_invertMouseBtn) s_invertMouseBtn->apply();
+	if (s_resCombo) s_resCombo->apply();
+	if (s_fsCombo) s_fsCombo->apply();
 	setDirty(false);
 }
 
@@ -808,6 +818,10 @@ void VguiOptionsDialog::resetAll()
 		if (_sliders[i]) _sliders[i]->reset();
 	for (int i = 0; i < _textEntries.getCount(); i++)
 		if (_textEntries[i]) _textEntries[i]->reset();
+	// Custom widgets not in typed Dars
+	if (s_invertMouseBtn) s_invertMouseBtn->reset();
+	if (s_resCombo) s_resCombo->reset();
+	if (s_fsCombo) s_fsCombo->reset();
 	setDirty(false);
 }
 
@@ -1187,6 +1201,7 @@ void VguiOptionsDialog::buildMouseTab(Panel* page)
 		LblX(), y, VS(200), FldH());
 	page->addChild(invertBtn);
 	invertBtn->addActionSignal(new MarkDirtyActionSignal(this));
+	s_invertMouseBtn = invertBtn;
 	y += RowH();
 
 	// Row 2: Sensitivity slider
@@ -1271,6 +1286,7 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 		InpX(), y, InpW(), FldH());
 	page->addChild(resCombo);
 	resCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	s_resCombo = resCombo;
 	y += RowH();
 
 	// Row 2: Display mode combo
@@ -1280,6 +1296,7 @@ void VguiOptionsDialog::buildVideoTab(Panel* page)
 		InpX(), y, InpW(), FldH());
 	page->addChild(fsCombo);
 	fsCombo->addActionSignal(new MarkDirtyActionSignal(this));
+	s_fsCombo = fsCombo;
 	y += RowH();
 
 	// Row 3: Gamma slider
@@ -1359,6 +1376,9 @@ void VGUI_OptionsShutdown(void)
 	vgui::g_pOptionsDialog = null;
 	vgui::s_keyBindListInstance = 0;
 	vgui::s_activeKeyBindList = 0;
+	vgui::s_invertMouseBtn = 0;
+	vgui::s_resCombo = 0;
+	vgui::s_fsCombo = 0;
 }
 
 extern "C"
