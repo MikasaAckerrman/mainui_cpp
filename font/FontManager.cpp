@@ -223,6 +223,17 @@ HFont CFontManager::GetFontByName(const char *name)
 	return -1;
 }
 
+HFont CFontManager::GetVGUIFont( int charH )
+{
+	if( charH <= 0 )
+		return uiStatic.hDefaultFont;
+
+	// CFontBuilder::Create() dedups by (name,tall,weight,blur,flags), so this
+	// returns a cached handle after the first build. Native size => DrawCharacter
+	// factor ~= 1.0 => crisp Tahoma, identical to the PC look.
+	return CFontBuilder( MenuFontName(), charH, MenuFontWeight() ).Create();
+}
+
 int CFontManager::GetFontTall(HFont font)
 {
 	CBaseFont *pFont = GetIFontFromHandle( font );

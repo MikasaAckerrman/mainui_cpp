@@ -224,7 +224,7 @@ protected:
 				// like the parent TextEntry does for the plain text path.
 				// Without this the caret used a guessed 8px/char and drifted
 				// off the actual asterisks at scaled resolutions.
-				HFont hFont = uiStatic.hDefaultFont;
+				HFont hFont = g_FontMgr ? g_FontMgr->GetVGUIFont(VS(12)) : 0;
 				int caretX;
 				if (g_FontMgr && hFont && n > 0)
 					caretX = textX + g_FontMgr->GetTextWideScaled(hFont, buf, VS(12));
@@ -425,8 +425,8 @@ inline void StubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
 // GoldSrc grid layout constants (@ 640x480 reference, scaled via VS)
 // All multiples of 4 for pixel-perfect alignment.
 // ====================================================================
-static const int DLG_W = 600;   // dialog width (GoldSrc PC Options, +~15% for readability on HD touch)
-static const int DLG_H = 440;   // dialog height (4:3 sub-window, +~15%)
+static const int DLG_W = 660;   // dialog width (GoldSrc PC Options; fixed size, bumped a bit for HD touch readability)
+static const int DLG_H = 484;   // dialog height (keeps the PC 15:11 sub-window proportion)
 
 // Form metrics for tab page content
 static inline int LblX()   { return VS(10); }
@@ -459,10 +459,9 @@ VguiOptionsDialog::VguiOptionsDialog(int screenW, int screenH)
 	setPos((screenW - dialogW) / 2, (screenH - dialogH) / 2);
 	setSize(dialogW, dialogH);
 	// Main Options dialog matches the PC: FIXED size (only drag-move), so the
-	// proportional layout always looks right. A maximize/restore button lets
-	// the user fill the screen on demand (touch convenience).
+	// proportional layout always looks right. No maximize/fullscreen button -
+	// the PC Options window cannot be maximized, only moved.
 	setSizeable(false);
-	setMaximizable(true);
 	setTitle("\xD0\x9D\xD0\xB0\xD1\x81\xD1\x82\xD1\x80\xD0\xBE\xD0\xB9\xD0\xBA\xD0\xB8"); // Настройки
 	setVisible(false);
 

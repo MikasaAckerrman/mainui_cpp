@@ -19,7 +19,6 @@ static const int TAB_INACTIVE_SHRINK  = 2;
 static const int TAB_TEXT_HEIGHT_B    = 12;  // text glyph height
 static const int TAB_TEXT_PAD_LEFT_B  = 6;
 static const int TAB_TEXT_PAD_RIGHT_B = 6;
-static const int TAB_OVERLAP          = 1;
 static const int TAB_MIN_WIDTH        = 40;  // never thinner than this
 
 // Each tab is sized to its text + symmetric padding (GoldSrc behavior).
@@ -129,6 +128,37 @@ void TabPanel::paintBackground()
 	// Transparent - parent dialog draws the background
 }
 
+void TabPanel::layoutTabs(int wide, int* xs, int* ws, int maxOut)
+{
+	int count = _tabDar.getCount();
+	if (count > maxOut) count = maxOut;
+
+	int natSum = 0;
+	for (int i = 0; i < count; i++)
+	{
+		Tab* t = _tabDar[i];
+		int n = t ? NaturalTabWidth(t->text) : VS(TAB_MIN_WIDTH);
+		ws[i] = n;            // stash natural width
+		natSum += n;
+	}
+	if (natSum <= 0) natSum = 1;
+
+	bool stretch = (natSum < wide); // only fill when the row is narrower than the strip
+	int x = 0;
+	for (int i = 0; i < count; i++)
+	{
+		int w;
+		if (stretch)
+			w = (i == count - 1) ? (wide - x) : (int)((double)ws[i] * wide / natSum);
+		else
+			w = ws[i];        // natural width (row may overflow on tiny dialogs)
+		if (w < VS(TAB_MIN_WIDTH)) w = VS(TAB_MIN_WIDTH);
+		xs[i] = x;
+		ws[i] = w;
+		x += w;
+	}
+}
+
 void TabPanel::paint()
 {
 	int wide, tall;
@@ -148,16 +178,22 @@ void TabPanel::paint()
 	int tabH   = VS(TAB_HEIGHT_BASE);
 	int shrink = VS(TAB_INACTIVE_SHRINK);
 
-	// Per-tab natural width (text + padding). GoldSrc canonical behavior.
+	// Tab row stretched to span the full strip width (proportional to each
+	// tab's natural text width). Height stays fixed (TAB_HEIGHT_BASE).
+	enum { MAXT = 64 };
+	int xs[MAXT], ws[MAXT];
+	if (tabCount > MAXT) tabCount = MAXT;
+	layoutTabs(wide, xs, ws, MAXT);
+
 	int activeX = 0, activeW = 0;
 
-	int x = 0;
 	for (int i = 0; i < tabCount; i++)
 	{
 		Tab* tab = _tabDar[i];
 		if (!tab) continue;
 
-		int w = NaturalTabWidth(tab->text);
+		int x = xs[i];
+		int w = ws[i];
 		bool selected = (i == _selectedTab);
 
 		if (selected)
@@ -209,8 +245,6 @@ void TabPanel::paint()
 			if (!selected) textY += shrink / 2;
 			drawPrintText(textX, textY, tab->text, textLen);
 		}
-
-		x += w - VS(TAB_OVERLAP);
 	}
 
 	// Content-area RAISED bevel (canon CS 1.6 PropertySheet content panel,
@@ -247,19 +281,22 @@ void TabPanel::internalMousePressed(MouseCode code)
 
 			if (my >= 0 && my < VS(TAB_HEIGHT_BASE))
 			{
+				int wide, tall;
+				getSize(wide, tall);
 				int tabCount = _tabDar.getCount();
-				int x = 0;
+				enum { MAXT = 64 };
+				int xs[MAXT], ws[MAXT];
+				if (tabCount > MAXT) tabCount = MAXT;
+				layoutTabs(wide, xs, ws, MAXT);
 				for (int i = 0; i < tabCount; i++)
 				{
 					Tab* tab = _tabDar[i];
 					if (!tab) continue;
-					int w = NaturalTabWidth(tab->text);
-					if (mx >= x && mx < x + w)
+					if (mx >= xs[i] && mx < xs[i] + ws[i])
 					{
 						setSelectedTab(i);
 						break;
 					}
-					x += w - VS(TAB_OVERLAP);
 				}
 			}
 		}

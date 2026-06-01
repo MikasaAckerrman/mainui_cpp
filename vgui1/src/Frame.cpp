@@ -479,16 +479,25 @@ void Frame::paintBackground()
 	drawTitleBar(wide);
 
 	// Bottom-right resize grip dots
+	// Bottom-right resize grip: canonical dotted right-triangle (Windows/GoldSrc
+	// sizer). Only shown on resizable frames (the fixed Options window hides it).
 	if (_sizeable)
 	{
-		schemeBgColor(this, bright);
-		int gx = wide - VS(4);
-		int gy = tall - VS(4);
-		for (int i = 0; i < 3; i++)
+		int s    = VS(1); if (s < 1) s = 1;   // dot size
+		int step = VS(3); if (step < 2) step = 2;
+		int ox = wide - border - VS(2);       // anchor inside the bottom-right border
+		int oy = tall - border - VS(2);
+		for (int i = 0; i < 3; i++)           // column from the right edge
 		{
-			int off = i * VS(3);
-			drawFilledRect(gx - off, gy, gx - off + VS(1), gy + VS(1));
-			drawFilledRect(gx, gy - off, gx + VS(1), gy - off + VS(1));
+			for (int j = 0; j < 3 - i; j++)   // dots up this column -> triangle
+			{
+				int dx = ox - i * step;
+				int dy = oy - j * step;
+				schemeBgColor(this, dark);    // shadow first (lower-right)
+				drawFilledRect(dx + s, dy + s, dx + s + s, dy + s + s);
+				schemeBgColor(this, bright);  // bright highlight on top
+				drawFilledRect(dx, dy, dx + s, dy + s);
+			}
 		}
 	}
 }

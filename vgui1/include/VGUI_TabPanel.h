@@ -31,6 +31,10 @@ private:
 		char text[64];
 		Panel* panel;
 	};
+	// Compute per-tab x/width so the tab row spans the full strip width
+	// (stretched proportionally to each tab's natural text width). Shared by
+	// paint() and hit-testing so they never disagree. xs/ws must hold >=count.
+	void layoutTabs(int wide, int* xs, int* ws, int maxOut);
 	Dar<Tab*> _tabDar;
 	int _selectedTab;
 };
