@@ -586,10 +586,22 @@ void VguiOptionsDialog::setSize(int wide, int tall)
 	if (_applyBtn)  _applyBtn->setBounds(applyX, btnY, btnW, btnH);
 }
 
+// Forward declaration for the static instance pointer used by the grab callback.
+// Declared here (before setVisible) so setVisible can clear the grab on hide.
+class KeyBindList;
+static KeyBindList* s_activeKeyBindList = 0;
+static KeyBindList* s_keyBindListInstance = 0; // persistent ref for re-show refresh
+
 void VguiOptionsDialog::setVisible(bool state)
 {
 	if (!state)
 	{
+		// Cancel any active key-grab mode so the callback does not fire
+		// into a hidden (or later destroyed) KeyBindList. This handles the
+		// case where ESC hides the dialog before the grab callback fires.
+		VGUI_SetKeyGrabCallback(0);
+		s_activeKeyBindList = 0;
+
 		App* app = App::getInstance();
 		if (app) app->requestFocus(null);
 		UI_EnableTextInput(false);
@@ -784,10 +796,6 @@ private:
 	int _splitX;
 };
 
-// Forward declaration for the static instance pointer used by the grab callback
-class KeyBindList;
-static KeyBindList* s_activeKeyBindList = 0;
-
 class KeyBindList : public ListPanel
 {
 public:
@@ -801,6 +809,17 @@ public:
 				0, 0, wide - 16, VS(18), _splitX);
 			addItem(row);
 		}
+	}
+
+	virtual ~KeyBindList()
+	{
+		if (s_activeKeyBindList == this)
+		{
+			s_activeKeyBindList = 0;
+			VGUI_SetKeyGrabCallback(0);
+		}
+		if (s_keyBindListInstance == this)
+			s_keyBindListInstance = 0;
 	}
 
 	void populateFromEngine()
@@ -893,13 +912,16 @@ private:
 
 	const char* findBoundKey(const char* command)
 	{
-		for (int k = 0; k < 256; k++)
+		for (int k = 0; ; k++)
 		{
+			const char* str = EngFuncs::KeynumToString(k);
+			if (!str || strcmp(str, "<OUT OF RANGE>") == 0)
+				break;
 			const char* binding = EngFuncs::KEY_GetBinding(k);
 			if (binding && binding[0])
 			{
 				if (stricmp(binding, command) == 0)
-					return EngFuncs::KeynumToString(k);
+					return str;
 			}
 		}
 		return "";
@@ -907,8 +929,11 @@ private:
 
 	void unbindCommand(const char* command)
 	{
-		for (int k = 0; k < 256; k++)
+		for (int k = 0; ; k++)
 		{
+			const char* str = EngFuncs::KeynumToString(k);
+			if (!str || strcmp(str, "<OUT OF RANGE>") == 0)
+				break;
 			const char* binding = EngFuncs::KEY_GetBinding(k);
 			if (binding && binding[0] && stricmp(binding, command) == 0)
 				EngFuncs::KEY_SetBinding(k, "");
@@ -959,6 +984,7 @@ void VguiOptionsDialog::buildKeyboardTab(Panel* page)
 	KeyBindList* kbList = new KeyBindList(listX, listY, listW, listH, splitX);
 	page->addChild(kbList);
 	kbList->populateFromEngine();
+	s_keyBindListInstance = kbList;
 
 	// Defaults button
 	int btnW = VS(120);
@@ -1103,6 +1129,8 @@ static VguiOptionsDialog* g_pOptionsDialog = null;
 void VGUI_OptionsShutdown(void)
 {
 	vgui::g_pOptionsDialog = null;
+	vgui::s_keyBindListInstance = 0;
+	vgui::s_activeKeyBindList = 0;
 }
 
 extern "C"
@@ -1158,6 +1186,9 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 	}
 
 	vgui::g_pOptionsDialog->resetAll();
+	// Refresh key bindings on re-open (clears stale "???" from cancelled grabs)
+	if (vgui::s_keyBindListInstance)
+		vgui::s_keyBindListInstance->populateFromEngine();
 	vgui::g_pOptionsDialog->setVisible(true);
 }
 

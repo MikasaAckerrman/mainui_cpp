@@ -7,6 +7,7 @@
 #include <VGUI_Scheme.h>
 #include <VGUI_Font.h>
 #include <string.h>
+#include "keydefs.h"
 
 // Forward declarations from CEngineSurface.cpp
 namespace vgui
@@ -220,7 +221,7 @@ void VGUI_Mouse(enum VGUI_MouseAction action, int code)
 	if (g_pfnKeyGrabCallback && action == MA_PRESSED)
 	{
 		// Mouse buttons are K_MOUSE1 + code (code is 0-based from MOUSE_LEFT)
-		g_pfnKeyGrabCallback(241 + code); // K_MOUSE1 = 241
+		g_pfnKeyGrabCallback(K_MOUSE1 + code);
 		g_pfnKeyGrabCallback = 0; // one-shot
 		return;
 	}
