@@ -31,6 +31,58 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "cursor_type.h"
 #include "utflib.h"
 #include "TrackerScheme.h"
+// ═══════════════════════════════════════════════════════
+// In-game diagnostic logger. Writes to multiple paths so
+// the Android user can find the file via file manager.
+// Every write is fflush'd so partial logs survive a crash.
+// ═══════════════════════════════════════════════════════
+#include <stdarg.h>
+#include <stdio.h>
+
+#ifdef __ANDROID__
+#include <android/log.h>
+#define MENU_LOGCAT(msg) __android_log_write(ANDROID_LOG_DEBUG, "Slayer3D_Menu", msg)
+#else
+#define MENU_LOGCAT(msg) ((void)0)
+#endif
+
+static FILE *s_menuLogFile = nullptr;
+
+static void MenuLog(const char *fmt, ...)
+{
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+
+    // Open log file on first call — try several paths
+    if (!s_menuLogFile)
+    {
+        const char *paths[] = {
+            "/sdcard/Slayer3D_menu.log",
+            "/storage/emulated/0/Slayer3D_menu.log",
+            "/sdcard/Android/data/su.xash.engine.test/files/Slayer3D_menu.log",
+            "/data/local/tmp/Slayer3D_menu.log",
+            nullptr
+        };
+        for (int i = 0; paths[i]; i++)
+        {
+            s_menuLogFile = fopen(paths[i], "a");
+            if (s_menuLogFile) break;
+        }
+    }
+
+    if (s_menuLogFile)
+    {
+        fputs(buf, s_menuLogFile);
+        fflush(s_menuLogFile);
+    }
+
+    // Also send to Android logcat (readable via any logcat app)
+    MENU_LOGCAT(buf);
+}
+
 
 // VGUI1 forwarding functions (defined in vgui1/src/vgui_main.cpp)
 extern "C" void VGUI_PaintAll(void);
@@ -913,8 +965,12 @@ UI_Precache
 */
 void UI_Precache( void )
 {
+	MenuLog("[UI_Precache] START\n");
 	if( !uiStatic.initialized )
+	{
+		MenuLog("[UI_Precache] skipped — not initialized\n");
 		return;
+	}
 
 	EngFuncs::PIC_Load( UI_LEFTARROW );
 	EngFuncs::PIC_Load( UI_LEFTARROWFOCUS );
@@ -938,8 +994,13 @@ void UI_Precache( void )
 	for( CMenuEntry *entry = s_pEntries; entry; entry = entry->m_pNext )
 	{
 		if( entry->m_pfnPrecache )
+		{
+			MenuLog("[UI_Precache] calling precache for cmd='%s'\n", entry->m_szCommand ? entry->m_szCommand : "(null)");
 			entry->m_pfnPrecache();
+			MenuLog("[UI_Precache] precache done for cmd='%s'\n", entry->m_szCommand ? entry->m_szCommand : "(null)");
+		}
 	}
+	MenuLog("[UI_Precache] END\n");
 }
 
 void UI_ParseColor( char *&pfile, unsigned int *outColor )
@@ -1071,6 +1132,7 @@ UI_VidInit
 */
 int UI_VidInit( void )
 {
+	MenuLog("[UI_VidInit] called\n");
 	static bool calledOnce = false;
 	if( uiStatic.textInput )
 	{
@@ -1189,6 +1251,7 @@ UI_Init
 */
 void UI_Init( void )
 {
+	MenuLog("[UI_Init] START\n");
 	// register our cvars and commands
 	ui_showmodels = EngFuncs::CvarRegister( "ui_showmodels", "0", FCVAR_ARCHIVE );
 	ui_show_window_stack = EngFuncs::CvarRegister( "ui_show_window_stack", "0", FCVAR_ARCHIVE );
@@ -1210,7 +1273,9 @@ void UI_Init( void )
 	}
 	(void)cmdCount;
 
+	MenuLog("[UI_Init] creating CFontManager...\n");
 	g_FontMgr = new CFontManager();
+	MenuLog("[UI_Init] CFontManager created OK\n");
 
 	uiStatic.initialized = true;
 	uiStatic.lowmemory = (int)EngFuncs::GetCvarFloat( "host_lowmemorymode" );
@@ -1229,6 +1294,7 @@ void UI_Init( void )
 
 	// load TrackerScheme.res (overrides colors.lst with Source-style scheme)
 	UI_LoadTrackerScheme();
+	MenuLog("[UI_Init] END (success)\n");
 }
 
 /*
