@@ -8,6 +8,7 @@ Copyright (C) 2024 DragonSlayer Team
 #include "FrameTabbed.h"
 #include "Utils.h"
 #include "keydefs.h"
+#include <math.h>
 
 #define TAB_HEIGHT FRAME_TAB_HEIGHT // use the public constant from header
 
@@ -115,6 +116,29 @@ static inline void TabPixel( int px, int py, unsigned int color )
 	UI_FillRect( px, py, 1, 1, color );
 }
 
+// Quarter-circle Bresenham/midpoint corner cut: erases the corner pixels
+// (fills with a transparent color) to create smooth rounded TOP corners on
+// each tab, matching the CS 1.6 VGUI tab caps. outerColor is the color of
+// whatever is BEHIND the tab -- pass 0x00000000 (transparent) so the frame
+// border/background shows through the cut naturally.
+static void FillCornerArc( int tabX, int tabY, int tabW, int tabH, int r, unsigned int outerColor )
+{
+	// Only process the top corners (y from 0 to r-1).
+	for( int y = 0; y < r && y < tabH; y++ )
+	{
+		// Distance of this row's center from the arc center is (r - y).
+		float fy  = (float)( r - y ) - 0.5f;            // use pixel center
+		float fx  = sqrtf( (float)( r * r ) - fy * fy );
+		int   cut = r - (int)( fx + 0.5f );             // pixels to erase on this row
+
+		if( cut > 0 )
+		{
+			UI_FillRect( tabX, tabY + y, cut, 1, outerColor );             // top-left
+			UI_FillRect( tabX + tabW - cut, tabY + y, cut, 1, outerColor ); // top-right
+		}
+	}
+}
+
 void CMenuFrameTabbed::DrawTabs()
 {
 	m_iTabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
@@ -132,11 +156,11 @@ void CMenuFrameTabbed::DrawTabs()
 	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFBFB85E );
 
 	// Color that exists "outside" the tab corners -- the dark frame border
-	unsigned int outerBg = Scheme_GetColor( g_Scheme.frameBorderColor, dark );
+	// Corners are now cut transparently, so an explicit outer fill color is no longer needed.
 
-	// Corner radius in screen pixels (2 logical pixels scaled, min 1)
-	int cr = (int)(2.0f * uiStatic.scaleX + 0.5f);
-	if( cr < 1 ) cr = 1;
+	// Corner radius in screen pixels (4 logical pixels scaled, CS 1.6 tab cap)
+	int r = (int)(4.0f * uiStatic.scaleX + 0.5f);
+	if( r < 2 ) r = 2;
 
 	int hovered = TabAtCursor();
 
@@ -162,26 +186,24 @@ void CMenuFrameTabbed::DrawTabs()
 		// 1. Full tab background fill
 		UI_FillRect( x, ty, tw, th, bg );
 
-		// 2. Cut top-left and top-right corners with outer background
-		//    This creates the rounded-corner illusion without extra rendering overhead.
-		UI_FillRect( x,            ty, cr, cr, outerBg ); // top-left cut
-		UI_FillRect( x + tw - cr,  ty, cr, cr, outerBg ); // top-right cut
+		// 2. Cut the top corners into a smooth quarter-circle arc.
+		//    Transparent fill (0x00000000) erases the corner pixels so whatever
+		//    is behind the tab (frame border / background) shows through, giving
+		//    the soft CS 1.6 rounded cap instead of a hard square notch.
+		FillCornerArc( x, ty, tw, th, r, 0x00000000 );
 
-		// 3. Diagonal bevel pixels at the cut corners (1 bright/dark pixel on each diagonal)
-		//    Top-left: bright diagonal
-		TabPixel( x + cr - 1, ty,      bright ); // horizontal entry of top border
-		TabPixel( x,      ty + cr - 1, bright ); // vertical entry of left border
-		//    Top-right: dark diagonal
-		TabPixel( x + tw - cr, ty,     dark   ); // horizontal entry of top border
-		TabPixel( x + tw - 1, ty + cr - 1, dark ); // vertical entry of right border
+		// 3. Borders (drawn after the corner cut so they hug the arc edge)
+		//    Top bright border, spanning between the two corner arcs
+		UI_FillRect( x + r, ty, tw - 2*r, 1, bright );
+		//    Left bright border, below the corner arc
+		UI_FillRect( x, ty + r, 1, th - r, bright );
+		//    Right dark border, below the corner arc
+		UI_FillRect( x + tw - 1, ty + r, 1, th - r, dark );
 
-		// 4. Borders (inset from corners)
-		//    Top bright (between corner radii)
-		UI_FillRect( x + cr, ty, tw - 2*cr, 1, bright );
-		//    Left bright (below corner radius)
-		UI_FillRect( x, ty + cr, 1, th - cr, bright );
-		//    Right dark (below corner radius)
-		UI_FillRect( x + tw - 1, ty + cr, 1, th - cr, dark );
+		// 4. Diagonal bevel pixels softening the arc-to-border seam at each
+		//    top corner (one antialias-style pixel on the inner diagonal).
+		TabPixel( x + r - 1,    ty + r - 1, bright ); // top-left inner bevel
+		TabPixel( x + tw - r,   ty + r - 1, dark   ); // top-right inner bevel
 
 		if( i != m_iActiveTab )
 		{
