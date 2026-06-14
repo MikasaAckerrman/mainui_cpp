@@ -207,9 +207,9 @@ void TabPanel::paint()
 			unsigned int fillG = (frameBg >>  8) & 0xFF;
 			unsigned int fillB = (frameBg >>  0) & 0xFF;
 			if (isPressed) {
-				fillR = fillR + 20 < 255 ? fillR + 20 : 255;
-				fillG = fillG + 20 < 255 ? fillG + 20 : 255;
-				fillB = fillB + 20 < 255 ? fillB + 20 : 255;
+				pR = pR >= 20 ? pR - 20 : 0u;
+				pG = pG >= 20 ? pG - 20 : 0u;
+				pB = pB >= 20 ? pB - 20 : 0u;
 			}
 			unsigned int fillBg = (fillA << 24) | (fillR << 16) | (fillG << 8) | fillB;
 			schemeBgColor(this, fillBg);
