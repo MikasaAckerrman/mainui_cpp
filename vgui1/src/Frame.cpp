@@ -487,9 +487,6 @@ void Frame::internalCursorMoved(int x, int y)
 	_lastCursor[0] = x;
 	_lastCursor[1] = y;
 
-	if (_dragging)  { _lastMoveX = dx; _lastMoveY = dy; }
-	if (_resizing)  { _lastMoveX = 0;  _lastMoveY = 0;  }
-
 	if (_dragging && _moveable)
 	{
 		int newX = _pos[0] + dx;
@@ -751,12 +748,6 @@ void Frame::internalMouseReleased(MouseCode code)
 				_pos[0], _pos[1], getWide(), getTall(),
 				_dragOrgSize[0], _dragOrgSize[1]);
 		}
-		if (_dragging) {
-			const int CAP = 90;
-			_inertiaX = _lastMoveX * 3; if (_inertiaX > CAP) _inertiaX = CAP; if (_inertiaX < -CAP) _inertiaX = -CAP;
-			_inertiaY = _lastMoveY * 3; if (_inertiaY > CAP) _inertiaY = CAP; if (_inertiaY < -CAP) _inertiaY = -CAP;
-			_lastMoveX = 0; _lastMoveY = 0;
-		} else { _inertiaX = 0; _inertiaY = 0; }
 		_dragging = false;
 		_resizing = false;
 		_resizeZone = 0;
