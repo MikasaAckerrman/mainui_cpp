@@ -224,11 +224,8 @@ void TabPanel::paint()
 			drawFilledRect(x, tabH - 1, x + w, tabH);
 		}
 
-		// Tab label - LEFT-aligned (canon CS 1.6 PropertySheet/PageTab). The PC
-		// reference shows tab captions hugging the left edge with a small fixed
-		// pad, NOT centred - even though our row is stretched to the full strip
-		// width, the text stays left so it reads exactly like the PC Options.
-		// Vertically centred in the tab (the active tab is 2px taller because
+		// Tab label - CENTERED horizontally in each tab (CS 1.6 PC behavior).
+		// Vertically centred in the tab (active tab is 2px taller because
 		// inactive tabs are pushed down by `shrink`).
 		int textLen = (int)strlen(tab->text);
 		if (textLen > 0)
@@ -236,7 +233,17 @@ void TabPanel::paint()
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
 			int textH = VS(TAB_TEXT_HEIGHT_B);
-			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
+			// Center text horizontally in the tab (CS 1.6 PC behavior).
+			// Measure text width, then: center = x + (tabW - textW) / 2.
+			// Clamp to minimum left pad so text never clips the left border.
+			HFont cFont = g_FontMgr ? g_FontMgr->GetVGUIFont( textH ) : 0;
+			int textMW = 0;
+			if ( g_FontMgr && cFont && textLen > 0 )
+				textMW = g_FontMgr->GetTextWideScaled( cFont, tab->text, textH );
+			else
+				textMW = textLen * ( textH * 6 / 10 );
+			int textX = x + ( w - textMW ) / 2;
+			if ( textX < x + VS(TAB_TEXT_PAD_LEFT_B) ) textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			int textY = (tabH - textH) / 2 - 1;
 			if (!selected) textY += shrink / 2;
 			drawPrintText(textX, textY, tab->text, textLen);
