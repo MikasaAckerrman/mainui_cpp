@@ -109,6 +109,12 @@ bool CMenuFrameTabbed::IsInTabBar( int x, int y )
 	         y >= tabY && y <= tabY + tabH );
 }
 
+// Draw a single pixel at (px, py) only if inside the tab strip clip region.
+static inline void TabPixel( int px, int py, unsigned int color )
+{
+	UI_FillRect( px, py, 1, 1, color );
+}
+
 void CMenuFrameTabbed::DrawTabs()
 {
 	m_iTabH = (int)(TAB_HEIGHT * uiStatic.scaleY);
@@ -117,7 +123,7 @@ void CMenuFrameTabbed::DrawTabs()
 	int tabW = ( m_iNumTabs > 0 ) ? m_scSize.w / m_iNumTabs : m_scSize.w;
 	int lastTabW = ( m_iNumTabs > 1 ) ? m_scSize.w - tabW * (m_iNumTabs - 1) : tabW;
 
-	// GoldSrc VGUI tab colors - active tab uses frame body color to blend seamlessly
+	// GoldSrc VGUI tab colors
 	unsigned int frameBg    = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
 	unsigned int inactiveBg = Scheme_GetColor( g_Scheme.tabInactiveBgColor, 0xE64E5643 );
 	unsigned int bright     = Scheme_GetColor( g_Scheme.borderBright, 0xFF889180 );
@@ -125,11 +131,18 @@ void CMenuFrameTabbed::DrawTabs()
 	unsigned int tabText    = Scheme_GetColor( g_Scheme.tabTextColor, 0xFFDCDCDC );
 	unsigned int tabSelText = Scheme_GetColor( g_Scheme.tabSelectedTextColor, 0xFFBFB85E );
 
+	// Color that exists "outside" the tab corners -- the dark frame border
+	unsigned int outerBg = Scheme_GetColor( g_Scheme.frameBorderColor, dark );
+
+	// Corner radius in screen pixels (2 logical pixels scaled, min 1)
+	int cr = (int)(2.0f * uiStatic.scaleX + 0.5f);
+	if( cr < 1 ) cr = 1;
+
 	int hovered = TabAtCursor();
 
 	for( int i = 0; i < m_iNumTabs; i++ )
 	{
-		int x = m_scPos.x + i * tabW;
+		int x  = m_scPos.x + i * tabW;
 		int tw = (i == m_iNumTabs - 1) ? lastTabW : tabW;
 		int ty = tabY;
 		int th = m_iTabH;
@@ -146,27 +159,43 @@ void CMenuFrameTabbed::DrawTabs()
 			fg = ( i == hovered ) ? tabSelText : tabText;
 		}
 
-		// Tab background fill
+		// 1. Full tab background fill
 		UI_FillRect( x, ty, tw, th, bg );
 
-		// Border system: top bright, left bright, right dark
-		UI_FillRect( x, ty, tw, 1, bright );        // top edge
-		UI_FillRect( x, ty, 1, th, bright );           // left edge
-		UI_FillRect( x + tw - 1, ty, 1, th, dark );  // right edge
+		// 2. Cut top-left and top-right corners with outer background
+		//    This creates the rounded-corner illusion without extra rendering overhead.
+		UI_FillRect( x,            ty, cr, cr, outerBg ); // top-left cut
+		UI_FillRect( x + tw - cr,  ty, cr, cr, outerBg ); // top-right cut
+
+		// 3. Diagonal bevel pixels at the cut corners (1 bright/dark pixel on each diagonal)
+		//    Top-left: bright diagonal
+		TabPixel( x + cr - 1, ty,      bright ); // horizontal entry of top border
+		TabPixel( x,      ty + cr - 1, bright ); // vertical entry of left border
+		//    Top-right: dark diagonal
+		TabPixel( x + tw - cr, ty,     dark   ); // horizontal entry of top border
+		TabPixel( x + tw - 1, ty + cr - 1, dark ); // vertical entry of right border
+
+		// 4. Borders (inset from corners)
+		//    Top bright (between corner radii)
+		UI_FillRect( x + cr, ty, tw - 2*cr, 1, bright );
+		//    Left bright (below corner radius)
+		UI_FillRect( x, ty + cr, 1, th - cr, bright );
+		//    Right dark (below corner radius)
+		UI_FillRect( x + tw - 1, ty + cr, 1, th - cr, dark );
 
 		if( i != m_iActiveTab )
 		{
 			// Inactive tabs: bottom dark border
 			UI_FillRect( x, ty + th - 1, tw, 1, dark );
 		}
-		// Active tab: NO bottom border (merges with content area below)
+		// Active tab: NO bottom border (merges seamlessly with content area)
 
-		// Tab label text - centered, using hSmallFont (Tahoma)
+		// 5. Tab label text - vertically centered, horizontally centered
 		UI_DrawString( uiStatic.hSmallFont, x, ty, tw, th,
 			m_tabs[i].name, fg, (int)(FRAME_TEXT_HEIGHT * uiStatic.scaleY), QM_CENTER, ETF_FORCECOL );
 	}
 
-	// 1px horizontal separator line below the entire tab strip
+	// 1px separator line below entire tab strip
 	unsigned int sepColor = Scheme_GetColor( g_Scheme.borderBright, 0xC8757B69 );
 	UI_FillRect( m_scPos.x, tabY + m_iTabH, m_scSize.w, 1, sepColor );
 }
