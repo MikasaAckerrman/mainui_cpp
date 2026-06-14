@@ -62,6 +62,10 @@ private:
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];
 	bool _dragAnchorReady;
+	// Fade animation fields (show/hide transitions)
+	int  _fadeAlpha;   // 0=transparent 255=opaque
+	bool _fadingIn;
+	bool _fadingOut;
 };
 
 }
