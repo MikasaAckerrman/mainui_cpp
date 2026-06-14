@@ -172,8 +172,6 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_dragOrgCursor[0] = 0; _dragOrgCursor[1] = 0;
 	_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 	_dragAnchorReady = false;
-	_inertiaX = 0; _inertiaY = 0;
-	_lastMoveX = 0; _lastMoveY = 0;
 
 	_topGrip = null; _bottomGrip = null; _leftGrip = null; _rightGrip = null;
 	_topLeftGrip = null; _topRightGrip = null;
@@ -272,9 +270,7 @@ void Frame::paintBackground()
 	// our flat ~1). Position-based hash picks sparse pixels and nudges them
 	// brighter/darker. Tighter step (VS(3)) + larger amplitude bring stddev
 	// up while staying cheap (~50K pixels at 800x500).
-	// Also skip expensive grain during inertia animation (both dragging &
-	// resizing are false during inertia, but grain every frame wastes battery).
-	if (!_dragging && !_resizing && !(_inertiaX || _inertiaY))
+	if (!_dragging && !_resizing)
 	{
 		int bx0 = border;
 		int by0 = captionH + border;
@@ -357,30 +353,7 @@ void Frame::paintBackground()
 	}
 }
 
-void Frame::paint()
-{
-	if ((_inertiaX || _inertiaY) && !_dragging && !_resizing) {
-		int dx = _inertiaX / 3, dy = _inertiaY / 3;
-		if (dx || dy) {
-			int newX = _pos[0] + dx, newY = _pos[1] + dy;
-			int wide = getWide(), tall = getTall(), sw, sh;
-			GetCanvasSize(this, sw, sh);
-			int captionH = _smallCaption ? FcapSmall() : Fcap();
-			int margin = VS(24); if (margin > wide) margin = wide;
-			if (newX < margin - wide) { newX = margin - wide; _inertiaX = 0; }
-			if (newX > sw - margin)   { newX = sw - margin;   _inertiaX = 0; }
-			if (newY < 0)             { newY = 0;             _inertiaY = 0; }
-			if (newY > sh - captionH) { newY = sh - captionH; _inertiaY = 0; }
-			setPos(newX, newY);
-		}
-		_inertiaX = _inertiaX * 4 / 5;
-		_inertiaY = _inertiaY * 4 / 5;
-		if (_inertiaX > -1 && _inertiaX < 1 && _inertiaY > -1 && _inertiaY < 1)
-			_inertiaX = _inertiaY = 0;
-		else
-			repaint();
-	}
-}
+void Frame::paint() {}
 
 void Frame::drawTitleBar(int wide)
 {
