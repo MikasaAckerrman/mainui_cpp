@@ -59,6 +59,7 @@ void TabPanel::addTab(const char* text, Panel* panel)
 {
 	Tab* tab = new Tab;
 	vgui_strcpy(tab->text, sizeof(tab->text), text ? text : "");
+	tab->naturalW = -1; // computed lazily
 	tab->panel = panel;
 	_tabDar.addElement(tab);
 
@@ -140,7 +141,9 @@ void TabPanel::layoutTabs(int wide, int* xs, int* ws, int maxOut)
 	for (int i = 0; i < count; i++)
 	{
 		Tab* t = _tabDar[i];
-		int n = t ? NaturalTabWidth(t->text) : VS(TAB_MIN_WIDTH);
+		if (t && t->naturalW < 0) t->naturalW = NaturalTabWidth(t->text);
+		int tw = t ? t->naturalW : VS(TAB_MIN_WIDTH);
+		int n = tw;
 		ws[i] = n;            // stash natural width
 		natSum += n;
 	}

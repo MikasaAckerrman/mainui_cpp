@@ -436,12 +436,15 @@ void ComboPopup::internalMousePressed(MouseCode code)
 		{
 			int mx, my;
 			app->getCursorPos(mx, my);
-			screenToLocal(mx, my);
+			int ax = 0, ay = 0;
+			localToScreen(ax, ay);
+			int lx = mx - ax;
+			int ly = my - ay;
 			int wide, tall;
 			getSize(wide, tall);
-			if (mx >= 0 && mx < wide && my >= 1 && my < tall - 1)
+			if (lx >= 0 && lx < wide && ly >= 1 && ly < tall - 1)
 			{
-				int idx = (my - 1) / _itemH;
+				int idx = (ly - 1) / _itemH;
 				if (idx >= 0 && idx < _count)
 				{
 					if (_owner) _owner->onItemPicked(idx);
@@ -546,18 +549,21 @@ protected:
 			{
 				int mx, my;
 				app->getCursorPos(mx, my);
-				screenToLocal(mx, my);
+				int ax = 0, ay = 0;
+				localToScreen(ax, ay);
+				int lx = mx - ax;
+				int ly = my - ay;
 				int wide, tall;
 				getSize(wide, tall);
 				int barX = wide - _barW;
-				if (mx >= barX)
+				if (lx >= barX)
 				{
-					if (my < _barW)            { _scrollY -= VS(20); }
-					else if (my >= tall - _barW) { _scrollY += VS(20); }
+					if (ly < _barW)            { _scrollY -= VS(20); }
+					else if (ly >= tall - _barW) { _scrollY += VS(20); }
 					else
 					{
 						_dragging = true;
-						_dragStartY = my;
+						_dragStartY = ly;
 						_dragStartScroll = _scrollY;
 						setAsMouseCapture(true);
 					}
@@ -579,7 +585,10 @@ protected:
 			{
 				int mx, my;
 				app->getCursorPos(mx, my);
-				screenToLocal(mx, my);
+				int ax = 0, ay = 0;
+				localToScreen(ax, ay);
+				int lx = mx - ax;
+				int ly = my - ay;
 				int wide, tall;
 				getSize(wide, tall);
 				int trackH = tall - 2 * _barW;
@@ -590,7 +599,7 @@ protected:
 				computeThumb(thumbY, thumbH);
 				int avail = trackH - thumbH;
 				if (avail < 1) avail = 1;
-				int dy = my - _dragStartY;
+				int dy = ly - _dragStartY;
 				int ns = _dragStartScroll + (dy * maxScroll) / avail;
 				_scrollY = ns;
 				clampScroll();
@@ -888,6 +897,14 @@ VguiCreateGame::VguiCreateGame(int screenW, int screenH)
 	client->addChild(_cancelBtn);
 
 	VLOG("VguiCreateGame ctor: done");
+}
+
+VguiCreateGame::~VguiCreateGame()
+{
+	// SimpleRadioGroup is a plain class (not a Panel child), so it is not
+	// freed by the panel tree - delete it explicitly to avoid a leak.
+	delete _difficulty;
+	_difficulty = 0;
 }
 
 // --------------------------------------------------------------------

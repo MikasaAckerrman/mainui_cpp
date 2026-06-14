@@ -313,23 +313,26 @@ protected:
 			{
 				int mx, my;
 				app->getCursorPos(mx, my);
-				screenToLocal(mx, my);
+				int ax = 0, ay = 0;
+				localToScreen(ax, ay);
+				int lx = mx - ax;
+				int ly = my - ay;
 				int wide, tall;
 				getSize(wide, tall);
 				int barW = wide;
 
-				if (my < barW)
+				if (ly < barW)
 				{
 					Con_Scroll(+1);              // view older lines
 				}
-				else if (my >= tall - barW)
+				else if (ly >= tall - barW)
 				{
 					Con_Scroll(-1);              // view newer lines
 				}
 				else
 				{
 					_dragging = true;
-					_dragStartY = my;
+					_dragStartY = ly;
 					_dragStartScroll = s_conScroll;
 					setAsMouseCapture(true);
 				}
@@ -348,7 +351,10 @@ protected:
 			{
 				int mx, my;
 				app->getCursorPos(mx, my);
-				screenToLocal(mx, my);
+				int ax = 0, ay = 0;
+				localToScreen(ax, ay);
+				int lx = mx - ax;
+				int ly = my - ay;
 				int wide, tall;
 				getSize(wide, tall);
 				int barW = wide;
@@ -367,7 +373,7 @@ protected:
 				int avail = trackH - thumbH;
 				if (avail < 1) avail = 1;
 
-				int dy = my - _dragStartY;
+				int dy = ly - _dragStartY;
 				// Drag down -> toward bottom -> smaller scroll value.
 				int ns = _dragStartScroll - (dy * maxScroll) / avail;
 				if (ns < 0) ns = 0;
@@ -460,8 +466,7 @@ private:
 	{
 		s_conScroll += delta;
 		if (s_conScroll < 0) s_conScroll = 0;
-		int total = Con_Count();
-		if (s_conScroll > total) s_conScroll = total; // precise clamp happens in paint
+		// upper bound clamped by Con_ClampScroll during paint
 	}
 
 	bool _dragging;
@@ -532,7 +537,6 @@ VguiConsole::VguiConsole(int screenW, int screenH)
 	setPos((screenW - dlgW) / 2, (screenH - dlgH) / 2);
 	setSize(dlgW, dlgH);
 	setSizeable(true);                 // user can drag edges/corners to resize
-	setMinimumSize(VS(300), VS(160));
 	setTitle("\xD0\x9A\xD0\xBE\xD0\xBD\xD1\x81\xD0\xBE\xD0\xBB\xD1\x8C"); // Консоль
 	setVisible(false);
 

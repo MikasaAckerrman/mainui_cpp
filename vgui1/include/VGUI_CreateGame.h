@@ -26,6 +26,7 @@ class VguiCreateGame : public Frame
 {
 public:
 	VguiCreateGame(int screenW, int screenH);
+	virtual ~VguiCreateGame();
 public:
 	virtual void setVisible(bool state);   // override - cleanup text input on hide
 	void launchGame();                      // "Запуск": map <selected> + hide

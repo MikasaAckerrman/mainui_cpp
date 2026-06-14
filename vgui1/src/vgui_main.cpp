@@ -31,6 +31,7 @@ void VGUI_Console_Show(bool show);
 bool VGUI_Console_IsVisible();
 }
 void VGUI_ConsoleShutdown(void);
+void VGUI_LoadingShutdown(void);
 
 // Forward declarations from VguiCreateGame.cpp
 namespace vgui
@@ -194,6 +195,7 @@ static void VGUI_Shutdown(void)
 	// Null out the options dialog pointer before destroying the panel tree
 	VGUI_OptionsShutdown();
 	VGUI_ConsoleShutdown();
+	VGUI_LoadingShutdown();
 	VGUI_CreateGameShutdown();
 
 	// Clear surface reference from panels BEFORE destroying surface
