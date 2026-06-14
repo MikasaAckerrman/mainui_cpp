@@ -15,9 +15,6 @@ GNU General Public License for more details.
 
 
 #include "extdll_menu.h"
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
 #include "BaseMenu.h"
 #include "Utils.h"
 
@@ -58,9 +55,6 @@ extern "C" EXPORT int GetMenuAPI(UI_FUNCTIONS *pFunctionTable, ui_enginefuncs_t*
 		if (!_f) _f = fopen("/sdcard/Android/data/su.xash.engine.test/files/Slayer3D_menu.log", "w");
 		if (!_f) _f = fopen("/data/local/tmp/Slayer3D_menu.log", "w");
 		if (_f) { fputs("=== GetMenuAPI called ===\n", _f); fflush(_f); fclose(_f); }
-#ifdef __ANDROID__
-		__android_log_write(ANDROID_LOG_DEBUG, "Slayer3D_Menu", "GetMenuAPI called");
-#endif
 	}
 	// ────────────────────────────────────────────────────────────────────────
 	if( !pFunctionTable || !pEngfuncsFromEngine )
