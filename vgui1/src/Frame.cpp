@@ -272,7 +272,9 @@ void Frame::paintBackground()
 	// our flat ~1). Position-based hash picks sparse pixels and nudges them
 	// brighter/darker. Tighter step (VS(3)) + larger amplitude bring stddev
 	// up while staying cheap (~50K pixels at 800x500).
-	if (!_dragging && !_resizing)
+	// Also skip expensive grain during inertia animation (both dragging &
+	// resizing are false during inertia, but grain every frame wastes battery).
+	if (!_dragging && !_resizing && !(_inertiaX || _inertiaY))
 	{
 		int bx0 = border;
 		int by0 = captionH + border;
