@@ -136,29 +136,16 @@ void TabPanel::layoutTabs(int wide, int* xs, int* ws, int maxOut)
 {
 	int count = _tabDar.getCount();
 	if (count > maxOut) count = maxOut;
+	if (count <= 0) return;
 
-	int natSum = 0;
-	for (int i = 0; i < count; i++)
-	{
-		Tab* t = _tabDar[i];
-		if (t && t->naturalW < 0) t->naturalW = NaturalTabWidth(t->text);
-		int tw = t ? t->naturalW : VS(TAB_MIN_WIDTH);
-		int n = tw;
-		ws[i] = n;            // stash natural width
-		natSum += n;
-	}
-	if (natSum <= 0) natSum = 1;
-
-	bool stretch = (natSum < wide); // only fill when the row is narrower than the strip
+	// PC CS 1.6 PropertySheet: all tabs have exactly the same width,
+	// spanning the full dialog width. They scale proportionally when
+	// the window is resized.
 	int x = 0;
+	int tabW = wide / count;
 	for (int i = 0; i < count; i++)
 	{
-		int w;
-		if (stretch)
-			w = (i == count - 1) ? (wide - x) : (int)((double)ws[i] * wide / natSum);
-		else
-			w = ws[i];        // natural width (row may overflow on tiny dialogs)
-		if (w < VS(TAB_MIN_WIDTH)) w = VS(TAB_MIN_WIDTH);
+		int w = (i == count - 1) ? (wide - x) : tabW;
 		xs[i] = x;
 		ws[i] = w;
 		x += w;
