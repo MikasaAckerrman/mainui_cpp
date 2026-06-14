@@ -32,6 +32,8 @@ bool VGUI_Console_IsVisible();
 }
 void VGUI_ConsoleShutdown(void);
 
+namespace vgui { void VGUI_Loading_Show(bool show, const char* statusText, float progress); bool VGUI_Loading_IsVisible(); } void VGUI_LoadingShutdown(void);
+
 // Engine API struct (matches vgui_api.h from engine)
 #ifndef VGUI_API_DEFINED
 #define VGUI_API_DEFINED
@@ -186,6 +188,7 @@ static void VGUI_Shutdown(void)
 	// Null out the options dialog pointer before destroying the panel tree
 	VGUI_OptionsShutdown();
 	VGUI_ConsoleShutdown();
+	VGUI_LoadingShutdown();
 
 	// Clear surface reference from panels BEFORE destroying surface
 	if (s_rootPanel)
@@ -584,6 +587,16 @@ EXPORT void VGUI_ShowConsole(bool show)
 EXPORT bool VGUI_IsConsoleVisible(void)
 {
 	return vgui::VGUI_Console_IsVisible();
+}
+
+EXPORT void VGUI_ShowLoading(bool show, const char* statusText, float progress)
+{
+	vgui::VGUI_Loading_Show(show, statusText, progress);
+}
+
+EXPORT bool VGUI_IsLoadingVisible(void)
+{
+	return vgui::VGUI_Loading_IsVisible();
 }
 
 } // extern "C"
