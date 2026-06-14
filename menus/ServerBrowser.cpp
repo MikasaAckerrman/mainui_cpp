@@ -1361,6 +1361,9 @@ void CMenuServerBrowser::AddServerToList( netadr_t adr, const char *info )
 	OnChangeSelectedServer();
 }
 
+// Forward declaration from WndServerBrowser.cpp
+void WndServerBrowser_AddServerToList( netadr_t adr, const char *info );
+
 /*
 =================
 UI_AddServerToList
@@ -1368,10 +1371,11 @@ UI_AddServerToList
 */
 void UI_AddServerToList( netadr_t adr, const char *info )
 {
-	if( !menu_internetgames )
-		return;
+	if( menu_internetgames )
+		menu_internetgames->AddServerToList( adr, info );
 
-	menu_internetgames->AddServerToList( adr, info );
+	// Also deliver to windowed server browser if it is open
+	WndServerBrowser_AddServerToList( adr, info );
 }
 
 /*
