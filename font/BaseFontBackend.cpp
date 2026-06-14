@@ -208,7 +208,7 @@ void CBaseFont::UploadGlyphsForRanges(charRange_t *range, int rangeSize)
 
 	SaveToCache( m_szTextureName, range, rangeSize, &bmp );
 
-	HIMAGE hImage = bmp.Upload( m_szTextureName );
+	HIMAGE hImage = bmp.Upload( m_szTextureName, 1 ); // 1 = TF_NEAREST (pixel-perfect sharpness)
 
 	delete[] temp;
 
@@ -660,7 +660,7 @@ bool CBaseFont::ReadFromCache( const char *filename, charRange_t *range, size_t 
 
 	uint bmpFileSize = bmp->fileSize;
 	CBMP::SwapBmpHdrToLE( bmp );
-	HIMAGE hImage = EngFuncs::PIC_Load( filename, (const byte*)bmp, bmpFileSize, 0 );
+	HIMAGE hImage = EngFuncs::PIC_Load( filename, (const byte*)bmp, bmpFileSize, 1 ); // 1 = TF_NEAREST (pixel-perfect sharpness)
 
 	if( !hImage )
 	{
