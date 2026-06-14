@@ -140,8 +140,10 @@ protected:
 		int sx = (wide - extent) / 2;
 		int sy = (tall - extent) / 2;
 		if (isDepressed()) { sx += 1; sy += 1; }
-		int brush = VS(3);
-		if (brush < 2) brush = 2;
+		// PC CS 1.6: close button uses an elegant thin 1px or 2px cross.
+		// Scale brush dynamically but keep it thin (1px on small screens, 2px max on high-res)
+		// to prevent it from rendering as a thick, blobby, ugly cross.
+		int brush = (side >= 24) ? 2 : 1;
 
 		schemeBgColor(this, argb);
 		for (int i = 0; i < extent; i++)
