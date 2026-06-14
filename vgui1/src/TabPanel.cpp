@@ -248,15 +248,10 @@ void TabPanel::paint()
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
 			int textH = VS(TAB_TEXT_HEIGHT_B);
-			// Center text horizontally in the tab (CS 1.6 PC behavior).
-			// Measure text width, then: center = x + (tabW - textW) / 2.
-			// Clamp to minimum left pad so text never clips the left border.
-			HFont cFont = g_FontMgr ? g_FontMgr->GetVGUIFont( textH ) : 0;
-			int textMW = 0;
-			if ( g_FontMgr && cFont && textLen > 0 )
-				textMW = g_FontMgr->GetTextWideScaled( cFont, tab->text, textH );
-			else
-				textMW = textLen * ( textH * 6 / 10 );
+			// Center text using drawTextSize() — uses the SAME font as drawPrintText
+			// (sf_primary1, already set above), so measured width == rendered width.
+			int textMW = 0, textMH = 0;
+			drawTextSize( tab->text, textLen, textMW, textMH );
 			int textX = x + ( w - textMW ) / 2;
 			if ( textX < x + VS(TAB_TEXT_PAD_LEFT_B) ) textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			int textY = (tabH - textH) / 2 - 1;
