@@ -39,12 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdarg.h>
 #include <stdio.h>
 
-#ifdef __ANDROID__
-#include <android/log.h>
-#define MENU_LOGCAT(msg) __android_log_write(ANDROID_LOG_DEBUG, "Slayer3D_Menu", msg)
-#else
 #define MENU_LOGCAT(msg) ((void)0)
-#endif
 
 static FILE *s_menuLogFile = nullptr;
 
@@ -80,7 +75,6 @@ static void MenuLog(const char *fmt, ...)
     }
 
     // Also send to Android logcat (readable via any logcat app)
-    MENU_LOGCAT(buf);
 }
 
 
