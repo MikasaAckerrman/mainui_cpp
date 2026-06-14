@@ -151,6 +151,11 @@ endif()
 
 install(TARGETS menu DESTINATION "${GAMEDIR}/${CLIENT_INSTALL_DIR}")
 
+# Android: link against the platform log library for __android_log_write
+if(ANDROID)
+    target_link_libraries(menu log)
+endif()
+
 if(MSVC)
 	install(FILES $<TARGET_PDB_FILE:menu> DESTINATION "${GAMEDIR}/${CLIENT_INSTALL_DIR}" OPTIONAL)
 endif()
