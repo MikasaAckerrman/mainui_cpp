@@ -534,7 +534,7 @@ HFont CFontBuilder::Create()
 	CBaseFont *font;
 
 	// check existing font at first
-	if( !m_hForceHandle )
+	if( m_hForceHandle == -1 )
 	{
 		for( int i = 0; i < g_FontMgr->m_Fonts.Count(); i++ )
 		{
