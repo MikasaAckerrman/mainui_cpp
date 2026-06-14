@@ -87,6 +87,7 @@ extern "C" void VGUI_ForwardMouseMove(int x, int y);
 extern "C" void VGUI_ForwardCharInput(const char *text);
 // Hide the Options dialog (defined in vgui1/src/VguiOptionsDialog.cpp)
 extern "C" void VGUI_HideOptions(void);
+extern "C" void VGUI_EnsureInitialized(int screenW, int screenH);
 
 cvar_t		*ui_showmodels;
 cvar_t		*ui_show_window_stack;
@@ -896,6 +897,7 @@ UI_SetActiveMenu
 */
 void UI_SetActiveMenu( int fActive )
 {
+	MenuLog("[UI_SetActiveMenu] fActive=%d initialized=%d\n", fActive, (int)uiStatic.initialized);
 	if( !uiStatic.initialized )
 		return;
 
@@ -1126,7 +1128,7 @@ UI_VidInit
 */
 int UI_VidInit( void )
 {
-	MenuLog("[UI_VidInit] called\n");
+	MenuLog("[UI_VidInit] called (screen %dx%d, textInput=%d)\n", ScreenWidth, ScreenHeight, uiStatic.textInput);
 	static bool calledOnce = false;
 	if( uiStatic.textInput )
 	{
@@ -1177,6 +1179,12 @@ int UI_VidInit( void )
 	uiStatic.background->VidInit();
 
 	uiStatic.menu.VidInit( calledOnce );
+
+	// Eagerly initialize VGUI1 root panel so Options/Console/CreateGame windows
+	// are ready immediately on first frame, not lazily on first click.
+	VGUI_EnsureInitialized(ScreenWidth, ScreenHeight);
+	MenuLog("[UI_VidInit] VGUI1 init done (screen=%dx%d scale=%.3f yOff=%.1f width=%.1f)\n",
+		ScreenWidth, ScreenHeight, uiStatic.scaleX, uiStatic.yOffset, uiStatic.width);
 
 	if( !calledOnce ) calledOnce = true;
 
