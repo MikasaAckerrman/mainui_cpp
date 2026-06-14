@@ -172,6 +172,7 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_dragOrgCursor[0] = 0; _dragOrgCursor[1] = 0;
 	_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 	_dragAnchorReady = false;
+	_fadeAlpha = 255; _fadingIn = false; _fadingOut = false;
 
 	_topGrip = null; _bottomGrip = null; _leftGrip = null; _rightGrip = null;
 	_topLeftGrip = null; _topRightGrip = null;
@@ -210,16 +211,36 @@ bool Frame::isSizeable() { return _sizeable; }
 
 void Frame::setVisible(bool state)
 {
-	if (!state && (_dragging || _resizing))
+	// Always stop drag/resize when visibility changes.
+	if (_dragging || _resizing)
 	{
-		_dragging = false;
-		_resizing = false;
-		_resizeZone = 0;
-		_lastCursorValid = false;
+		_dragging = false; _resizing = false;
+		_resizeZone = 0;  _lastCursorValid = false;
 		App* app = App::getInstance();
 		if (app) app->setMouseCapture(null);
 	}
-	Panel::setVisible(state);
+	if (state)
+	{
+		if (!_visible)
+		{
+			// Fade in from transparent.
+			_fadeAlpha = 0;
+			_fadingIn  = true;
+			_fadingOut = false;
+			Panel::setVisible(true);
+			repaint();
+		}
+	}
+	else
+	{
+		if (_visible && !_fadingOut)
+		{
+			// Fade out to black, then actually hide.
+			_fadingOut = true;
+			_fadingIn  = false;
+			repaint();
+		}
+	}
 }
 
 Panel* Frame::getClient() { return _client; }
@@ -353,7 +374,44 @@ void Frame::paintBackground()
 	}
 }
 
-void Frame::paint() {}
+void Frame::paint()
+{
+	// Fade animation: draw a black overlay on top of everything.
+	// fade-in : overlayAlpha goes 255->0 (window appears from black)
+	// fade-out: overlayAlpha goes 0->255 (window disappears to black)
+	if (!_fadingIn && !_fadingOut)
+		return;
+
+	int overlayAlpha = 255 - _fadeAlpha;
+	if (overlayAlpha > 0)
+	{
+		// Semi-transparent black rectangle covering the entire frame.
+		// Xash3D VGUI renders with GL_BLEND enabled, so alpha IS applied.
+		schemeBgColor(this, ((unsigned int)overlayAlpha << 24) | 0x000000u);
+		int wide, tall;
+		getSize(wide, tall);
+		drawFilledRect(0, 0, wide, tall);
+	}
+
+	// Advance: step=64 per frame => ~4 frames total at 60fps (~67ms).
+	const int STEP = 64;
+	if (_fadingIn)
+	{
+		_fadeAlpha += STEP;
+		if (_fadeAlpha >= 255) { _fadeAlpha = 255; _fadingIn = false; }
+		else repaint();  // keep animation going
+	}
+	else if (_fadingOut)
+	{
+		_fadeAlpha -= STEP;
+		if (_fadeAlpha <= 0)
+		{
+			_fadeAlpha = 0; _fadingOut = false;
+			Panel::setVisible(false);  // actually hide now
+		}
+		else repaint();
+	}
+}
 
 void Frame::drawTitleBar(int wide)
 {
@@ -606,7 +664,7 @@ void Frame::internalCursorMoved(int x, int y)
 // button is checked first so it keeps working.
 Panel* Frame::isWithinTraverse(int x, int y)
 {
-	if (!_visible)
+	if (!_visible || _fadingOut)
 		return null;
 
 	// Close button (a child) keeps priority in its own rect.
