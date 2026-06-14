@@ -239,7 +239,7 @@ void TabPanel::paint()
 			drawFilledRect(x, tabH - 1, x + w, tabH);
 		}
 
-		// Tab label - CENTERED horizontally in each tab (CS 1.6 PC behavior).
+		// Tab label: LEFT-aligned with VS(TAB_TEXT_PAD_LEFT_B) left pad (canonical GoldSrc).
 		// Vertically centred in the tab (active tab is 2px taller because
 		// inactive tabs are pushed down by `shrink`).
 		int textLen = (int)strlen(tab->text);
@@ -248,12 +248,8 @@ void TabPanel::paint()
 			schemeFgColor(this, selected ? selTextCol : textColor);
 			drawSetTextFont(Scheme::sf_primary1);
 			int textH = VS(TAB_TEXT_HEIGHT_B);
-			// Center text using drawTextSize() — uses the SAME font as drawPrintText
-			// (sf_primary1, already set above), so measured width == rendered width.
-			int textMW = 0, textMH = 0;
-			drawTextSize( tab->text, textLen, textMW, textMH );
-			int textX = x + ( w - textMW ) / 2;
-			if ( textX < x + VS(TAB_TEXT_PAD_LEFT_B) ) textX = x + VS(TAB_TEXT_PAD_LEFT_B);
+			// LEFT-aligned with fixed left pad (canonical GoldSrc/CS 1.6 PropertySheet).
+			int textX = x + VS(TAB_TEXT_PAD_LEFT_B);
 			int textY = (tabH - textH) / 2 - 1;
 			if (!selected) textY += shrink / 2;
 			drawPrintText(textX, textY, tab->text, textLen);
