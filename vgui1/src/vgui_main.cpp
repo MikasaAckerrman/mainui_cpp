@@ -32,6 +32,14 @@ bool VGUI_Console_IsVisible();
 }
 void VGUI_ConsoleShutdown(void);
 
+// Forward declarations from VguiCreateGame.cpp
+namespace vgui
+{
+void VGUI_CreateGame_Show(bool show);
+bool VGUI_CreateGame_IsVisible();
+}
+void VGUI_CreateGameShutdown(void);
+
 // Engine API struct (matches vgui_api.h from engine)
 #ifndef VGUI_API_DEFINED
 #define VGUI_API_DEFINED
@@ -186,6 +194,7 @@ static void VGUI_Shutdown(void)
 	// Null out the options dialog pointer before destroying the panel tree
 	VGUI_OptionsShutdown();
 	VGUI_ConsoleShutdown();
+	VGUI_CreateGameShutdown();
 
 	// Clear surface reference from panels BEFORE destroying surface
 	if (s_rootPanel)
@@ -584,6 +593,19 @@ EXPORT void VGUI_ShowConsole(bool show)
 EXPORT bool VGUI_IsConsoleVisible(void)
 {
 	return vgui::VGUI_Console_IsVisible();
+}
+
+// ====================================================================
+// Create Server dialog bridge: exposed to engine / mainui
+// ====================================================================
+EXPORT void VGUI_ShowCreateGame(bool show)
+{
+	vgui::VGUI_CreateGame_Show(show);
+}
+
+EXPORT bool VGUI_IsCreateGameVisible(void)
+{
+	return vgui::VGUI_CreateGame_IsVisible();
 }
 
 } // extern "C"
