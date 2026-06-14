@@ -48,13 +48,29 @@ static UI_FUNCTIONS gFunctionTable =
 //=======================================================================
 extern "C" EXPORT int GetMenuAPI(UI_FUNCTIONS *pFunctionTable, ui_enginefuncs_t* pEngfuncsFromEngine, ui_globalvars_t *pGlobals)
 {
-	// ─── Early diagnostic log — no EngFuncs yet, pure C stdio ───────────────
+	// ── Early diagnostic log — no EngFuncs yet, pure C stdio ───────────────
 	{
-		FILE *_f = fopen("/sdcard/Slayer3D_menu.log", "w");
-		if (!_f) _f = fopen("/storage/emulated/0/Slayer3D_menu.log", "w");
-		if (!_f) _f = fopen("/sdcard/Android/data/su.xash.engine.test/files/Slayer3D_menu.log", "w");
-		if (!_f) _f = fopen("/data/local/tmp/Slayer3D_menu.log", "w");
-		if (_f) { fputs("=== GetMenuAPI called ===\n", _f); fflush(_f); fclose(_f); }
+		const char *_logPaths[] = {
+			"/sdcard/Slayer3D_menu.log",
+			"/storage/emulated/0/Slayer3D_menu.log",
+			"/sdcard/Android/data/su.xash.engine.test/files/Slayer3D_menu.log",
+			"/data/local/tmp/Slayer3D_menu.log",
+			nullptr
+		};
+		FILE *_f = nullptr;
+		for (int _i = 0; _logPaths[_i]; _i++) {
+			_f = fopen(_logPaths[_i], "w");  // 'w' = fresh log each run
+			if (_f) break;
+		}
+		if (_f) {
+			fprintf(_f, "=== GetMenuAPI called ===\n");
+			fprintf(_f, "  pFunctionTable  = %p\n", (void*)pFunctionTable);
+			fprintf(_f, "  pEngfuncs       = %p\n", (void*)pEngfuncsFromEngine);
+			fprintf(_f, "  pGlobals        = %p\n", (void*)pGlobals);
+			fprintf(_f, "  UI_FUNCTIONS sz = %zu bytes\n", sizeof(UI_FUNCTIONS));
+			fflush(_f);
+			fclose(_f);
+		}
 	}
 	// ────────────────────────────────────────────────────────────────────────
 	if( !pFunctionTable || !pEngfuncsFromEngine )
@@ -90,6 +106,12 @@ static UI_EXTENDED_FUNCTIONS gExtendedTable =
 
 extern "C" EXPORT int GetExtAPI( int version, UI_EXTENDED_FUNCTIONS *pFunctionTable, ui_extendedfuncs_t *pEngfuncsFromEngine )
 {
+	{
+		FILE *_ef = fopen("/sdcard/Slayer3D_menu.log", "a");
+		if (!_ef) _ef = fopen("/storage/emulated/0/Slayer3D_menu.log", "a");
+		if (!_ef) _ef = fopen("/data/local/tmp/Slayer3D_menu.log", "a");
+		if (_ef) { fprintf(_ef, "[GetExtAPI] version=%d\n", version); fflush(_ef); fclose(_ef); }
+	}
 	if( !pFunctionTable || !pEngfuncsFromEngine )
 	{
 		return false;
