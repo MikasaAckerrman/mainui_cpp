@@ -33,6 +33,13 @@ bool VGUI_Console_IsVisible();
 void VGUI_ConsoleShutdown(void);
 void VGUI_LoadingShutdown(void);
 
+// Forward declarations from VguiLoadingDialog.cpp
+namespace vgui
+{
+void VGUI_Loading_Show(bool show, const char* statusText, float progress);
+bool VGUI_Loading_IsVisible();
+}
+
 // Forward declarations from VguiCreateGame.cpp
 namespace vgui
 {
@@ -608,6 +615,19 @@ EXPORT void VGUI_ShowCreateGame(bool show)
 EXPORT bool VGUI_IsCreateGameVisible(void)
 {
 	return vgui::VGUI_CreateGame_IsVisible();
+}
+
+// ====================================================================
+// Loading dialog bridge: exposed to engine / mainui
+// ====================================================================
+EXPORT void VGUI_ShowLoading(bool show, const char* statusText, float progress)
+{
+	vgui::VGUI_Loading_Show(show, statusText, progress);
+}
+
+EXPORT bool VGUI_IsLoadingVisible(void)
+{
+	return vgui::VGUI_Loading_IsVisible();
 }
 
 } // extern "C"
