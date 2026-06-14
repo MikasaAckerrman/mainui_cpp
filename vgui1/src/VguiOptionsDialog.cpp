@@ -606,8 +606,8 @@ inline void IntStubCombo_CycleSignal::actionPerformed(Panel* /*p*/)
 // GoldSrc grid layout constants (@ 640x480 reference, scaled via VS)
 // All multiples of 4 for pixel-perfect alignment.
 // ====================================================================
-static const int DLG_W = 720;   // dialog width  (GoldSrc PC Options; fixed size, bumped for HD touch readability)
-static const int DLG_H = 528;   // dialog height (keeps the exact PC 15:11 sub-window proportion: 720:528 = 15:11)
+static const int DLG_W = 660;   // dialog width  — matches PC CS 1.6 Options 512×406 ratio 1.261 exactly
+static const int DLG_H = 524;   // dialog height — 660/524 = 1.260 ≈ PC original 512/406 = 1.261
 
 // Form metrics for tab page content
 static inline int LblX()   { return VS(10); }

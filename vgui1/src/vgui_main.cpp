@@ -23,6 +23,15 @@ void EngineSurface_Destroy();
 // Forward declaration from VguiOptionsDialog.cpp
 void VGUI_OptionsShutdown(void);
 
+// Forward declarations from VguiConsole.cpp
+namespace vgui
+{
+void VGUI_Console_Output(const char* text);
+void VGUI_Console_Show(bool show);
+bool VGUI_Console_IsVisible();
+}
+void VGUI_ConsoleShutdown(void);
+
 // Engine API struct (matches vgui_api.h from engine)
 #ifndef VGUI_API_DEFINED
 #define VGUI_API_DEFINED
@@ -176,6 +185,7 @@ static void VGUI_Shutdown(void)
 
 	// Null out the options dialog pointer before destroying the panel tree
 	VGUI_OptionsShutdown();
+	VGUI_ConsoleShutdown();
 
 	// Clear surface reference from panels BEFORE destroying surface
 	if (s_rootPanel)
@@ -556,6 +566,24 @@ EXPORT void VGUI_ForwardMouseMove(int x, int y)
 EXPORT void VGUI_ForwardCharInput(const char *text)
 {
 	VGUI_TextInput(text);
+}
+
+// ====================================================================
+// Console bridge: exposed to engine / mainui
+// ====================================================================
+EXPORT void VGUI_ConsoleOutput(const char* text)
+{
+	vgui::VGUI_Console_Output(text);
+}
+
+EXPORT void VGUI_ShowConsole(bool show)
+{
+	vgui::VGUI_Console_Show(show);
+}
+
+EXPORT bool VGUI_IsConsoleVisible(void)
+{
+	return vgui::VGUI_Console_IsVisible();
 }
 
 } // extern "C"
