@@ -30,6 +30,7 @@ private:
 	{
 		char text[64];
 		Panel* panel;
+		int naturalW;
 	};
 	// Compute per-tab x/width so the tab row spans the full strip width
 	// (stretched proportionally to each tab's natural text width). Shared by

@@ -268,6 +268,7 @@ void Frame::paintBackground()
 	// our flat ~1). Position-based hash picks sparse pixels and nudges them
 	// brighter/darker. Tighter step (VS(3)) + larger amplitude bring stddev
 	// up while staying cheap (~50K pixels at 800x500).
+	if (!_dragging && !_resizing)
 	{
 		int bx0 = border;
 		int by0 = captionH + border;
@@ -450,7 +451,6 @@ void Frame::internalCursorMoved(int x, int y)
 		// (press - firstMove) offset that is not real drift.
 		_dragOrgCursor[0] = x;
 		_dragOrgCursor[1] = y;
-		VLOG("Frame move: seed cursor (%d,%d), no delta applied yet", x, y);
 		Panel::internalCursorMoved(x, y);
 		return;
 	}
@@ -475,7 +475,6 @@ void Frame::internalCursorMoved(int x, int y)
 		if (adx > 500 || ady > 500)
 		{
 			_dragOrgSize[1]++;   // count clamped huge-delta events this drag
-			VLOG("Frame move: clamp huge d=(%+d,%+d) - reseed only", dx, dy);
 			_lastCursor[0] = x;
 			_lastCursor[1] = y;
 			Panel::internalCursorMoved(x, y);
@@ -485,8 +484,6 @@ void Frame::internalCursorMoved(int x, int y)
 
 	_lastCursor[0] = x;
 	_lastCursor[1] = y;
-	VLOG("Frame move: cursor=(%d,%d) d=(%+d,%+d) %s",
-		x, y, dx, dy, _dragging ? "drag" : "resize");
 
 	if (_dragging && _moveable)
 	{
