@@ -26,14 +26,16 @@ public:
 	virtual void setSmallCaption(bool state);
 	virtual void setSize(int wide, int tall);
 	virtual Panel* isWithinTraverse(int x, int y); // resize/caption zones win over children
+	using Panel::paintTraverse; // keep the no-arg overload visible
+	virtual void paintTraverse(bool repaint); // fade overlay drawn ABOVE children
 protected:
 	virtual void paintBackground();
-	virtual void paint();
 	virtual void internalCursorMoved(int x, int y);
 	virtual void internalMousePressed(MouseCode code);
 	virtual void internalMouseReleased(MouseCode code);
 private:
 	void drawTitleBar(int wide);
+	void updateFade(); // advance fade state machine from real elapsed time
 private:
 	char _title[128];
 	Panel* _topGrip;
@@ -62,10 +64,14 @@ private:
 	int _dragOrgCursor[2];
 	int _dragOrgSize[2];
 	bool _dragAnchorReady;
-	// Fade animation fields (show/hide transitions)
-	int  _fadeAlpha;   // 0=transparent 255=opaque
-	bool _fadingIn;
-	bool _fadingOut;
+	// Fade animation fields (show/hide transitions).
+	// Time-based: _fadeAlpha is always derived from (now - _fadeStartTime),
+	// never incremented per frame, so a skipped/stopped repaint can never
+	// strand the animation in a half-faded (invisible) state.
+	int    _fadeAlpha;     // 0=transparent 255=opaque (derived)
+	bool   _fadingIn;
+	bool   _fadingOut;
+	double _fadeStartTime; // EngFuncs::DoubleTime() when the current fade began
 };
 
 }

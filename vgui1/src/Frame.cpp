@@ -7,6 +7,7 @@
 
 extern void UI_FillRect( int x, int y, int width, int height, const unsigned int color );
 #include "TrackerScheme.h"
+#include "BMPUtils.h" // tga_t - in-memory TGA for the cached grain texture
 
 #include <VGUI_Log.h>
 #include <VGUI_SchemeColors.h>
@@ -16,10 +17,28 @@ extern void UI_FillRect( int x, int y, int width, int height, const unsigned int
 #include <VGUI_Button.h>
 #include <VGUI_ActionSignal.h>
 #include <VGUI_CvarBridge.h> // VGUI_GetScreenSize - authoritative drawable canvas
+#include <VGUI_SurfaceBase.h>
 #include <string.h>
 
 namespace vgui
 {
+
+// Fallback scheme colors (used when the active scheme doesn't define one).
+static const unsigned int FALLBACK_FRAME_BG      = 0xFF4C5844u; // olive body/button bg
+static const unsigned int FALLBACK_BORDER_BRIGHT = 0xFF889180u; // raised bevel top-left
+static const unsigned int FALLBACK_BORDER_DARK   = 0xFF282E22u; // raised bevel bottom-right
+static const unsigned int FALLBACK_TEXT          = 0xFFD8DED3u; // idle glyph/text
+static const unsigned int FALLBACK_TEXT_ARMED    = 0xFFFFFFFFu; // armed glyph/text
+static const unsigned int FALLBACK_TITLE_FG      = 0xFFFFFFFFu; // title bar text
+static const unsigned int FALLBACK_HI_BAND       = 0x40FFFFFFu; // top gradient band
+static const unsigned int FALLBACK_LO_BAND       = 0x40000000u; // bottom gradient band
+
+// Fade transition duration in seconds (full 0<->255 alpha sweep).
+static const double FADE_DURATION = 0.12;
+
+// Largest believable cursor delta per engine tick (px). Larger deltas are
+// engine glitches and are dropped (see internalCursorMoved).
+static const int MAX_CURSOR_DELTA = 500;
 
 // GoldSrc VGUI Frame layout constants (CS 1.6 reference @ 640x480, scaled via VS).
 enum
@@ -82,6 +101,88 @@ static int HitTestResize(int lx, int ly, int w, int h)
 	return zone;
 }
 
+// 1px GoldSrc bevel border around the panel's full extent:
+// top+left edges in `tl`, bottom+right edges in `br`.
+// Raised look = (BorderBright, BorderDark); sunken = swapped.
+static void DrawBevel(Panel* p, int wide, int tall, unsigned int tl, unsigned int br)
+{
+	SurfaceBase* sb = p ? p->getSurfaceBase() : null;
+	if (!sb)
+		return;
+	schemeBgColor(p, tl);
+	sb->drawFilledRect(0, 0, wide, 1);
+	sb->drawFilledRect(0, 0, 1, tall);
+	schemeBgColor(p, br);
+	sb->drawFilledRect(0, tall - 1, wide, tall);
+	sb->drawFilledRect(wide - 1, 0, wide, tall);
+}
+
+// ---------------------------------------------------------------------------
+// Cached GoldSrc grain/noise texture.
+//
+// The canonical CS 1.6 window body has a visible noisy texture (reference
+// luminance stddev ~15-25). We used to draw it as ~50K 1x1 drawFilledRect
+// calls per repaint at 800x500 - a measurable hit on weak Android GPUs.
+// Instead, build ONE small tileable RGBA texture (same position-hash pattern)
+// and tile it over the body with a handful of PIC_DrawTrans calls.
+//
+// Texture space is base-640x480 pixels (cell step GRAIN_STEP), drawn scaled
+// by VS() so the grain size tracks UI scale exactly like the old loop did.
+// White dots lighten, black dots darken; alphas are tuned so the effective
+// nudge over the olive body color matches the old +/-16 RGB offset.
+// ---------------------------------------------------------------------------
+static const int GRAIN_TEX_SIZE = 64; // base px, tileable
+static const int GRAIN_STEP     = 3;  // base px between noise cells (old VS(3))
+
+static HIMAGE GetGrainTexture()
+{
+	static HIMAGE s_grain = (HIMAGE)-1;
+	if (s_grain != (HIMAGE)-1)
+		return s_grain;
+
+	const int bufSize = (int)sizeof(tga_t) + GRAIN_TEX_SIZE * GRAIN_TEX_SIZE * 4;
+	unsigned char* buf = new unsigned char[bufSize];
+	memset(buf, 0, bufSize);
+
+	tga_t* hdr      = (tga_t*)buf;
+	hdr->image_type = 2; // uncompressed true-color
+	hdr->width      = GRAIN_TEX_SIZE;
+	hdr->height     = GRAIN_TEX_SIZE;
+	hdr->pixel_size = 32;
+	hdr->attributes = 0x28; // 8-bit alpha, origin upper left
+
+	unsigned char* pixels = buf + sizeof(tga_t);
+
+	// Same position-hash as the old per-pixel loop: 25% bright, 25% dark.
+	// Alpha tuned against the olive body (~0x58 luminance): white a=24 gives
+	// ~+16, black a=46 gives ~-16 after alpha blending.
+	for (int y = 0; y < GRAIN_TEX_SIZE; y += GRAIN_STEP)
+	{
+		for (int x = 0; x < GRAIN_TEX_SIZE; x += GRAIN_STEP)
+		{
+			unsigned int h = ((unsigned int)x * 2654435761u) ^ ((unsigned int)y * 340573321u);
+			int q = h & 0xF;
+			unsigned char lum = 0, a = 0;
+			if (q < 4)        { lum = 255; a = 24; } // brighter dot
+			else if (q >= 12) { lum = 0;   a = 46; } // darker dot
+			else continue;
+			int i = (y * GRAIN_TEX_SIZE + x) * 4;
+			pixels[i + 0] = lum; // B
+			pixels[i + 1] = lum; // G
+			pixels[i + 2] = lum; // R
+			pixels[i + 3] = a;   // A
+		}
+	}
+
+	s_grain = EngFuncs::PIC_Load("#frame_grain.tga",
+		buf, bufSize, PIC_NOMIPMAP | PIC_NEAREST | PIC_HAS_ALPHA);
+	delete[] buf;
+
+	if (!s_grain)
+		Con_DPrintf("vgui1/Frame: failed to create #frame_grain.tga noise texture\n");
+	return s_grain;
+}
+
 // Close button signal
 class FrameCloseSignal : public ActionSignal
 {
@@ -104,25 +205,20 @@ protected:
 		getSize(wide, tall);
 		bool sunken = isDepressed() || isSelected();
 
-		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : 0xFF4C5844;
+		unsigned int bg = g_Scheme.buttonBgColor ? g_Scheme.buttonBgColor : FALLBACK_FRAME_BG;
 		schemeBgColor(this, bg);
 		drawFilledRect(1, 1, wide - 1, tall - 1);
 
 		// Phase 1-D: canonical CS 1.6 border = 1px ONLY.
 		// Sunken (depressed/selected) = inset (BorderDark TL, BorderBright BR).
 		// Raised = bevel (BorderBright TL, BorderDark BR). No inner second band.
-		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
-		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
+		unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : FALLBACK_BORDER_BRIGHT;
+		unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : FALLBACK_BORDER_DARK;
 
-		unsigned int tl = sunken ? dark   : bright;
-		unsigned int br = sunken ? bright : dark;
-
-		schemeBgColor(this, tl);
-		drawFilledRect(0, 0, wide, 1);
-		drawFilledRect(0, 0, 1, tall);
-		schemeBgColor(this, br);
-		drawFilledRect(0, tall - 1, wide, tall);
-		drawFilledRect(wide - 1, 0, wide, tall);
+		if (sunken)
+			DrawBevel(this, wide, tall, dark, bright);
+		else
+			DrawBevel(this, wide, tall, bright, dark);
 	}
 
 	virtual void paint()
@@ -131,8 +227,8 @@ protected:
 		getSize(wide, tall);
 
 		unsigned int argb = isArmed()
-			? (g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : 0xFFFFFFFF)
-			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : 0xFFD8DED3);
+			? (g_Scheme.buttonArmedTextColor ? g_Scheme.buttonArmedTextColor : FALLBACK_TEXT_ARMED)
+			: (g_Scheme.buttonTextColor ? g_Scheme.buttonTextColor : FALLBACK_TEXT);
 
 		int side = (wide < tall ? wide : tall);
 		int extent = (side * 55) / 100;
@@ -173,6 +269,7 @@ Frame::Frame(int x, int y, int wide, int tall) : Panel(x, y, wide, tall)
 	_dragOrgSize[0] = 0; _dragOrgSize[1] = 0;
 	_dragAnchorReady = false;
 	_fadeAlpha = 255; _fadingIn = false; _fadingOut = false;
+	_fadeStartTime = 0.0;
 
 	_topGrip = null; _bottomGrip = null; _leftGrip = null; _rightGrip = null;
 	_topLeftGrip = null; _topRightGrip = null;
@@ -209,6 +306,45 @@ bool Frame::isMoveable() { return _moveable; }
 void Frame::setSizeable(bool state) { _sizeable = state; }
 bool Frame::isSizeable() { return _sizeable; }
 
+// Advance the fade state machine from real elapsed time. _fadeAlpha is
+// always DERIVED from (now - _fadeStartTime) - never incremented per frame -
+// so the animation is FPS-independent and self-healing: even if the engine
+// stops repainting mid-fade (menu deactivated, resolution change, missed
+// ticks), the very next call from ANY entry point (paintTraverse, setVisible,
+// isWithinTraverse) resolves the fade to its correct final state. The window
+// can therefore never be left stuck invisible or half-faded.
+void Frame::updateFade()
+{
+	if (!_fadingIn && !_fadingOut)
+		return;
+
+	double elapsed = EngFuncs::DoubleTime() - _fadeStartTime;
+	if (elapsed < 0.0) elapsed = 0.0; // clock anomaly safety
+
+	int a = (int)(255.0 * (elapsed / FADE_DURATION));
+	if (a > 255) a = 255;
+
+	if (_fadingIn)
+	{
+		_fadeAlpha = a;
+		if (a >= 255)
+		{
+			_fadeAlpha = 255;
+			_fadingIn  = false;
+		}
+	}
+	else // _fadingOut
+	{
+		_fadeAlpha = 255 - a;
+		if (a >= 255)
+		{
+			_fadeAlpha = 0;
+			_fadingOut = false;
+			Panel::setVisible(false); // actually hide now
+		}
+	}
+}
+
 void Frame::setVisible(bool state)
 {
 	// Always stop drag/resize when visibility changes.
@@ -219,25 +355,47 @@ void Frame::setVisible(bool state)
 		App* app = App::getInstance();
 		if (app) app->setMouseCapture(null);
 	}
+
+	// Resolve any in-flight fade against real time first: if a fade-out
+	// already ran to completion (even without repaints), this hides the
+	// panel now so the branches below see the true state.
+	updateFade();
+
 	if (state)
 	{
 		if (!_visible)
 		{
-			// Fade in from transparent.
-			_fadeAlpha = 0;
+			// Fresh show: fade in from fully faded.
 			_fadingIn  = true;
 			_fadingOut = false;
+			_fadeAlpha = 0;
+			_fadeStartTime = EngFuncs::DoubleTime();
 			Panel::setVisible(true);
 			repaint();
 		}
+		else if (_fadingOut)
+		{
+			// Re-shown mid fade-out: cancel the fade-out and fade back in
+			// FROM THE CURRENT alpha (no restart-from-black flash). Back-date
+			// the start time so the derived alpha continues seamlessly.
+			_fadingOut = false;
+			_fadingIn  = true;
+			_fadeStartTime = EngFuncs::DoubleTime()
+				- FADE_DURATION * ((double)_fadeAlpha / 255.0);
+			repaint();
+		}
+		// else: already fully visible or mid fade-in - nothing to do.
 	}
 	else
 	{
 		if (_visible && !_fadingOut)
 		{
-			// Fade out to black, then actually hide.
+			// Fade out, then actually hide (in updateFade). If this interrupts
+			// a fade-in, start from the current alpha, not from fully opaque.
+			double doneFrac = _fadingIn ? (1.0 - (double)_fadeAlpha / 255.0) : 0.0;
 			_fadingOut = true;
 			_fadingIn  = false;
+			_fadeStartTime = EngFuncs::DoubleTime() - FADE_DURATION * doneFrac;
 			repaint();
 		}
 	}
@@ -278,7 +436,7 @@ void Frame::paintBackground()
 	int wide, tall;
 	getSize(wide, tall);
 
-	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : 0xFF4C5844;
+	unsigned int frameBg = g_Scheme.frameBgColor ? g_Scheme.frameBgColor : FALLBACK_FRAME_BG;
 	schemeBgColor(this, frameBg);
 	drawFilledRect(0, 0, wide, tall);
 
@@ -287,66 +445,63 @@ void Frame::paintBackground()
 
 	// Subtle GoldSrc noise/grain over the body region (canonical look - the
 	// original CS 1.6 VGUI window has a visible noisy texture, not a flat
-	// color; pixel audit shows reference body luminance stddev ~15-25 vs
-	// our flat ~1). Position-based hash picks sparse pixels and nudges them
-	// brighter/darker. Tighter step (VS(3)) + larger amplitude bring stddev
-	// up while staying cheap (~50K pixels at 800x500).
+	// color). Tiled from ONE cached texture (see GetGrainTexture) instead of
+	// the old ~50K per-pixel drawFilledRect calls per repaint.
 	if (!_dragging && !_resizing)
 	{
 		int bx0 = border;
 		int by0 = captionH + border;
 		int bx1 = wide - border;
 		int by1 = tall - border;
-		int areaW = bx1 - bx0;
-		int areaH = by1 - by0;
-		if (areaW > 16 && areaH > 16)
+		if (bx1 - bx0 > 16 && by1 - by0 > 16)
 		{
-			int step = VS(3);
-			if (step < 2) step = 2;
-			unsigned int br = (frameBg >> 16) & 0xFF;
-			unsigned int bg = (frameBg >> 8) & 0xFF;
-			unsigned int bb = frameBg & 0xFF;
-			unsigned int ba = (frameBg >> 24) & 0xFF;
-			for (int py = by0; py < by1; py += step)
+			HIMAGE grain = GetGrainTexture();
+			if (grain)
 			{
-				for (int px = bx0; px < bx1; px += step)
+				int tile = VS(GRAIN_TEX_SIZE);
+				if (tile < GRAIN_TEX_SIZE) tile = GRAIN_TEX_SIZE;
+
+				int ox = 0, oy = 0;
+				localToScreen(ox, oy);
+
+				EngFuncs::PIC_Set(grain, 255, 255, 255, 255);
+				for (int ty = by0; ty < by1; ty += tile)
 				{
-					unsigned int h = ((unsigned int)px * 2654435761u) ^ ((unsigned int)py * 340573321u);
-					int q = h & 0xF;
-					int d = 0;
-					if (q < 4)        d =  16;  // 25% brighter
-					else if (q >= 12) d = -16;  // 25% darker
-					if (d == 0) continue;
-					int nr = (int)br + d; if (nr < 0) nr = 0; if (nr > 255) nr = 255;
-					int ng = (int)bg + d; if (ng < 0) ng = 0; if (ng > 255) ng = 255;
-					int nb = (int)bb + d; if (nb < 0) nb = 0; if (nb > 255) nb = 255;
-					schemeBgColor(this, (ba << 24) | (nr << 16) | (ng << 8) | nb);
-					drawFilledRect(px, py, px + 1, py + 1);
+					int drawH = by1 - ty; if (drawH > tile) drawH = tile;
+					for (int tx = bx0; tx < bx1; tx += tile)
+					{
+						int drawW = bx1 - tx; if (drawW > tile) drawW = tile;
+						// Clip partial edge tiles in texture space so the
+						// grain scale stays uniform at the borders.
+						wrect_t rc;
+						rc.left   = 0;
+						rc.top    = 0;
+						rc.right  = GRAIN_TEX_SIZE * drawW / tile;
+						rc.bottom = GRAIN_TEX_SIZE * drawH / tile;
+						if (rc.right < 1) rc.right = 1;
+						if (rc.bottom < 1) rc.bottom = 1;
+						EngFuncs::PIC_DrawTrans(ox + tx, oy + ty, drawW, drawH, &rc);
+					}
 				}
 			}
 		}
 	}
 
 	// Subtle gradient bands
-	unsigned int hiBand = g_Scheme.frameHighlightBand ? g_Scheme.frameHighlightBand : 0x40FFFFFF;
-	unsigned int loBand = g_Scheme.frameShadowBand    ? g_Scheme.frameShadowBand    : 0x40000000;
+	unsigned int hiBand = g_Scheme.frameHighlightBand ? g_Scheme.frameHighlightBand : FALLBACK_HI_BAND;
+	unsigned int loBand = g_Scheme.frameShadowBand    ? g_Scheme.frameShadowBand    : FALLBACK_LO_BAND;
 	schemeBgColor(this, hiBand);
 	drawFilledRect(border, captionH + border, wide - border, captionH + border + 1);
 	schemeBgColor(this, loBand);
 	drawFilledRect(border, tall - border - 1, wide - border, tall - border);
 
-	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : 0xFF889180;
-	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : 0xFF282E22;
+	unsigned int bright = g_Scheme.borderBright ? g_Scheme.borderBright : FALLBACK_BORDER_BRIGHT;
+	unsigned int dark   = g_Scheme.borderDark   ? g_Scheme.borderDark   : FALLBACK_BORDER_DARK;
 
 	// Canonical CS 1.6 RaisedBorder = 1px only:
 	// Top + Left = BorderBright; Bottom + Right = BorderDark.
 	// No inner-bevel (we used to draw a second band - that was non-canonical).
-	schemeBgColor(this, bright);
-	drawFilledRect(0, 0, wide, 1);
-	drawFilledRect(0, 0, 1, tall);
-	schemeBgColor(this, dark);
-	drawFilledRect(0, tall - 1, wide, tall);
-	drawFilledRect(wide - 1, 0, wide, tall);
+	DrawBevel(this, wide, tall, bright, dark);
 
 	drawTitleBar(wide);
 
@@ -374,42 +529,37 @@ void Frame::paintBackground()
 	}
 }
 
-void Frame::paint()
+void Frame::paintTraverse(bool repaintFlag)
 {
-	// Fade animation: draw a black overlay on top of everything.
+	// Advance the fade BEFORE painting: may complete a fade-out and hide
+	// the panel (Panel::paintTraverse below then draws nothing).
+	updateFade();
+
+	Panel::paintTraverse(repaintFlag);
+
+	// Fade overlay: a semi-transparent black rectangle over the ENTIRE frame,
+	// drawn AFTER the children so the whole window (buttons, tabs, client
+	// area) fades as one unit - the old paint()-time overlay was painted
+	// before the children and left them fully visible over the dimming.
 	// fade-in : overlayAlpha goes 255->0 (window appears from black)
 	// fade-out: overlayAlpha goes 0->255 (window disappears to black)
-	if (!_fadingIn && !_fadingOut)
-		return;
-
-	int overlayAlpha = 255 - _fadeAlpha;
-	if (overlayAlpha > 0)
+	if ((_fadingIn || _fadingOut) && _visible && _surfaceBase)
 	{
-		// Semi-transparent black rectangle covering the entire frame.
-		// Xash3D VGUI renders with GL_BLEND enabled, so alpha IS applied.
-		schemeBgColor(this, ((unsigned int)overlayAlpha << 24) | 0x000000u);
-		int wide, tall;
-		getSize(wide, tall);
-		drawFilledRect(0, 0, wide, tall);
-	}
-
-	// Advance: step=64 per frame => ~4 frames total at 60fps (~67ms).
-	const int STEP = 64;
-	if (_fadingIn)
-	{
-		_fadeAlpha += STEP;
-		if (_fadeAlpha >= 255) { _fadeAlpha = 255; _fadingIn = false; }
-		else repaint();  // keep animation going
-	}
-	else if (_fadingOut)
-	{
-		_fadeAlpha -= STEP;
-		if (_fadeAlpha <= 0)
+		int overlayAlpha = 255 - _fadeAlpha;
+		if (overlayAlpha > 0)
 		{
-			_fadeAlpha = 0; _fadingOut = false;
-			Panel::setVisible(false);  // actually hide now
+			// Xash3D VGUI renders with GL_BLEND enabled, so alpha IS applied.
+			_surfaceBase->pushMakeCurrent(this, true);
+			schemeBgColor(this, ((unsigned int)overlayAlpha << 24) | 0x000000u);
+			int wide, tall;
+			getSize(wide, tall);
+			drawFilledRect(0, 0, wide, tall);
+			_surfaceBase->popMakeCurrent(this);
 		}
-		else repaint();
+		// Request another pass while animating. Harmless when the engine
+		// already redraws every frame; with time-derived alpha a missed
+		// repaint can no longer stall the animation.
+		repaint();
 	}
 }
 
@@ -420,21 +570,25 @@ void Frame::drawTitleBar(int wide)
 	int barX = border, barY = border;
 	int barW = wide - border * 2, barH = captionH;
 
-	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : 0xFF4C5844;
+	unsigned int titleBg = g_Scheme.frameTitleBarBg ? g_Scheme.frameTitleBarBg : FALLBACK_FRAME_BG;
 	schemeBgColor(this, titleBg);
 	drawFilledRect(barX, barY, barX + barW, barY + barH);
 
-	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : 0xFF889180;
+	unsigned int topEdge = g_Scheme.frameTitleBarTop ? g_Scheme.frameTitleBarTop : FALLBACK_BORDER_BRIGHT;
 	schemeBgColor(this, topEdge);
 	drawFilledRect(barX, barY, barX + barW, barY + 1);
 
-	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : 0xFF282E22;
+	unsigned int botEdge = g_Scheme.frameTitleBarBottom ? g_Scheme.frameTitleBarBottom : FALLBACK_BORDER_DARK;
 	schemeBgColor(this, botEdge);
 	drawFilledRect(barX, barY + barH - 1, barX + barW, barY + barH);
 
 	static HIMAGE s_steamIcon = (HIMAGE)-1;
 	if (s_steamIcon == (HIMAGE)-1)
+	{
 		s_steamIcon = EngFuncs::PIC_Load("gfx/vgui2/steam_logo.tga");
+		if (!s_steamIcon)
+			Con_DPrintf("vgui1/Frame: missing asset gfx/vgui2/steam_logo.tga - title bar icon disabled\n");
+	}
 
 	int titleTextX = border + VS(4);
 	if (s_steamIcon)
@@ -453,7 +607,7 @@ void Frame::drawTitleBar(int wide)
 
 	if (_title[0])
 	{
-		unsigned int titleFg = g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : 0xFFFFFFFF;
+		unsigned int titleFg = g_Scheme.frameTitleBarFg ? g_Scheme.frameTitleBarFg : FALLBACK_TITLE_FG;
 		schemeFgColor(this, titleFg);
 		drawSetTextFont(Scheme::sf_primary1);
 		int textY = barY + (barH - VS(13)) / 2;
@@ -532,7 +686,7 @@ void Frame::internalCursorMoved(int x, int y)
 	{
 		int adx = dx < 0 ? -dx : dx;
 		int ady = dy < 0 ? -dy : dy;
-		if (adx > 500 || ady > 500)
+		if (adx > MAX_CURSOR_DELTA || ady > MAX_CURSOR_DELTA)
 		{
 			_dragOrgSize[1]++;   // count clamped huge-delta events this drag
 			_lastCursor[0] = x;
@@ -664,6 +818,12 @@ void Frame::internalCursorMoved(int x, int y)
 // button is checked first so it keeps working.
 Panel* Frame::isWithinTraverse(int x, int y)
 {
+	// Resolve any in-flight fade first: a fade-out that already ran to
+	// completion (even if painting stopped) must not keep eating input.
+	updateFade();
+
+	// During an active fade-out the window is closing - don't accept input.
+	// This state is now guaranteed transient (time-derived, self-healing).
 	if (!_visible || _fadingOut)
 		return null;
 
