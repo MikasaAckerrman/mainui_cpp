@@ -50,13 +50,16 @@ if(MAINUI_FONT_SCALE)
 endif()
 
 # VGUI diagnostic logging. When -DVGUI_DIAG is defined, VLOG() writes to both
-# the engine console (Con_Printf) and <gamedir>/logs/vgui_diag.log via
-# fopen("a"). That is a per-event fopen/fprintf/fclose - on a touch drag the
-# engine fires hundreds of cursorMoved events, so leaving it on caused visible
-# drag/resize lag on device. Diagnosis is complete (drag MISMATCH=0 confirmed),
-# so it is OFF by default now; VLOG() compiles to a no-op. Re-enable only when
-# actively debugging by uncommenting the line below.
-# add_definitions(-DVGUI_DIAG)
+# the engine console (Con_Printf -> <gamedir>/qconsole.log) and
+# <gamedir>/logs/vgui_diag.log.
+#
+# The file channel is now BUFFERED: lines accumulate in memory and flush in one
+# fopen per 64 lines (or on VLOGFLUSH()), instead of the old fopen-per-event
+# that caused drag/resize lag. That removes the perf reason to keep it off, so
+# it is safe to leave enabled while diagnosing the invisible-windows issue.
+# Turn OFF again (comment out) once diagnosis is complete to save the tiny
+# residual cost. VLOG()/VLOGFLUSH() compile to no-ops when this is undefined.
+add_definitions(-DVGUI_DIAG)
 
 add_definitions(-DSTDINT_H=<cstdint>)
 

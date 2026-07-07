@@ -197,6 +197,12 @@ static void VGUI_Startup(int width, int height)
 
 static void VGUI_Shutdown(void)
 {
+	// Flush any buffered diagnostic lines to disk before we tear everything
+	// down -- otherwise the most interesting lines (right before shutdown) are
+	// lost. No-op in non-diag builds.
+	VLOG("VGUI_Shutdown: entering");
+	VLOGFLUSH();
+
 	// DrawShutdown no longer needed - we use EngFuncs directly
 
 	// Null out the options dialog pointer before destroying the panel tree
@@ -555,7 +561,38 @@ EXPORT int VGUI_IsVisible(void)
 EXPORT void VGUI_PaintAll(void)
 {
 	if (!s_rootPanel || !s_app)
+	{
+		// Log the FIRST time we're asked to paint with no root/app: that means
+		// the paint loop is running but VGUI was never initialized -> nothing
+		// can ever show. Distinguishes "not initialized" from "nothing added".
+#ifdef VGUI_DIAG
+		static bool s_warnedNoRoot = false;
+		if (!s_warnedNoRoot)
+		{
+			s_warnedNoRoot = true;
+			VLOG("VGUI_PaintAll: called but rootPanel=%p app=%p -- nothing to paint",
+				(void*)s_rootPanel, (void*)s_app);
+			VLOGFLUSH();
+		}
+#endif
 		return;
+	}
+
+#ifdef VGUI_DIAG
+	// Log only when the child count CHANGES (window opened/closed), not every
+	// frame -- keeps the buffer useful and cheap. This confirms whether the
+	// dialog is actually attached to the root the paint loop traverses.
+	{
+		static int s_lastChildCount = -1;
+		int cc = s_rootPanel->getChildCount();
+		if (cc != s_lastChildCount)
+		{
+			s_lastChildCount = cc;
+			VLOG("VGUI_PaintAll: rootChildren changed -> %d", cc);
+			VLOGFLUSH();
+		}
+	}
+#endif
 
 	s_app->externalTick();
 	s_rootPanel->solveTraverse();

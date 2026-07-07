@@ -1438,6 +1438,21 @@ OPTDLG_EXPORT void VGUI_ShowOptions(void)
 	if (vgui::s_keyBindListInstance)
 		vgui::s_keyBindListInstance->populateFromEngine();
 	vgui::g_pOptionsDialog->setVisible(true);
+
+	// Diagnostic snapshot: everything needed to explain "window not visible".
+	// If the dialog is created, visible, sized and parented to a root that the
+	// paint loop traverses, but nothing shows, the fault is downstream (paint
+	// not called / z-order / engine menu on top) rather than in construction.
+	{
+		int dx = 0, dy = 0, dw = 0, dh = 0;
+		vgui::g_pOptionsDialog->getPos(dx, dy);
+		vgui::g_pOptionsDialog->getSize(dw, dh);
+		VLOG("VGUI_ShowOptions EXIT: dlg=%p vis=%d pos=(%d,%d) size=(%dx%d) rootChildren=%d screen=(%dx%d)",
+			(void*)vgui::g_pOptionsDialog,
+			vgui::g_pOptionsDialog->isVisible() ? 1 : 0,
+			dx, dy, dw, dh, root->getChildCount(), sw, sh);
+		VLOGFLUSH();
+	}
 }
 
 OPTDLG_EXPORT void VGUI_HideOptions(void)
