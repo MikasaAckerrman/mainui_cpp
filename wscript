@@ -26,6 +26,14 @@ def configure(conf):
 	conf.load('fwgslib cxx11')
 	conf.env.append_unique('DEFINES', 'STDINT_H=<cstdint>')
 
+	# VGUI1 diagnostic logging. The APK is built with waf (this wscript), NOT
+	# CMake, so the -DVGUI_DIAG in CMakeLists.txt never reaches the Android
+	# build -- which is why <gamedir>/logs/vgui_diag.log never appeared. Define
+	# it here so the logger is actually compiled in. The logger is buffered
+	# (one fopen per 64 lines), so leaving it on has negligible cost. Remove
+	# this define once the invisible-window diagnosis is complete.
+	conf.env.append_unique('DEFINES', 'VGUI_DIAG=1')
+
 	if not conf.check_std('cxx11'):
 		conf.define('MY_COMPILER_SUCKS', 1)
 
