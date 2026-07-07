@@ -20,7 +20,8 @@ extern "C" {
 #endif
 
 void VguiLog( const char *fmt, ... );      // Con_Printf
-void VguiLogFile( const char *fmt, ... );  // separate file
+void VguiLogFile( const char *fmt, ... );  // buffered append to vgui_diag.log
+void VguiLogFlush( void );                 // flush the in-memory buffer to disk
 
 #ifdef __cplusplus
 }
@@ -31,9 +32,11 @@ void VguiLogFile( const char *fmt, ... );  // separate file
 // in the Options dialog) is fully eliminated. Define VGUI_DIAG at build
 // time to re-enable diagnostic logging.
 #ifdef VGUI_DIAG
-#  define VLOG(...)  do { VguiLog(__VA_ARGS__); VguiLogFile(__VA_ARGS__); } while (0)
+#  define VLOG(...)   do { VguiLog(__VA_ARGS__); VguiLogFile(__VA_ARGS__); } while (0)
+#  define VLOGFLUSH() VguiLogFlush()
 #else
-#  define VLOG(...)  ((void)0)
+#  define VLOG(...)   ((void)0)
+#  define VLOGFLUSH() ((void)0)
 #endif
 
 #endif // VGUI_LOG_H
