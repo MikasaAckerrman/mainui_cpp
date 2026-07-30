@@ -111,7 +111,7 @@ void CMenuWndConsole::_Init()
 {
 	// CS 1.6 console: full width, top 60%, anchored at y=0.
 	int w = uiStatic.width;
-	int h = (int)(uiStatic.height * 0.60f);
+	int h = (int)(( ScreenHeight / uiStatic.scaleY ) * 0.60f);
 	SetRect( 0, 0, w, h );
 
 	inputField.iFlags    |= QMF_DISABLESCAILING;
@@ -128,7 +128,7 @@ void CMenuWndConsole::_VidInit()
 	// Always re-dock to top regardless of m_bUserMoved;
 	// a console is not a floating window.
 	int w = uiStatic.width;
-	int h = (int)(uiStatic.height * 0.60f);
+	int h = (int)(( ScreenHeight / uiStatic.scaleY ) * 0.60f);
 	SetRect( 0, 0, w, h );
 	m_bUserMoved = false; // prevent drift after resolution change
 }
