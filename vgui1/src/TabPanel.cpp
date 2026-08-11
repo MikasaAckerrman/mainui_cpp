@@ -198,18 +198,19 @@ void TabPanel::paint()
 			// Active tab fills with body color and overlaps the page area
 			// by 2px so the bottom seam under the tab disappears (canon
 			// TabActiveBorder.Bottom = ControlBG offset 6 2).
-			// Active-tab fill: brighten by +18 on each channel when the finger is
-			// still held (pressed-state feedback). The boost is perceptible but
-			// subtle - just enough to register as "the tab responded".
+			// Active-tab fill: darken by 20 on each channel while the finger is
+			// still held. CS 1.6 renders a pressed tab as sunken, and a sunken
+			// surface catches less light - so the fill goes DOWN, not up.
+			// Saturating subtract: never wrap past 0 (these are unsigned).
 			bool isPressed = (i == _pressedTab);
 			unsigned int fillA = (frameBg >> 24) & 0xFF;
 			unsigned int fillR = (frameBg >> 16) & 0xFF;
 			unsigned int fillG = (frameBg >>  8) & 0xFF;
 			unsigned int fillB = (frameBg >>  0) & 0xFF;
 			if (isPressed) {
-				pR = pR >= 20 ? pR - 20 : 0u;
-				pG = pG >= 20 ? pG - 20 : 0u;
-				pB = pB >= 20 ? pB - 20 : 0u;
+				fillR = fillR >= 20 ? fillR - 20 : 0u;
+				fillG = fillG >= 20 ? fillG - 20 : 0u;
+				fillB = fillB >= 20 ? fillB - 20 : 0u;
 			}
 			unsigned int fillBg = (fillA << 24) | (fillR << 16) | (fillG << 8) | fillB;
 			schemeBgColor(this, fillBg);
