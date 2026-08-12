@@ -43,6 +43,35 @@ extern "C" void VGUI_SetCvarFuncs(
 	const char*(*)(const char*), void(*)(const char*,const char*), void(*)(const char*));
 extern "C" void VGUI_ShowOptions(void);
 
+// WHICH MENU DOES A MAIN-MENU BUTTON OPEN?
+//
+// The windowed dialogs (CMenuFrame / CMenuFrameTabbed, plus the VGUI1 Options
+// panel) were wired straight onto the main menu buttons in May. That turned out
+// to be a mistake with a cost that is easy to understate: the ONLY way into a
+// server, a local game or the settings is through those buttons, so as long as
+// the windowed dialogs are incomplete the game is unreachable -- and every other
+// change in the engine becomes untestable on the device along with it.
+//
+// The native mainui screens were never deleted. CMenuServerBrowser (1391 lines,
+// menus/ServerBrowser.cpp), CMenuCreateGame, CMenuOptions and the whole
+// Configuration tree are all still registered and working; they were simply
+// disconnected from the buttons. So this is a routing decision, not a rewrite.
+//
+// `ui_windowed_dialogs` picks the routing:
+//
+//    0 (default) -- native mainui screens. The game is playable.
+//    1           -- the windowed dialogs, for working on them.
+//
+// It is deliberately NOT FCVAR_ARCHIVE. A half-finished UI that a config file
+// can make permanent is how the game became unreachable in the first place; this
+// way a bad experiment lasts until the next restart and no further.
+static cvar_t *ui_windowed_dialogs;
+
+static bool UI_UseWindowedDialogs( void )
+{
+	return ui_windowed_dialogs && ui_windowed_dialogs->value != 0.0f;
+}
+
 static void UI_VguiClientCmd( const char *cmd )
 {
 	EngFuncs::ClientCmd( false, cmd );
@@ -72,6 +101,44 @@ static void UI_ShowVguiOptions( void )
 	VGUI_SetScreenSize( ScreenWidth, ScreenHeight );
 	VGUI_ShowOptions();
 	Con_Printf( "[VGUI] returned from VGUI_ShowOptions\n" );
+}
+
+// --- button routing -------------------------------------------------------
+//
+// One function per button, each choosing between the native screen and the
+// windowed dialog. Written as functions rather than as an `if` around the
+// assignment in _VidInit because _VidInit runs once per video init, while the
+// cvar can be flipped at any point from the console -- reading it at click time
+// means the switch takes effect immediately instead of after a vid_restart.
+
+static void UI_Main_MultiplayerCb( void )
+{
+	if( UI_UseWindowedDialogs( ))
+		WndServerBrowser_Show();
+	else
+		UI_MultiPlayer_Menu();
+}
+
+static void UI_Main_ConfigurationCb( void )
+{
+	if( UI_UseWindowedDialogs( ))
+		UI_ShowVguiOptions();
+	else
+		UI_Options_Menu();
+}
+
+static void UI_Main_ConsoleCb( void )
+{
+	if( UI_UseWindowedDialogs( ))
+	{
+		WndConsole_Show();
+		return;
+	}
+
+	// The engine's own console, which is what the button did before the windowed
+	// one existed: close the menu and hand the keyboard to the console.
+	UI_SetActiveMenu( false );
+	EngFuncs::KEY_SetDest( KEY_CONSOLE );
 }
 
 #define ART_MINIMIZE_N	"gfx/shell/min_n"
@@ -208,6 +275,13 @@ void CMenuMain::HazardCourseCb()
 
 void CMenuMain::_Init( void )
 {
+	// Registered here rather than in BaseMenu's cvar block: this is the main
+	// menu's own routing switch, and keeping the declaration next to the code
+	// that reads it is what keeps the two from drifting apart. CvarRegister
+	// returns the existing cvar if it was already created, so calling it again
+	// on a second _Init is harmless.
+	ui_windowed_dialogs = EngFuncs::CvarRegister( "ui_windowed_dialogs", "0", 0 );
+
 	if( gMenu.m_gameinfo.trainmap[0] && stricmp( gMenu.m_gameinfo.trainmap, gMenu.m_gameinfo.startmap ) != 0 )
 		bTrainMap = true;
 	else bTrainMap = false;
@@ -221,7 +295,7 @@ void CMenuMain::_Init( void )
 	console.iFlags |= QMF_NOTIFY;
 	console.SetPicture( PC_CONSOLE );
 	console.SetVisibility( gpGlobals->developer );
-	console.onReleased = WndConsole_Show;
+	console.onReleased = UI_Main_ConsoleCb;
 
 	resumeGame.SetNameAndStatus( L( "GameUI_GameMenu_ResumeGame" ), L( "StringsList_188" ) );
 	resumeGame.SetPicture( PC_RESUME_GAME );
@@ -247,12 +321,12 @@ void CMenuMain::_Init( void )
 	multiPlayer.SetNameAndStatus( L( "GameUI_Multiplayer" ), L( "StringsList_198" ) );
 	multiPlayer.SetPicture( PC_MULTIPLAYER );
 	multiPlayer.iFlags |= QMF_NOTIFY;
-	multiPlayer.onReleased = WndServerBrowser_Show;
+	multiPlayer.onReleased = UI_Main_MultiplayerCb;
 
 	configuration.SetNameAndStatus( L( "GameUI_Options" ), L( "StringsList_193" ) );
 	configuration.SetPicture( PC_CONFIG );
 	configuration.iFlags |= QMF_NOTIFY;
-	SET_EVENT( configuration.onReleased, UI_ShowVguiOptions() );
+	configuration.onReleased = UI_Main_ConfigurationCb;
 
 	saveRestore.iFlags |= QMF_NOTIFY;
 

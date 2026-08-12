@@ -91,57 +91,21 @@ int CMenuFrame::HitTestResize( int x, int y )
 void CMenuFrame::DrawBackground()
 {
 	unsigned int bgColor = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
+
+	// A FLAT FILL, and that is the whole of it.
+	//
+	// This used to also scatter per-pixel "grain" over the panel: up to 4000
+	// separate UI_FillRect( x, y, 1, 1 ) calls per window per frame. It was added
+	// to imitate a texture in the CS 1.6 panels, and it imitates nothing -- the
+	// real thing has no such texture. Checked against the game's own scheme:
+	// resource/ClientScheme.res paints panels with a single flat role (ControlBG)
+	// and gets all of its depth from the Borders section, which is 21 named
+	// borders each built out of 1px lines with an inset and a per-side offset.
+	// Grain on top of that reads as noise, and it cost thousands of draw calls a
+	// frame on a phone.
+	//
+	// The depth belongs in DrawBorder (see the note there), not here.
 	UI_FillRect( m_scPos.x, m_scPos.y + m_iTitleH, m_scSize.w, m_scSize.h - m_iTitleH, bgColor );
-
-	// GoldSrc subtle noise/grain effect - sparse grid, position-based hash
-	// Skip noise on very small windows where it would be imperceptible
-	int areaW = m_scSize.w;
-	int areaH = m_scSize.h - m_iTitleH;
-	if( areaW * areaH < 10000 )
-		return;
-
-	int startX = m_scPos.x;
-	int startY = m_scPos.y + m_iTitleH;
-	int endX = m_scPos.x + areaW;
-	int endY = m_scPos.y + m_iTitleH + areaH;
-	int step = 6; // every 6th pixel - sparser for performance
-
-	// Cap grid points at ~4000 to avoid excessive draw calls on large screens
-	int gridPoints = (areaW / step) * (areaH / step);
-	while( gridPoints > 4000 && step < 20 )
-	{
-		step += 2;
-		gridPoints = (areaW / step) * (areaH / step);
-	}
-
-	unsigned int r = (bgColor >> 16) & 0xFF;
-	unsigned int g = (bgColor >> 8) & 0xFF;
-	unsigned int b = bgColor & 0xFF;
-	unsigned int a = (bgColor >> 24) & 0xFF;
-
-	for( int py = startY; py < endY; py += step )
-	{
-		for( int px = startX; px < endX; px += step )
-		{
-			unsigned int hash = ((unsigned int)px * 2654435761u) ^ ((unsigned int)py * 340573321u);
-			if( (hash & 0xF) < 2 )
-			{
-				// Slightly brighter
-				unsigned int nr = (r + 8 > 255) ? 255 : r + 8;
-				unsigned int ng = (g + 8 > 255) ? 255 : g + 8;
-				unsigned int nb = (b + 8 > 255) ? 255 : b + 8;
-				UI_FillRect( px, py, 1, 1, (a << 24) | (nr << 16) | (ng << 8) | nb );
-			}
-			else if( (hash & 0xF) == 15 )
-			{
-				// Slightly darker
-				unsigned int nr = (r > 8) ? r - 8 : 0;
-				unsigned int ng = (g > 8) ? g - 8 : 0;
-				unsigned int nb = (b > 8) ? b - 8 : 0;
-				UI_FillRect( px, py, 1, 1, (a << 24) | (nr << 16) | (ng << 8) | nb );
-			}
-		}
-	}
 }
 
 void CMenuFrame::DrawTitleBar()
@@ -225,18 +189,46 @@ void CMenuFrame::DrawTitleBar()
 
 void CMenuFrame::DrawBorder()
 {
-	unsigned int dark   = Scheme_GetColor( g_Scheme.borderDark,   0xFF282E22 );
+	// FrameBorder, as the game's own scheme defines it.
+	//
+	// resource/ClientScheme.res, section Borders:
+	//
+	//     FrameBorder
+	//     {
+	//         "inset" "0 0 1 1"
+	//         Left   { "1" { "color" "ControlBG" "offset" "0 1" } }
+	//         Right  { "1" { "color" "ControlBG" "offset" "0 0" } }
+	//         Top    { "1" { "color" "ControlBG" "offset" "0 1" } }
+	//         Bottom { "1" { "color" "ControlBG" "offset" "0 0" } }
+	//     }
+	//
+	// So a CS 1.6 frame border is FOUR 1px lines in the panel's own background
+	// colour, each with its own start offset -- not an outline in a contrasting
+	// colour. That is why the real windows look flat-edged and slightly recessed
+	// rather than outlined. A dark outline (what this drew before) is what made
+	// our frames read as "a rectangle with a border drawn round it".
+	//
+	// The offsets are what the inset/offset pair means in that format: a side's
+	// line starts `offset` pixels in from the corner, which leaves the corner
+	// pixel to the perpendicular side and produces the mitred look.
+	unsigned int edge = Scheme_GetColor( g_Scheme.frameBorderColor, 0 );
+
+	if( !edge )
+		edge = Scheme_GetColor( g_Scheme.frameBgColor, 0xFF4C5844 );
 
 	int x = m_scPos.x;
 	int y = m_scPos.y;
 	int w = m_scSize.w;
 	int h = m_scSize.h;
 
-	// Single 1px outer dark outline (thin, soft - CS 1.6 style)
-	UI_FillRect( x - 1, y - 1, w + 2, 1, dark );     // top
-	UI_FillRect( x - 1, y + h, w + 2, 1, dark );     // bottom
-	UI_FillRect( x - 1, y - 1, 1, h + 2, dark );     // left
-	UI_FillRect( x + w, y - 1, 1, h + 2, dark );     // right
+	// Top: offset "0 1" -- starts one pixel in.
+	UI_FillRect( x + 1, y - 1, w, 1, edge );
+	// Bottom: offset "0 0".
+	UI_FillRect( x, y + h, w, 1, edge );
+	// Left: offset "0 1".
+	UI_FillRect( x - 1, y + 1, 1, h, edge );
+	// Right: offset "0 0".
+	UI_FillRect( x + w, y, 1, h, edge );
 }
 
 void CMenuFrame::DrawResizeGrip()

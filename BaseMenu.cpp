@@ -774,6 +774,23 @@ void UI_KeyEvent( int key, int down )
 	clientActive = uiStatic.client.IsActive();
 	menuActive = uiStatic.menu.IsActive();
 
+	// ONE RECIPIENT PER KEY.
+	//
+	// A visible VGUI1 panel is a modal dialog on top of everything: it must take
+	// the key, and mainui must NOT also get it. Delivering to both is what made
+	// the windowed dialogs feel broken -- a click landed on the VGUI button AND
+	// on whatever mainui item happened to be under the cursor, so the dialog and
+	// the menu behind it acted on the same press. Same for the keyboard: Enter in
+	// a VGUI text field also activated the highlighted main-menu button.
+	if( VGUI_IsVisible( ))
+	{
+		if( key >= K_MOUSE1 && key <= K_MOUSE5 )
+			VGUI_ForwardMouse( down ? 0 : 1, key - K_MOUSE1 );
+		else
+			VGUI_ForwardKey( down ? 1 : 2, key );
+		return;
+	}
+
 	if( clientActive && !menuActive )
 		down ? uiStatic.client.KeyDownEvent( key ) :
 			uiStatic.client.KeyUpEvent( key );
@@ -781,19 +798,6 @@ void UI_KeyEvent( int key, int down )
 	if( menuActive )
 		down ? uiStatic.menu.KeyDownEvent( key ) :
 			uiStatic.menu.KeyUpEvent( key );
-
-	// Forward to VGUI1 panels only when a VGUI1 panel is visible
-	if( VGUI_IsVisible() )
-	{
-		if( key >= K_MOUSE1 && key <= K_MOUSE5 )
-		{
-			VGUI_ForwardMouse(down ? 0 : 1, key - K_MOUSE1);
-		}
-		else
-		{
-			VGUI_ForwardKey(down ? 1 : 2, key);
-		}
-	}
 }
 
 /*
@@ -809,20 +813,23 @@ void UI_CharEvent( int key )
 	bool clientActive = uiStatic.client.IsActive();
 	bool menuActive = uiStatic.menu.IsActive();
 
+	// Same single-recipient rule as UI_KeyEvent: a visible VGUI1 panel owns the
+	// keyboard. Typing into its text field must not also type into a mainui field.
+	if( VGUI_IsVisible( ))
+	{
+		if( key > 0 && key < 128 )
+		{
+			char buf[2] = { (char)key, 0 };
+			VGUI_ForwardCharInput( buf );
+		}
+		return;
+	}
+
 	if( clientActive && !menuActive )
 		uiStatic.client.CharEvent( key );
 
 	if( menuActive )
 		uiStatic.menu.CharEvent( key );
-
-	// Forward typed character to VGUI1 panels (e.g. TextEntry) when visible.
-	// VGUI's KA_PRESSED path handles only navigation keys; insertion of
-	// printable characters comes through this typed-char route.
-	if( VGUI_IsVisible() && key > 0 && key < 128 )
-	{
-		char buf[2] = { (char)key, 0 };
-		VGUI_ForwardCharInput( buf );
-	}
 }
 
 bool g_bCursorDown;
@@ -878,15 +885,20 @@ void UI_MouseMove( int x, int y )
 	uiStatic.cursorX = bound( 0, uiStatic.cursorX, ScreenWidth );
 	uiStatic.cursorY = bound( 0, uiStatic.cursorY, ScreenHeight );
 
+	// Single recipient again: while a VGUI1 panel is up, mainui must not see the
+	// motion. Otherwise items behind the dialog light up under the cursor and the
+	// hover highlight follows the mouse across a modal window.
+	if( VGUI_IsVisible( ))
+	{
+		VGUI_ForwardMouseMove( x, y );
+		return;
+	}
+
 	if( clientActive && !menuActive )
 		uiStatic.client.MouseEvent( x, y );
 
 	if( menuActive )
 		uiStatic.menu.MouseEvent( x, y );
-
-	// Forward to VGUI1 panels only when a VGUI1 panel is visible
-	if( VGUI_IsVisible() )
-		VGUI_ForwardMouseMove(x, y);
 }
 
 
