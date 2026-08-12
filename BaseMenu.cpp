@@ -1294,6 +1294,11 @@ void UI_Init( void )
 	// trying to load colors.lst
 	UI_ApplyCustomColors ();
 
+	// ui_scheme / ui_scheme_list / ui_scheme_reload must exist BEFORE the first
+	// load, otherwise ui_scheme reads back empty and a selected colour scheme is
+	// ignored until the player reloads it by hand.
+	UI_RegisterSchemeCommands();
+
 	// load TrackerScheme.res (overrides colors.lst with Source-style scheme)
 	UI_LoadTrackerScheme();
 	MenuLog("[UI_Init] END (success)\n");

@@ -101,6 +101,46 @@ extern SchemeColors g_Scheme;
 // Load and apply TrackerScheme.res (called after UI_ApplyCustomColors in UI_Init)
 void UI_LoadTrackerScheme( void );
 
+// ---------------------------------------------------------------------------
+// Generic role access.
+//
+// The named fields above are a convenience VIEW over a much larger table: the
+// real resource/TrackerScheme.res shipped with CS 1.6 defines ~147 BaseSettings
+// roles, and every one of them is now stored verbatim at parse time. Widgets
+// that need a role which has no dedicated field (ScrollBar*, CheckButton.*,
+// SectionedListPanel.*, Tooltip.*, ComboBoxButton.*, ...) ask for it by name
+// instead of growing the struct and the parser in lockstep.
+//
+// Why by name and not more fields: adding a role used to mean editing the
+// struct, the built-in scheme text AND a 54-branch stricmp chain. Three places
+// to keep in sync is how 112 of 147 canonical roles ended up silently dropped.
+//
+// Scheme_Role returns fallback when the role is absent from the scheme.
+// A role explicitly set to "Blank" (0 0 0 0) is PRESENT and returns 0, which is
+// a meaningful value in VGUI (draw nothing) - hence the separate Has query.
+unsigned int Scheme_Role( const char *role, unsigned int fallback );
+bool         Scheme_HasRole( const char *role );
+
+// Numeric roles: Frame.TransitionEffectTime (0.25), Menu.TextInset (6),
+// MainMenu.MenuItemHeight (30), Frame.OutOfFocusAlpha (128), Main.Title1.X ...
+// Times are fractional in the Source scheme, so this is float, not int.
+float Scheme_Metric( const char *role, float fallback );
+bool  Scheme_HasMetric( const char *role );
+
+// How many roles the active scheme defined. Used by the test harness to catch a
+// parser that silently stops early, and by the diagnostic console output.
+int Scheme_RoleCount( void );
+
+// Path the active scheme was read from, e.g. "resource/schemes/TrackerScheme_Source.res"
+// or "(built-in)". Useful in diagnostics: "my colours did not change" is almost
+// always "a different file than you edited was loaded".
+const char *Scheme_ActivePath( void );
+
+// Registers the ui_scheme cvar plus ui_scheme_list / ui_scheme_reload.
+// Must run before UI_LoadTrackerScheme, otherwise ui_scheme reads as empty and
+// a selected variant is ignored on the first load.
+void UI_RegisterSchemeCommands( void );
+
 // Query helpers
 inline unsigned int Scheme_GetColor( unsigned int schemeColor, unsigned int fallback )
 {
